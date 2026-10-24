@@ -1,0 +1,123 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+  color-scheme: light;
+
+  /* --- Marca (fijada en el handoff) ------------------------------------- */
+  --color-coral: #E1755A;        /* coral: gajos, guarda, acentos. Nunca lleva texto encima */
+  --color-coral-text: #AA442B;   /* coral-texto: acentos tipográficos sobre crema (5,3:1) */
+  --color-sky: #C2E5F1;          /* cielo: hero, avisos informativos, lo más importante del día */
+  --color-sea: #50AFB9;          /* agua: franja del emblema. Nunca lleva texto */
+  --color-sand: #E6CDA5;         /* arena: tarjetas y bloques */
+  --color-cream: #FAF3E3;        /* crema: fondo de página */
+  --color-ink: #482A1D;          /* tinta: texto, botón primario */
+  --color-ink-hover: #5F3F31;    /* tinta hover: oklch(0.4 0.05 45) */
+  --color-ink-soft: #6B5244;     /* tinta-sec: texto secundario */
+  --color-line: rgb(72 42 29 / 0.16);         /* línea: bordes y divisores */
+  --color-line-strong: rgb(72 42 29 / 0.35);  /* línea fuerte: borde de botón secundario */
+
+  /* --- Agregados para la aplicación ------------------------------------ */
+  --color-foam: #FFFCF6;         /* espuma: campos, tablas, modales, calendario */
+  --color-sand-soft: #F0E0C4;    /* arena suave: cabecera de tabla, esqueletos, rango de fechas */
+  --color-field-border: #917E74; /* borde de campo: 3,5:1 sobre crema (WCAG 1.4.11) */
+
+  /* --- Estados: las banderas del bañero --------------------------------
+     Verde: se puede. Amarilla: atención. Roja: no se puede.
+     Cancelada no es peligro: es neutra, sin bandera.                        */
+  --color-success: #2F6B45;
+  --color-success-soft: #DCEBD8;
+  --color-success-text: #245536;
+
+  --color-warning: #E3AE3B;
+  --color-warning-soft: #F6E4B4;
+  --color-warning-text: #6B4A00;
+
+  --color-danger: #A8322A;
+  --color-danger-hover: #8F2A23;
+  --color-danger-soft: #F5D8D1;
+  --color-danger-text: #8C2A22;
+
+  --color-neutral-soft: #E9E1D3;
+  --color-neutral-text: #6B5244;
+
+  /* --- Roles ------------------------------------------------------------ */
+  --color-bg: var(--color-cream);
+  --color-surface: var(--color-foam);
+  --color-block: var(--color-sand);
+  --color-text: var(--color-ink);
+  --color-text-muted: var(--color-ink-soft);
+  --color-focus: var(--color-coral-text);
+  --color-scrim: rgb(72 42 29 / 0.55);
+
+  /* --- Tipografía ------------------------------------------------------- */
+  --font-display: 'Young Serif', Georgia, serif;           /* nunca debajo de 24px */
+  --font-body: 'Hanken Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;  /* etiquetas y códigos */
+
+  --text-display-xl: 56px;  /* titular de portada (40px en celular) */
+  --text-display-l: 40px;   /* título de página y de sección (32px en celular) */
+  --text-display-m: 32px;   /* título de pantalla de la app, resultado de ingreso */
+  --text-display-s: 24px;   /* título de tarjeta y de modal: el mínimo de la serif */
+  --text-lead: 18px;        /* bajada de portada */
+  --text-body: 16px;        /* texto de la app: mínimo en celular */
+  --text-small: 14px;       /* tablas, ayudas, secundario */
+  --text-caption: 13px;     /* etiquetas de estado, notas */
+  --text-label: 11px;       /* mono en mayúsculas */
+  --text-figure: 36px;      /* cifra de panel (Hanken 600, tabular) */
+
+  --leading-display: 1.04;
+  --leading-title: 1.1;
+  --leading-body: 1.55;
+  --leading-ui: 1.3;
+  --tracking-label: 0.14em;
+  --tracking-label-wide: 0.3em;
+
+  /* --- Espacio (base 4) ------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 48px;
+  --space-8: 72px;
+
+  /* --- Forma ------------------------------------------------------------ */
+  --radius-s: 3px;
+  --radius-m: 4px;
+  --radius-pill: 999px;
+  --border: 1px solid var(--color-line);
+  --border-strong: 1px solid var(--color-line-strong);
+
+  /* --- Controles -------------------------------------------------------- */
+  --control-large: 56px;    /* Validar ingreso, acción principal en celular */
+  --control: 48px;          /* botón y campo por defecto */
+  --control-compact: 40px;  /* barras de navegación */
+  --control-small: 32px;    /* solo dentro de tablas, en escritorio */
+  --touch-min: 44px;
+
+  /* --- Íconos (Lucide, trazo 1,75) -------------------------------------- */
+  --icon-s: 16px;
+  --icon-m: 20px;
+  --icon-l: 24px;
+
+  /* --- Movimiento ------------------------------------------------------- */
+  --duration: 150ms;
+  --ease: cubic-bezier(0, 0, 0.2, 1);
+
+  /* --- Maquetación ------------------------------------------------------
+     Cortes: 360 (diseño base del cliente) · 768 · 1024 · 1280             */
+  --container: 1120px;
+  --gutter: 16px;
+  --sidebar-width: 256px;
+
+  /* --- Capas ------------------------------------------------------------ */
+  --z-nav: 10;
+  --z-dropdown: 20;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
+@media (min-width: 768px) {
+    :root { --gutter: 28px; }
+}
