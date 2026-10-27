@@ -93,10 +93,14 @@ describe('SiteLayout', () => {
     ]);
   });
 
-  it('al administrador le suma el acceso al panel', async () => {
+  it('al administrador le muestra solo el panel y cerrar sesión', async () => {
     await render(MAXIMILIANO);
 
-    expect(texts('#menu-usuario .z-menu__item')).toContain('Panel de mi balneario');
+    expect(userButton().textContent).toContain('Maximiliano');
+    expect(texts('#menu-usuario .z-menu__item')).toEqual([
+      'Panel de mi balneario',
+      'Cerrar sesión',
+    ]);
   });
 
   it('Cerrar sesión cierra la sesión', async () => {
