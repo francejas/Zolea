@@ -1,59 +1,47 @@
-# Frontend
+# Frontend de Zolea
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+La aplicación web de Zolea, en Angular 22. Habla con el backend de este mismo repositorio por HTTP.
 
-## Development server
+## Qué instalar
 
-To start a local development server, run:
+- **Node 24.** La versión está fijada en `.nvmrc`: con `nvm use` (o `nvm-windows`) tomás la correcta.
+- **El backend levantado** en `http://localhost:8080`. Cómo se hace está en el `README.md` de la raíz
+  y en el manual de arranque del equipo.
 
-```bash
-ng serve
-```
+No hace falta instalar el Angular CLI global: se usa el del proyecto, con `npx ng` o los scripts de
+`npm`.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Levantarlo
 
 ```bash
-ng generate component component-name
+cd frontend
+npm ci
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Queda en `http://localhost:4200`, que es también adonde vuelve el cliente después de pagar en
+MercadoPago. `npm ci` instala exactamente las versiones de `package-lock.json`, así los tres
+trabajamos con lo mismo.
 
-```bash
-ng generate --help
+## Otros comandos
+
+| Comando | Para qué |
+|---|---|
+| `npm run build` | Compila para producción, en `dist/` |
+| `npm test` | Corre las pruebas con Vitest |
+| `npx prettier --write src` | Le da al código el formato acordado |
+
+## Dónde va cada cosa
+
+```
+src/app/
+  core/      lo que existe una sola vez: sesión, interceptor, guards, errores y modelos de la API
+  shared/    lo que se repite: botón, campo, aviso, los cuatro estados y el plano del balneario
+  layout/    las dos estructuras de página: barra superior y barra lateral
+  features/  una carpeta por épica: auth, resorts, bookings, admin y entry
+src/styles/tokens.css   colores y medidas del sistema de diseño: la única fuente
+src/environments/       la dirección del backend en desarrollo y en producción
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Una feature no importa nada de otra: si algo lo usan dos, va a `shared/` o a `core/`. El porqué
+está en la decisión 16 de `docs/decisiones.md`.
