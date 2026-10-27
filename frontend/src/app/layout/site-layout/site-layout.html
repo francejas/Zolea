@@ -1,0 +1,127 @@
+<a class="z-skip" href="#contenido" (click)="skipToContent($event)">Saltar al contenido</a>
+
+<header class="z-topbar">
+  <div class="z-topbar__inner">
+    <a class="z-logo" routerLink="/">
+      <img class="z-emblem" src="emblema.svg" alt="" width="34" height="34" />
+      <span class="z-logo__word" translate="no">Zolea</span>
+    </a>
+
+    <div class="z-topbar__actions">
+      @if (session.user(); as user) {
+        <div class="user" #userMenu (focusout)="onUserMenuFocusOut($event)">
+          <button
+            #userButton
+            class="z-user-btn"
+            type="button"
+            aria-controls="menu-usuario"
+            [attr.aria-expanded]="userMenuOpen()"
+            (click)="userMenuOpen.set(!userMenuOpen())"
+          >
+            <span class="z-avatar" aria-hidden="true">{{ initials() }}</span>
+            {{ user.firstName }}
+            <svg class="z-icon z-icon--s" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          <ul
+            class="z-menu"
+            id="menu-usuario"
+            [hidden]="!userMenuOpen()"
+            (click)="userMenuOpen.set(false)"
+          >
+            <ng-container *ngTemplateOutlet="account; context: { $implicit: user }" />
+          </ul>
+        </div>
+      } @else {
+        <a class="z-btn z-btn--secondary z-btn--compact" routerLink="/register">Crear cuenta</a>
+        <a class="z-btn z-btn--primary z-btn--compact" routerLink="/login">Ingresar</a>
+      }
+    </div>
+
+    <button
+      #sheetButton
+      class="z-icon-btn z-topbar__menu-btn"
+      type="button"
+      aria-controls="menu-celular"
+      [attr.aria-expanded]="sheetOpen()"
+      [attr.aria-label]="sheetOpen() ? 'Cerrar menú' : 'Abrir menú'"
+      (click)="sheetOpen.set(!sheetOpen())"
+    >
+      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
+        @if (sheetOpen()) {
+          <path d="M18 6 6 18M6 6l12 12" />
+        } @else {
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        }
+      </svg>
+    </button>
+  </div>
+</header>
+
+<nav class="z-sheet" id="menu-celular" aria-label="Menú" [hidden]="!sheetOpen()">
+  @if (session.user(); as user) {
+    <ul class="z-sheet__list" (click)="sheetOpen.set(false)">
+      <ng-container *ngTemplateOutlet="account; context: { $implicit: user }" />
+    </ul>
+  } @else {
+    <a class="z-btn z-btn--primary z-btn--block" routerLink="/login">Ingresar</a>
+    <a class="z-btn z-btn--secondary z-btn--block" routerLink="/register">Crear cuenta</a>
+  }
+</nav>
+
+<main id="contenido" #main tabindex="-1">
+  <router-outlet />
+</main>
+
+<!-- Lo mismo en el menú de la computadora y en el del celular. -->
+<ng-template #account let-user>
+  <li class="z-menu__head">
+    <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+    <span>{{ user.email }}</span>
+  </li>
+  <li class="z-menu__sep" role="separator"></li>
+  <li>
+    <a class="z-menu__item" routerLink="/my-bookings" routerLinkActive ariaCurrentWhenActive="page">
+      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"
+        />
+        <path d="M13 5v2M13 17v2M13 11v2" />
+      </svg>
+      Mis reservas
+    </a>
+  </li>
+  <li>
+    <a class="z-menu__item" routerLink="/profile" routerLinkActive ariaCurrentWhenActive="page">
+      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+      Mi cuenta
+    </a>
+  </li>
+  @if (session.isAdmin()) {
+    <li>
+      <a class="z-menu__item" routerLink="/admin">
+        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="9" rx="1" />
+          <rect x="14" y="3" width="7" height="5" rx="1" />
+          <rect x="14" y="12" width="7" height="9" rx="1" />
+          <rect x="3" y="16" width="7" height="5" rx="1" />
+        </svg>
+        Panel de mi balneario
+      </a>
+    </li>
+  }
+  <li class="z-menu__sep" role="separator"></li>
+  <li>
+    <button class="z-menu__item" type="button" (click)="logout()">
+      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <path d="m16 17 5-5-5-5M21 12H9" />
+      </svg>
+      Cerrar sesión
+    </button>
+  </li>
+</ng-template>
