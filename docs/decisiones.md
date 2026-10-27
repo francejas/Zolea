@@ -386,3 +386,31 @@ a quien lo iba a administrar sin asignación — o sea, con 403 en todo el panel
 proyecto porque los cinco balnearios y sus administradores están fijos en `data-demo.sql`, pero el
 endpoint permite llegar a ese estado. El día que se cierre, la decisión de fondo es quién asigna:
 el propio creador, o un alta de administrador aparte.
+
+## 16. El frontend se ordena en cuatro carpetas: core, shared, layout y features
+
+**Problema.** La base del frontend la construyen tres personas en paralelo. Sin una estructura
+acordada, cada una inventa la suya: la sesión en una carpeta, el interceptor en otra y tres
+versiones del mismo botón.
+
+**Decisión.**
+
+```
+frontend/src/app/
+  core/      lo que existe una sola vez: sesión, interceptor, guards, manejo de errores y modelos de la API
+  shared/    piezas visuales que se repiten: botón, campo, aviso, los cuatro estados y el plano del balneario
+  layout/    las dos estructuras de página: la barra superior y la barra lateral
+  features/  una carpeta por épica: auth, resorts, bookings, admin y entry
+```
+
+Cada carpeta de `features/` tiene sus pantallas y sus propias rutas, y se carga recién cuando se
+entra a ella. Una feature no importa nada de otra: lo que dos features necesitan sube a `shared/`
+o a `core/`. El plano del balneario, por ejemplo, va a `shared/` porque lo usan la ficha y Reservar.
+
+**Por qué.** Es la convención más común en Angular, así que cualquiera que abra el proyecto se
+ubica. `core/` y `shared/` separan lo que tiene una sola instancia de lo que se repite, y
+`features/` sigue la misma división que las épicas de Jira: cada tarjeta cae en una carpeta.
+
+**Lo que se paga.** Algunas piezas quedan en el límite y hay que decidir dónde van; la regla es que
+si la usa más de una feature, va a `shared/`. Mover algo de una feature a `shared/` cuando aparece
+el segundo uso es un cambio chico, pero hay que hacerlo en el momento y no copiarlo.
