@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { toUserMessage, applyFieldErrors } from './error-message';
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { form, submit } from '@angular/forms/signals';
+import { toUserMessage, toFieldErrors } from './error-message';
 
 describe('Error Utilities', () => {
   describe('toUserMessage', () => {
@@ -43,61 +45,43 @@ describe('Error Utilities', () => {
     });
   });
 
-  describe('applyFieldErrors', () => {
+  describe('toFieldErrors', () => {
     const createForm = () =>
-      new FormGroup({
-        email: new FormControl('santi.rodriguez@gmail.com', Validators.required),
-        password: new FormControl(''),
-      });
+      TestBed.runInInjectionContext(() =>
+        form(signal({ email: 'santi.rodriguez@gmail.com', password: 'admin123' })),
+      );
 
-    it('debería setear errores "server" y marcar como tocados', () => {
-      const form = createForm();
-      const err = new HttpErrorResponse({
-        error: {
-          error: 'Datos inválidos',
-          campos: { email: 'El email ya está en uso' },
-        },
-      });
+    const badRequest = (campos?: Record<string, string>) =>
+      new HttpErrorResponse({ status: 400, error: { error: 'Datos inválidos', campos } });
 
-      applyFieldErrors(form, err);
+    it('después de submit, cada campo trae su error server', async () => {
+      const f = createForm();
 
-      expect(form.controls.email.errors).toEqual({ server: 'El email ya está en uso' });
-      expect(form.controls.email.touched).toBe(true);
+      await submit(f, async () =>
+        toFieldErrors(f, badRequest({ email: 'El email ya está en uso' })),
+      );
 
-      expect(form.controls.password.errors).toBeNull();
-      expect(form.controls.password.touched).toBe(false);
+      expect(f.email().errors()).toEqual([
+        expect.objectContaining({ kind: 'server', message: 'El email ya está en uso' }),
+      ]);
+      expect(f.password().errors()).toEqual([]);
     });
 
-    it('debería conservar los errores que el control ya tenía', () => {
-      const form = createForm();
-      form.controls.email.setValue('');
-      const err = new HttpErrorResponse({
-        error: { error: 'Datos inválidos', campos: { email: 'El email es obligatorio' } },
-      });
+    it('sin campos en la respuesta no devuelve errores', () => {
+      const f = createForm();
 
-      applyFieldErrors(form, err);
-
-      expect(form.controls.email.errors).toEqual({
-        required: true,
-        server: 'El email es obligatorio',
-      });
+      expect(toFieldErrors(f, badRequest())).toEqual([]);
+      expect(toFieldErrors(f, new HttpErrorResponse({ status: 0 }))).toEqual([]);
     });
 
-    it('no debería mutar nada si la respuesta no trae campos', () => {
-      const form = createForm();
-      const err = new HttpErrorResponse({ error: { error: 'Error general' } });
+    it('un campo que no está en el formulario no rompe nada', async () => {
+      const f = createForm();
+      const err = badRequest({ dni: 'DNI inválido', email: 'El email ya está en uso' });
 
-      expect(() => applyFieldErrors(form, err)).not.toThrow();
-      expect(form.controls.email.errors).toBeNull();
-    });
+      await submit(f, async () => toFieldErrors(f, err));
 
-    it('no debería romper si el campo no existe en el form', () => {
-      const form = createForm();
-      const err = new HttpErrorResponse({
-        error: { error: 'Error', campos: { dni: 'DNI inválido' } },
-      });
-
-      expect(() => applyFieldErrors(form, err)).not.toThrow();
+      expect(toFieldErrors(f, err)).toHaveLength(1);
+      expect(f.email().errors()).toHaveLength(1);
     });
   });
 });

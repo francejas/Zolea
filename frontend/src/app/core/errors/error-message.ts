@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormGroup } from '@angular/forms';
+import { FieldTree, ValidationError } from '@angular/forms/signals';
 import { ApiError } from '../api/api-error';
 
 export function toUserMessage(err: HttpErrorResponse): string {
@@ -25,20 +25,20 @@ export function toUserMessage(err: HttpErrorResponse): string {
   }
 }
 
-export function applyFieldErrors(form: FormGroup, err: HttpErrorResponse): void {
+/**
+ * Los errores por campo del backend, listos para devolver desde la acción de `submit()`: Angular
+ * pega cada uno en su campo. Los campos del modelo se llaman igual que los del pedido, y una clave
+ * que el formulario no tiene se descarta.
+ */
+export function toFieldErrors<T>(
+  form: FieldTree<T>,
+  err: HttpErrorResponse,
+): ValidationError.WithOptionalFieldTree[] {
   const apiError = err.error as ApiError | null;
+  const fields = form as unknown as Record<string, FieldTree<unknown> | undefined>;
 
-  if (!apiError || !apiError.campos) {
-    return;
-  }
-
-  Object.entries(apiError.campos).forEach(([field, message]) => {
-    const control = form.get(field);
-
-    if (control) {
-      // Se suma a los errores que el control ya tenía, para no borrar los de sus validadores.
-      control.setErrors({ ...control.errors, server: message });
-      control.markAsTouched();
-    }
+  return Object.entries(apiError?.campos ?? {}).flatMap(([key, message]) => {
+    const fieldTree = fields[key];
+    return fieldTree ? [{ fieldTree, kind: 'server', message }] : [];
   });
 }
