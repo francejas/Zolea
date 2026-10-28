@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Zolea">
+  <defs><clipPath id="c"><circle cx="50" cy="50" r="50"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="100" height="100" fill="#C2E5F1"/>
+    <rect y="60" width="100" height="10" fill="#50AFB9"/>
+    <rect y="70" width="100" height="30" fill="#E6CDA5"/>
+    <path fill="#FAF3E3" d="M18 50A32 32 0 0 1 82 50Z"/><path fill="#E1755A" d="M50 50L18 50A32 32 0 0 1 20.436 37.754ZM50 50L27.373 27.373A32 32 0 0 1 37.754 20.436ZM50 50L50 18A32 32 0 0 1 62.246 20.436ZM50 50L72.627 27.373A32 32 0 0 1 79.564 37.754Z"/><rect fill="#482A1D" x="48.8" y="50" width="2.4" height="32"/>
+  </g>
+</svg>
