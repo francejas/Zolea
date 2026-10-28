@@ -27,11 +27,11 @@ export function toUserMessage(err: HttpErrorResponse): string {
 export function applyFieldErrors(form: any, err: HttpErrorResponse): void {
   const apiError = err.error as ApiError | null;
   
-  if (!apiError || !apiError.fields) {
+  if (!apiError || !apiError.campos) {
     return;
   }
 
-  Object.entries(apiError.fields).forEach(([field, message]) => {
+  Object.entries(apiError.campos).forEach(([field, message]) => {
     const control = form.controls?.[field];
     
     if (control) {
