@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HttpErrorResponse } from '@angular/common/http';
-import { signal } from '@angular/core';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { toUserMessage, applyFieldErrors } from './error-message';
 
 describe('Error Utilities', () => {
@@ -43,36 +43,15 @@ describe('Error Utilities', () => {
     });
   });
 
-  describe('applyFieldErrors (SignalForms)', () => {
-    const createMockForm = () => {
-      const emailErrors = signal<any>(null);
-      let emailTouched = false;
-
-      const passwordErrors = signal<any>(null);
-      let passwordTouched = false;
-
-      return {
-        controls: {
-          email: {
-            errors: emailErrors,
-            markAsTouched: () => {
-              emailTouched = true;
-            },
-            getTouched: () => emailTouched,
-          },
-          password: {
-            errors: passwordErrors,
-            markAsTouched: () => {
-              passwordTouched = true;
-            },
-            getTouched: () => passwordTouched,
-          },
-        },
-      };
-    };
+  describe('applyFieldErrors', () => {
+    const createForm = () =>
+      new FormGroup({
+        email: new FormControl('santi.rodriguez@gmail.com', Validators.required),
+        password: new FormControl(''),
+      });
 
     it('debería setear errores "server" y marcar como tocados', () => {
-      const form = createMockForm();
+      const form = createForm();
       const err = new HttpErrorResponse({
         error: {
           error: 'Datos inválidos',
@@ -82,23 +61,38 @@ describe('Error Utilities', () => {
 
       applyFieldErrors(form, err);
 
-      expect(form.controls.email.errors()).toEqual({ server: 'El email ya está en uso' });
-      expect(form.controls.email.getTouched()).toBe(true);
+      expect(form.controls.email.errors).toEqual({ server: 'El email ya está en uso' });
+      expect(form.controls.email.touched).toBe(true);
 
-      expect(form.controls.password.errors()).toBeNull();
-      expect(form.controls.password.getTouched()).toBe(false);
+      expect(form.controls.password.errors).toBeNull();
+      expect(form.controls.password.touched).toBe(false);
+    });
+
+    it('debería conservar los errores que el control ya tenía', () => {
+      const form = createForm();
+      form.controls.email.setValue('');
+      const err = new HttpErrorResponse({
+        error: { error: 'Datos inválidos', campos: { email: 'El email es obligatorio' } },
+      });
+
+      applyFieldErrors(form, err);
+
+      expect(form.controls.email.errors).toEqual({
+        required: true,
+        server: 'El email es obligatorio',
+      });
     });
 
     it('no debería mutar nada si la respuesta no trae campos', () => {
-      const form = createMockForm();
+      const form = createForm();
       const err = new HttpErrorResponse({ error: { error: 'Error general' } });
 
       expect(() => applyFieldErrors(form, err)).not.toThrow();
-      expect(form.controls.email.errors()).toBeNull();
+      expect(form.controls.email.errors).toBeNull();
     });
 
     it('no debería romper si el campo no existe en el form', () => {
-      const form = createMockForm();
+      const form = createForm();
       const err = new HttpErrorResponse({
         error: { error: 'Error', campos: { dni: 'DNI inválido' } },
       });

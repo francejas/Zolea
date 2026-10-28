@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { FormGroup } from '@angular/forms';
 import { ApiError } from '../api/api-error';
 
 export function toUserMessage(err: HttpErrorResponse): string {
@@ -24,7 +25,7 @@ export function toUserMessage(err: HttpErrorResponse): string {
   }
 }
 
-export function applyFieldErrors(form: any, err: HttpErrorResponse): void {
+export function applyFieldErrors(form: FormGroup, err: HttpErrorResponse): void {
   const apiError = err.error as ApiError | null;
 
   if (!apiError || !apiError.campos) {
@@ -32,18 +33,12 @@ export function applyFieldErrors(form: any, err: HttpErrorResponse): void {
   }
 
   Object.entries(apiError.campos).forEach(([field, message]) => {
-    const control = form.controls?.[field];
+    const control = form.get(field);
 
     if (control) {
-      // Usamos .set() leyendo el valor actual con control.errors()
-      if (control.errors && typeof control.errors.set === 'function') {
-        const currentErrors = control.errors() || {};
-        control.errors.set({ ...currentErrors, server: message });
-      }
-
-      if (typeof control.markAsTouched === 'function') {
-        control.markAsTouched();
-      }
+      // Se suma a los errores que el control ya tenía, para no borrar los de sus validadores.
+      control.setErrors({ ...control.errors, server: message });
+      control.markAsTouched();
     }
   });
 }
