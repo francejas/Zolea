@@ -36,5 +36,8 @@ build/
 ### Environment ###
 .env
 
+### Vercel ###
+.vercel
+
 ### Consignas de las materias (no se publican) ###
 Consignas/
