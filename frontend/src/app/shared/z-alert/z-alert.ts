@@ -8,7 +8,9 @@ import { ZBtn } from '../z-btn/z-btn';
   template: `
     <div class="z-alert z-alert--{{ variant() }}">
       <div class="z-alert-content">
-        @if (title()) { <strong class="z-alert-title">{{ title() }}</strong> }
+        @if (title()) {
+          <strong class="z-alert-title">{{ title() }}</strong>
+        }
         <p class="z-alert-text">{{ text() }}</p>
       </div>
       @if (actionLabel()) {
@@ -17,7 +19,7 @@ import { ZBtn } from '../z-btn/z-btn';
         </z-btn>
       }
     </div>
-  `
+  `,
 })
 export class ZAlert {
   variant = input.required<'info' | 'success' | 'warning' | 'error' | 'forbidden'>();

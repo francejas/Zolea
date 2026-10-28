@@ -8,10 +8,10 @@ import { Component, input, computed } from '@angular/core';
       @if (label()) {
         <label [attr.for]="inputId()" class="z-field-label">{{ label() }}</label>
       }
-      
+
       <!-- El input proyectado va acá. El desarrollador le debe poner el aria-describedby -->
       <ng-content></ng-content>
-      
+
       @if (errorMessage()) {
         <span [id]="errorId()" class="z-field-error" aria-live="polite">
           {{ errorMessage() }}
@@ -22,13 +22,13 @@ import { Component, input, computed } from '@angular/core';
         </span>
       }
     </div>
-  `
+  `,
 })
 export class ZField {
   inputId = input.required<string>();
   label = input<string>();
   help = input<string>();
-  
+
   // Recibe los errores del control (compatible con SignalForms o ReactiveForms)
   errors = input<Record<string, any> | null>(null);
   touched = input(false);
@@ -43,7 +43,7 @@ export class ZField {
     if (errs['server']) return errs['server']; // Tarea 8.5
     if (errs['required']) return 'Este campo es obligatorio.';
     if (errs['pattern'] || errs['email']) return 'El formato no es válido.';
-    
+
     return null;
   });
 }

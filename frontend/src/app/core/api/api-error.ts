@@ -1,4 +1,4 @@
 export interface ApiError {
-    error: string;
-    campos?: Record<string, string>;
+  error: string;
+  campos?: Record<string, string>;
 }

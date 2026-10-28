@@ -6,10 +6,7 @@ import { LucideLoaderCircle } from '@lucide/angular';
   standalone: true,
   imports: [LucideLoaderCircle],
   template: `
-    <button
-      [class]="buttonClasses()"
-      [disabled]="loading() || disabled()"
-    >
+    <button [class]="buttonClasses()" [disabled]="loading() || disabled()">
       @if (loading()) {
         <svg lucideLoaderCircle [strokeWidth]="1.75" class="z-spinner"></svg>
       }
@@ -17,7 +14,7 @@ import { LucideLoaderCircle } from '@lucide/angular';
         <ng-content></ng-content>
       </span>
     </button>
-  `
+  `,
 })
 export class ZBtn {
   variant = input<'primary' | 'secondary' | 'ghost' | 'danger'>('primary');

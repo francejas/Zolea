@@ -26,21 +26,21 @@ export function toUserMessage(err: HttpErrorResponse): string {
 
 export function applyFieldErrors(form: any, err: HttpErrorResponse): void {
   const apiError = err.error as ApiError | null;
-  
+
   if (!apiError || !apiError.campos) {
     return;
   }
 
   Object.entries(apiError.campos).forEach(([field, message]) => {
     const control = form.controls?.[field];
-    
+
     if (control) {
       // Usamos .set() leyendo el valor actual con control.errors()
       if (control.errors && typeof control.errors.set === 'function') {
         const currentErrors = control.errors() || {};
         control.errors.set({ ...currentErrors, server: message });
       }
-      
+
       if (typeof control.markAsTouched === 'function') {
         control.markAsTouched();
       }

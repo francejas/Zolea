@@ -7,15 +7,15 @@ describe('ZAlert', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ZAlert]
+      imports: [ZAlert],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ZAlert);
     component = fixture.componentInstance;
-    
+
     fixture.componentRef.setInput('variant', 'info');
     fixture.componentRef.setInput('text', 'Aviso de prueba');
-    
+
     fixture.detectChanges();
   });
 
