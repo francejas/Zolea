@@ -33,14 +33,10 @@ build/
 ### VS Code ###
 .vscode/
 
-### Claude Code CLI ###
-.claude/
-
 ### Environment ###
 .env
 
-### Claude Code Context ###
-CLAUDE.md
+### Vercel ###
 .vercel
 
 ### Consignas de las materias (no se publican) ###
