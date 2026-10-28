@@ -1,0 +1,128 @@
+/* El bloque Botón de Zolea-docs/diseno/componentes.css, con los mismos nombres de clase. */
+
+.z-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control);
+  padding: 0 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: 600 15px/1 var(--font-body);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color var(--duration) var(--ease),
+    border-color var(--duration) var(--ease);
+}
+
+.z-btn--primary {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.z-btn--primary:hover {
+  background: var(--color-ink-hover);
+}
+
+.z-btn--secondary {
+  background: transparent;
+  color: var(--color-ink);
+  border-color: var(--color-line-strong);
+}
+
+.z-btn--secondary:hover {
+  background: var(--color-sand);
+}
+
+.z-btn--ghost {
+  background: transparent;
+  color: var(--color-ink);
+  padding: 0 var(--space-3);
+}
+
+.z-btn--ghost:hover {
+  background: var(--color-sand-soft);
+}
+
+.z-btn--danger {
+  background: var(--color-danger);
+  color: var(--color-cream);
+}
+
+.z-btn--danger:hover {
+  background: var(--color-danger-hover);
+}
+
+.z-btn--on-color {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+.z-btn--on-color:hover {
+  background: var(--color-sand);
+}
+
+.z-btn--large {
+  height: var(--control-large);
+  padding: 0 32px;
+  font-size: 17px;
+}
+
+.z-btn--compact {
+  height: var(--control-compact);
+  padding: 0 22px;
+}
+
+.z-btn--small {
+  height: var(--control-small);
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.z-btn--block {
+  width: 100%;
+}
+
+.z-btn:disabled,
+.z-btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.z-btn[aria-busy='true'] {
+  cursor: progress;
+}
+
+.z-btn[aria-busy='true'] .z-icon {
+  display: none;
+}
+
+.z-spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: z-spin 0.7s linear infinite;
+}
+
+.z-btn[aria-busy='true'] .z-spinner {
+  display: inline-block;
+}
+
+@keyframes z-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .z-spinner {
+    animation-duration: 1.6s;
+  }
+}

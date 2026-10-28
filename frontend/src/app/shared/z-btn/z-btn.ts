@@ -1,29 +1,30 @@
 import { Component, input, computed } from '@angular/core';
-import { LucideLoaderCircle } from '@lucide/angular';
 
 @Component({
   selector: 'z-btn',
-  standalone: true,
-  imports: [LucideLoaderCircle],
+  styleUrl: './z-btn.scss',
   template: `
-    <button [class]="buttonClasses()" [disabled]="loading() || disabled()">
+    <button
+      [class]="buttonClasses()"
+      [disabled]="loading() || disabled()"
+      [attr.aria-busy]="loading() || null"
+    >
       @if (loading()) {
-        <svg lucideLoaderCircle [strokeWidth]="1.75" class="z-spinner"></svg>
+        <span class="z-spinner" aria-hidden="true"></span>
       }
-      <span [class.opacity-0]="loading()">
-        <ng-content></ng-content>
-      </span>
+      <ng-content />
     </button>
   `,
 })
 export class ZBtn {
   variant = input<'primary' | 'secondary' | 'ghost' | 'danger'>('primary');
-  size = input<'sm' | 'md' | 'lg'>('md');
+  size = input<'small' | 'normal' | 'large'>('normal');
   loading = input(false);
   disabled = input(false);
 
+  // Las clases de componentes.css: el tamaño normal no lleva modificador.
   buttonClasses = computed(() => {
-    // Estas clases las definís en componentes.css usando tus var(--...)
-    return `z-btn z-btn--${this.variant()} z-btn--${this.size()}`;
+    const size = this.size() === 'normal' ? '' : ` z-btn--${this.size()}`;
+    return `z-btn z-btn--${this.variant()}${size}`;
   });
 }
