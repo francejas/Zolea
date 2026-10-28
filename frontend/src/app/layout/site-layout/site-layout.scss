@@ -1,0 +1,242 @@
+/* La barra superior de Zolea-docs/diseno/componentes.css. Los botones son una copia local hasta que
+   la 8.8 (ZOL-129) deje el botón común en shared/ui. */
+
+:host {
+  display: block;
+}
+
+main {
+  display: block;
+}
+
+main:focus {
+  outline: none;
+}
+
+.z-topbar {
+  position: relative;
+  z-index: var(--z-nav);
+  background: var(--color-cream);
+  border-bottom: var(--border);
+}
+
+.z-topbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 14px var(--gutter);
+}
+
+.z-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.z-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.z-emblem {
+  display: block;
+  flex: none;
+}
+
+.z-logo__word {
+  font: 400 26px/1 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.z-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-compact);
+  padding: 0 22px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: 600 15px/1 var(--font-body);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.z-btn--primary {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.z-btn--primary:hover {
+  background: var(--color-ink-hover);
+}
+
+.z-btn--secondary {
+  color: var(--color-ink);
+  border-color: var(--color-line-strong);
+}
+
+.z-btn--secondary:hover {
+  background: var(--color-sand);
+}
+
+.z-btn--block {
+  width: 100%;
+  height: var(--control);
+  margin-top: var(--space-2);
+}
+
+.z-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.z-icon-btn:hover {
+  background: var(--color-sand-soft);
+}
+
+/* --- El menú de la persona ---------------------------------------------- */
+.user {
+  position: relative;
+}
+
+.z-user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--touch-min);
+  padding: 4px 12px 4px 4px;
+  border: var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink);
+  font: 500 14px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.z-user-btn:hover {
+  background: var(--color-sand-soft);
+}
+
+.z-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-sand);
+  font: 600 13px/1 var(--font-body);
+  letter-spacing: 0.02em;
+}
+
+.z-menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 240px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.z-menu[hidden] {
+  display: none;
+}
+
+.z-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: var(--touch-min);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--color-ink);
+  font: 500 15px/1 var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.z-menu__item:hover {
+  background: var(--color-sand-soft);
+}
+
+.z-menu__sep {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--color-line);
+}
+
+.z-menu__head {
+  padding: 10px 12px 8px;
+}
+
+.z-menu__head strong {
+  display: block;
+  font-size: 15px;
+}
+
+.z-menu__head span {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+/* --- El menú del celular: se despliega debajo de la barra --------------- */
+.z-sheet {
+  padding: var(--space-2) var(--gutter) var(--space-4);
+  border-bottom: var(--border);
+  background: var(--color-cream);
+}
+
+.z-sheet__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.z-sheet .z-menu__item {
+  height: 48px;
+  padding: 0 4px;
+  font-size: 16px;
+}
+
+.z-sheet .z-menu__head {
+  padding: var(--space-3) 4px;
+}
+
+@media (max-width: 767px) {
+  .z-topbar__actions {
+    display: none;
+  }
+
+  .z-logo__word {
+    font-size: 24px;
+  }
+}
+
+@media (min-width: 768px) {
+  .z-topbar__menu-btn,
+  .z-sheet {
+    display: none;
+  }
+}

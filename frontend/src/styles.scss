@@ -1,3 +1,78 @@
 /* Estilos globales. Los colores y las medidas salen de tokens.css, que es una copia exacta de
    Zolea-docs/diseno/tokens.css: si cambia allá, se vuelve a copiar acá. */
 @use 'styles/tokens';
+
+/* La base de Zolea-docs/diseno/componentes.css. Lo de cada pieza va en su componente. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 400 var(--text-body) / var(--leading-body) var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+a,
+button,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.z-icon {
+  width: var(--icon-m);
+  height: var(--icon-m);
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.z-icon--s {
+  width: var(--icon-s);
+  height: var(--icon-s);
+}
+
+/* Salto al contenido: el primer elemento de las dos estructuras, visible solo con teclado. */
+.z-skip {
+  position: absolute;
+  left: var(--space-4);
+  top: -80px;
+  z-index: var(--z-toast);
+  padding: 12px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-cream);
+  font: 600 15px/1 var(--font-body);
+  text-decoration: none;
+}
+
+.z-skip:focus-visible {
+  top: var(--space-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

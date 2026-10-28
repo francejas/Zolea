@@ -1,16 +1,21 @@
-# Compila y corre las 105 pruebas en cada push y en cada pull request.
+# Compila y prueba el backend en cada push a main o develop y en cada pull request. Un cambio que
+# toca solo frontend/ no lo dispara: de eso se ocupa frontend.yml.
 #
 # Las pruebas necesitan un MySQL de verdad —el proyecto no usa H2, ver docs/decisiones.md—,
 # así que el trabajo levanta uno como servicio. La única condición es que quede escuchando en
 # el 3307 del runner, que es el puerto que espera el perfil `test`: así el mismo comando
 # funciona igual acá y en la máquina de cualquiera con docker-compose levantado.
 
-name: CI
+name: Backend
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
+    paths-ignore:
+      - 'frontend/**'
   pull_request:
+    paths-ignore:
+      - 'frontend/**'
 
 jobs:
   build:
