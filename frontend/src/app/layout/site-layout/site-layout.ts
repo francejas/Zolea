@@ -2,6 +2,15 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  LucideChevronDown,
+  LucideLayoutDashboard,
+  LucideLogOut,
+  LucideMenu,
+  LucideTicket,
+  LucideUser,
+  LucideX,
+} from '@lucide/angular';
 import { filter } from 'rxjs';
 import { SessionService } from '../../core/session/session.service';
 
@@ -11,7 +20,19 @@ import { SessionService } from '../../core/session/session.service';
  */
 @Component({
   selector: 'app-site-layout',
-  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [
+    NgTemplateOutlet,
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    LucideChevronDown,
+    LucideLayoutDashboard,
+    LucideLogOut,
+    LucideMenu,
+    LucideTicket,
+    LucideUser,
+    LucideX,
+  ],
   templateUrl: './site-layout.html',
   styleUrl: './site-layout.scss',
   host: {

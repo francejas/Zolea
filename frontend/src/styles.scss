@@ -1,8 +1,10 @@
 /* Estilos globales. Los colores y las medidas salen de tokens.css, que es una copia exacta de
    Zolea-docs/diseno/tokens.css: si cambia allá, se vuelve a copiar acá. */
 @use 'styles/tokens';
+@use 'styles/buttons';
 
-/* La base de Zolea-docs/diseno/componentes.css. Lo de cada pieza va en su componente. */
+/* La base de Zolea-docs/diseno/componentes.css. Lo de cada pieza va en su componente, salvo los
+   botones, que también los usan los enlaces (styles/buttons.scss). */
 *,
 *::before,
 *::after {

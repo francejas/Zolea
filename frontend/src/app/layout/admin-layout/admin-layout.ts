@@ -3,6 +3,20 @@ import { HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, computed, DestroyRef, ElementRef, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  LucideArrowUpRight,
+  LucideHouse,
+  LucideLayoutDashboard,
+  LucideLogOut,
+  LucideMenu,
+  LucideScanLine,
+  LucideTag,
+  LucideTicket,
+  LucideUmbrella,
+  LucideUserPlus,
+  LucideUsers,
+  LucideX,
+} from '@lucide/angular';
 import { filter } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Resort } from '../../core/api/resort.models';
@@ -14,7 +28,24 @@ import { SessionService } from '../../core/session/session.service';
  */
 @Component({
   selector: 'app-admin-layout',
-  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [
+    NgTemplateOutlet,
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    LucideArrowUpRight,
+    LucideHouse,
+    LucideLayoutDashboard,
+    LucideLogOut,
+    LucideMenu,
+    LucideScanLine,
+    LucideTag,
+    LucideTicket,
+    LucideUmbrella,
+    LucideUserPlus,
+    LucideUsers,
+    LucideX,
+  ],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.scss',
 })

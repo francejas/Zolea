@@ -9,9 +9,7 @@
       aria-haspopup="dialog"
       (click)="openDrawer()"
     >
-      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
+      <svg lucideMenu class="z-icon" aria-hidden="true"></svg>
     </button>
     <ng-container *ngTemplateOutlet="logo" />
   </header>
@@ -33,9 +31,7 @@
       aria-label="Cerrar menú"
       (click)="closeDrawer()"
     >
-      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M18 6 6 18M6 6l12 12" />
-      </svg>
+      <svg lucideX class="z-icon" aria-hidden="true"></svg>
     </button>
     <ng-container *ngTemplateOutlet="sidebar" />
   </nav>
@@ -77,12 +73,7 @@
         [routerLinkActiveOptions]="{ exact: true }"
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="9" rx="1" />
-          <rect x="14" y="3" width="7" height="5" rx="1" />
-          <rect x="14" y="12" width="7" height="9" rx="1" />
-          <rect x="3" y="16" width="7" height="5" rx="1" />
-        </svg>
+        <svg lucideLayoutDashboard class="z-icon" aria-hidden="true"></svg>
         Panel
       </a>
     </li>
@@ -93,11 +84,7 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M19 8v6M22 11h-6" />
-        </svg>
+        <svg lucideUserPlus class="z-icon" aria-hidden="true"></svg>
         Mostrador
       </a>
     </li>
@@ -108,11 +95,7 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"
-          />
-        </svg>
+        <svg lucideScanLine class="z-icon" aria-hidden="true"></svg>
         Validar ingreso
       </a>
     </li>
@@ -127,12 +110,7 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"
-          />
-          <path d="M13 5v2M13 17v2M13 11v2" />
-        </svg>
+        <svg lucideTicket class="z-icon" aria-hidden="true"></svg>
         Reservas
       </a>
     </li>
@@ -143,11 +121,7 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
-        </svg>
+        <svg lucideUsers class="z-icon" aria-hidden="true"></svg>
         Mis clientes
       </a>
     </li>
@@ -158,10 +132,7 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M22 12a10 10 0 0 0-20 0Z" />
-          <path d="M12 12v8a2 2 0 0 0 4 0M12 2v1" />
-        </svg>
+        <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
         Unidades
       </a>
     </li>
@@ -172,12 +143,7 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
-          <path
-            d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-          />
-        </svg>
+        <svg lucideHouse class="z-icon" aria-hidden="true"></svg>
         Mi balneario
       </a>
     </li>
@@ -188,12 +154,7 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"
-          />
-          <circle cx="7.5" cy="7.5" r=".5" />
-        </svg>
+        <svg lucideTag class="z-icon" aria-hidden="true"></svg>
         Catálogo de servicios
       </a>
     </li>
@@ -203,18 +164,13 @@
     <ul class="z-sidebar__list">
       <li>
         <a class="z-sidebar__item" routerLink="/">
-          <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 7h10v10M7 17 17 7" />
-          </svg>
+          <svg lucideArrowUpRight class="z-icon" aria-hidden="true"></svg>
           Ver el sitio público
         </a>
       </li>
       <li>
         <button class="z-sidebar__item" type="button" (click)="logout()">
-          <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <path d="m16 17 5-5-5-5M21 12H9" />
-          </svg>
+          <svg lucideLogOut class="z-icon" aria-hidden="true"></svg>
           Salir
         </button>
       </li>

@@ -1,4 +1,6 @@
-/* El bloque Botón de Zolea-docs/diseno/componentes.css, con los mismos nombres de clase. */
+/* El bloque Botón de Zolea-docs/diseno/componentes.css, con los mismos nombres de clase. Es global
+   para que un enlace que se ve como botón (<a routerLink class="z-btn z-btn--primary">) quede igual
+   que el componente z-btn, que es solo para acciones. */
 
 .z-btn {
   display: inline-flex;

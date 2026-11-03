@@ -49,6 +49,19 @@ describe('ZField', () => {
     expect(field().classList).toContain('z-field--invalid');
   });
 
+  it('conecta solo el control con el texto que se ve debajo: la ayuda o el error', async () => {
+    const input = page.querySelector('input')!;
+    expect(input.getAttribute('aria-describedby')).toBe('email-help');
+
+    fixture.componentInstance.f.email().markAsTouched();
+    await fixture.whenStable();
+    expect(input.getAttribute('aria-describedby')).toBe('email-error');
+
+    fixture.componentInstance.f.email().value.set('santi.rodriguez@gmail.com');
+    await fixture.whenStable();
+    expect(input.getAttribute('aria-describedby')).toBe('email-help');
+  });
+
   it('muestra el error server que devuelve el submit', async () => {
     const { f } = fixture.componentInstance;
     f.email().value.set('santi.rodriguez@gmail.com');
