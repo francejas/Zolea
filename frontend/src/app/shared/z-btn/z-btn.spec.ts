@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ZBtn } from './z-btn';
 
 describe('ZBtn', () => {
-  let component: ZBtn;
   let fixture: ComponentFixture<ZBtn>;
 
   beforeEach(async () => {
@@ -11,11 +10,21 @@ describe('ZBtn', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ZBtn);
-    component = fixture.componentInstance;
     await fixture.whenStable();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  function button(): HTMLButtonElement {
+    return fixture.nativeElement.querySelector('button');
+  }
+
+  it('por defecto es type="button", para no enviar formularios sin querer', () => {
+    expect(button().type).toBe('button');
+  });
+
+  it('deja elegir otro type, como el submit de un formulario', async () => {
+    fixture.componentRef.setInput('type', 'submit');
+    await fixture.whenStable();
+
+    expect(button().type).toBe('submit');
   });
 });
