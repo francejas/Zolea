@@ -1,0 +1,24 @@
+/* El esqueleto de «Los cuatro estados», en Zolea-docs/diseno/componentes.css. */
+
+.z-skeleton {
+  // El elemento es propio, no un div: sin esto, el ancho y el alto no se aplican.
+  display: block;
+  border-radius: var(--radius-s);
+  background: var(--color-sand-soft);
+  animation: z-pulse 1.4s var(--ease) infinite alternate;
+}
+
+@keyframes z-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .z-skeleton {
+    animation: none;
+  }
+}
