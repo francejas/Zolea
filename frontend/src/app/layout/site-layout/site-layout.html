@@ -20,9 +20,7 @@
           >
             <span class="z-avatar" aria-hidden="true">{{ initials() }}</span>
             {{ user.firstName }}
-            <svg class="z-icon z-icon--s" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
+            <svg lucideChevronDown class="z-icon z-icon--s" aria-hidden="true"></svg>
           </button>
           <ul
             class="z-menu"
@@ -48,13 +46,11 @@
       [attr.aria-label]="sheetOpen() ? 'Cerrar menú' : 'Abrir menú'"
       (click)="sheetOpen.set(!sheetOpen())"
     >
-      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-        @if (sheetOpen()) {
-          <path d="M18 6 6 18M6 6l12 12" />
-        } @else {
-          <path d="M4 6h16M4 12h16M4 18h16" />
-        }
-      </svg>
+      @if (sheetOpen()) {
+        <svg lucideX class="z-icon" aria-hidden="true"></svg>
+      } @else {
+        <svg lucideMenu class="z-icon" aria-hidden="true"></svg>
+      }
     </button>
   </div>
 </header>
@@ -85,12 +81,7 @@
   @if (session.isAdmin()) {
     <li>
       <a class="z-menu__item" routerLink="/admin">
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="9" rx="1" />
-          <rect x="14" y="3" width="7" height="5" rx="1" />
-          <rect x="14" y="12" width="7" height="9" rx="1" />
-          <rect x="3" y="16" width="7" height="5" rx="1" />
-        </svg>
+        <svg lucideLayoutDashboard class="z-icon" aria-hidden="true"></svg>
         Panel de mi balneario
       </a>
     </li>
@@ -102,21 +93,13 @@
         routerLinkActive
         ariaCurrentWhenActive="page"
       >
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"
-          />
-          <path d="M13 5v2M13 17v2M13 11v2" />
-        </svg>
+        <svg lucideTicket class="z-icon" aria-hidden="true"></svg>
         Mis reservas
       </a>
     </li>
     <li>
       <a class="z-menu__item" routerLink="/profile" routerLinkActive ariaCurrentWhenActive="page">
-        <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
+        <svg lucideUser class="z-icon" aria-hidden="true"></svg>
         Mi cuenta
       </a>
     </li>
@@ -124,10 +107,7 @@
   <li class="z-menu__sep" role="separator"></li>
   <li>
     <button class="z-menu__item" type="button" (click)="logout()">
-      <svg class="z-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-        <path d="m16 17 5-5-5-5M21 12H9" />
-      </svg>
+      <svg lucideLogOut class="z-icon" aria-hidden="true"></svg>
       Cerrar sesión
     </button>
   </li>
