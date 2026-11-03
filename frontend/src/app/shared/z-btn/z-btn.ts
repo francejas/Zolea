@@ -1,8 +1,9 @@
 import { Component, input, computed } from '@angular/core';
 
+/** Un botón para una acción. Sus estilos son globales (styles/buttons.scss): un enlace que tiene
+ * que verse como botón usa las mismas clases, sin este componente. */
 @Component({
   selector: 'z-btn',
-  styleUrl: './z-btn.scss',
   template: `
     <button
       [type]="type()"
