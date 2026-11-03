@@ -35,8 +35,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: () =>
-          import('./features/resorts/resorts.routes').then((m) => m.resortRoutes),
+        loadChildren: () => import('./features/resorts/resorts.routes').then((m) => m.resortRoutes),
       },
       {
         path: '',
