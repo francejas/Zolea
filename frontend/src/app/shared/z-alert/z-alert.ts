@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { ZBtn } from '../z-btn/z-btn';
 
 @Component({
@@ -14,7 +14,9 @@ import { ZBtn } from '../z-btn/z-btn';
         <p class="z-alert__text">{{ text() }}</p>
         @if (actionLabel()) {
           <div class="z-alert__action">
-            <z-btn variant="secondary" size="small">{{ actionLabel() }}</z-btn>
+            <z-btn variant="secondary" size="small" (click)="action.emit()">
+              {{ actionLabel() }}
+            </z-btn>
           </div>
         }
       </div>
@@ -26,6 +28,8 @@ export class ZAlert {
   title = input<string>();
   text = input.required<string>();
   actionLabel = input<string>();
+  /** Se emite cuando se toca el botón de la acción. */
+  action = output<void>();
 
   // Como en el sistema de diseño: el error y el sin permiso se anuncian enseguida; el resto, sin
   // interrumpir.
