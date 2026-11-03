@@ -1,5 +1,13 @@
-import { Component, computed, input, ViewEncapsulation } from '@angular/core';
-import { ReadonlyFieldTree } from '@angular/forms/signals';
+import {
+  Component,
+  computed,
+  contentChild,
+  effect,
+  ElementRef,
+  input,
+  ViewEncapsulation,
+} from '@angular/core';
+import { FormField, ReadonlyFieldTree } from '@angular/forms/signals';
 
 /** El texto para los errores de los validadores que no traen mensaje propio. */
 const MESSAGES: Record<string, string> = {
@@ -28,7 +36,7 @@ const MESSAGES: Record<string, string> = {
       <label class="z-field__label" [attr.for]="inputId()">{{ label() }}</label>
     }
 
-    <!-- El control proyectado lleva su propio aria-describedby. -->
+    <!-- El control proyectado. Su aria-describedby lo pone el campo. -->
     <ng-content />
 
     @if (errorMessage(); as message) {
@@ -54,4 +62,23 @@ export class ZField {
 
     return first.message ?? MESSAGES[first.kind] ?? null;
   });
+
+  /** El control proyectado: el que lleva el `[formField]`. */
+  private readonly control = contentChild(FormField, { read: ElementRef });
+
+  constructor() {
+    // El control queda descripto por el texto que se ve debajo: el error o, si no hay, la ayuda.
+    effect(() => {
+      const control: HTMLElement | undefined = this.control()?.nativeElement;
+      if (!control) return;
+
+      const describedBy =
+        this.errorMessage() !== null ? this.errorId() : this.help() ? this.helpId() : null;
+      if (describedBy) {
+        control.setAttribute('aria-describedby', describedBy);
+      } else {
+        control.removeAttribute('aria-describedby');
+      }
+    });
+  }
 }
