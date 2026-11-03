@@ -2,14 +2,19 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { PlaceholderPage } from './core/placeholder-page';
+import { AdminLayout } from './layout/admin-layout/admin-layout';
+import { SiteLayout } from './layout/site-layout/site-layout';
 
 /**
  * Las dos rutas padre, cada una con su estructura de página: el panel del administrador y el sitio,
- * para el público y el cliente. Las rutas hijas y los guards los pone la 8.4 (ZOL-124).
+ * para el público y el cliente. Cada feature tiene su archivo de rutas, cargado recién cuando se
+ * entra.
  */
 export const routes: Routes = [
+  // El panel del administrador: los guards del rol van en el padre y cubren todo lo de adentro.
   {
     path: 'admin',
+    component: AdminLayout,
     canActivate: [authGuard, roleGuard('ADMIN')],
     children: [
       {
@@ -22,14 +27,16 @@ export const routes: Routes = [
       },
     ],
   },
-  // El sitio, público y del cliente. La 8.7 le pone la barra superior.
-  // Los guards del cliente van en cada feature, porque acá se mezclan con las rutas públicas.
+  // El sitio, público y del cliente. Los guards del cliente van en cada feature, porque acá se
+  // mezclan con las rutas públicas.
   {
     path: '',
+    component: SiteLayout,
     children: [
       {
         path: '',
-        loadChildren: () => import('./features/resorts/resorts.routes').then((m) => m.resortRoutes),
+        loadChildren: () =>
+          import('./features/resorts/resorts.routes').then((m) => m.resortRoutes),
       },
       {
         path: '',

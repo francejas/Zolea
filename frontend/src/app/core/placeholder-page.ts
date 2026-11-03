@@ -8,10 +8,10 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   selector: 'app-placeholder-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="placeholder">
+    <section class="placeholder">
       <h1>{{ title() }}</h1>
       <p>Esta pantalla todavía no está construida.</p>
-    </main>
+    </section>
   `,
   styles: `
     .placeholder {

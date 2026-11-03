@@ -1,4 +1,6 @@
-import { signal } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -29,20 +31,58 @@ describe('routes', () => {
 
   beforeEach(async () => {
     user.set(null);
+    // jsdom no trae matchMedia ni los métodos de <dialog>, que usa AdminLayout.
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes, withComponentInputBinding()),
-        { provide: SessionService, useValue: { user, isLoggedIn: () => user() !== null } },
+        // AdminLayout pide /api/resorts/my: el pedido queda sin responder, no importa acá.
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: SessionService,
+          useValue: {
+            user,
+            isLoggedIn: computed(() => user() !== null),
+            isAdmin: computed(() => user()?.role === 'ADMIN'),
+            logout: vi.fn(),
+          },
+        },
       ],
     });
     harness = await RouterTestingHarness.create();
     router = TestBed.inject(Router);
   });
 
+  afterEach(() => vi.unstubAllGlobals());
+
   const heading = () => {
     harness.detectChanges();
     return (harness.routeNativeElement as HTMLElement).querySelector('h1')?.textContent;
   };
+
+  it('el sitio lleva la barra superior y el panel la barra lateral', async () => {
+    const page = () => harness.routeNativeElement as HTMLElement;
+
+    await harness.navigateByUrl('/');
+    expect(page().querySelector('.z-topbar')).not.toBeNull();
+    expect(page().querySelector('.z-sidebar')).toBeNull();
+
+    user.set(admin);
+    await harness.navigateByUrl('/admin/units');
+    expect(page().querySelector('.z-sidebar')).not.toBeNull();
+    expect(page().querySelector('.z-topbar')).toBeNull();
+  });
 
   it('sin sesión, /my-bookings lleva al login con volver', async () => {
     await harness.navigateByUrl('/my-bookings');
