@@ -1,0 +1,24 @@
+/* El vacío de «Los cuatro estados», en Zolea-docs/diseno/componentes.css. */
+
+.z-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+}
+
+.z-empty__title {
+  margin: 0;
+  font: 400 28px/1.1 var(--font-display);
+}
+
+.z-empty__text {
+  max-width: 38ch;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.z-empty .z-btn {
+  margin-top: var(--space-2);
+}
