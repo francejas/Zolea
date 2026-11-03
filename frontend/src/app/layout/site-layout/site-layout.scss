@@ -1,5 +1,5 @@
-/* La barra superior de Zolea-docs/diseno/componentes.css. Los botones son una copia local hasta que
-   la 8.8 (ZOL-129) deje el botón común en shared/ui. */
+/* La barra superior de Zolea-docs/diseno/componentes.css. Los enlaces con forma de botón usan las
+   clases globales de styles/buttons.scss. */
 
 :host {
   display: block;
@@ -52,44 +52,6 @@ main:focus {
 .z-logo__word {
   font: 400 26px/1 var(--font-display);
   letter-spacing: -0.01em;
-}
-
-.z-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--control-compact);
-  padding: 0 22px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  font: 600 15px/1 var(--font-body);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background-color var(--duration) var(--ease);
-}
-
-.z-btn--primary {
-  background: var(--color-ink);
-  color: var(--color-cream);
-}
-
-.z-btn--primary:hover {
-  background: var(--color-ink-hover);
-}
-
-.z-btn--secondary {
-  color: var(--color-ink);
-  border-color: var(--color-line-strong);
-}
-
-.z-btn--secondary:hover {
-  background: var(--color-sand);
-}
-
-.z-btn--block {
-  width: 100%;
-  height: var(--control);
-  margin-top: var(--space-2);
 }
 
 .z-icon-btn {
@@ -222,6 +184,10 @@ main:focus {
 
 .z-sheet .z-menu__head {
   padding: var(--space-3) 4px;
+}
+
+.z-sheet .z-btn {
+  margin-top: var(--space-2);
 }
 
 @media (max-width: 767px) {
