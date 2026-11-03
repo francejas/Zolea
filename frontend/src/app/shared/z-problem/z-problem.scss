@@ -1,0 +1,34 @@
+/* El error de «Los cuatro estados», en Zolea-docs/diseno/componentes.css. */
+
+.z-problem {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+}
+
+.z-problem__title {
+  margin: 0;
+  font: 400 28px/1.1 var(--font-display);
+}
+
+.z-problem__text {
+  max-width: 38ch;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.z-problem .z-btn {
+  margin-top: var(--space-2);
+}
+
+.z-problem__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}

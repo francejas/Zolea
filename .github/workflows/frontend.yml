@@ -1,0 +1,49 @@
+# Compila, prueba y revisa el formato del frontend en cada push a main o develop y en cada pull
+# request, pero solo cuando cambia algo de frontend/ (o este mismo archivo). El backend tiene su
+# propio workflow, ci.yml.
+#
+# Node sale de frontend/.nvmrc, así el runner usa la misma versión que cada uno en su máquina.
+
+name: Frontend
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+
+jobs:
+  build:
+    name: Compilar, probar y revisar el formato
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar las dependencias
+        run: npm ci
+
+      - name: Compilar
+        run: npx ng build
+
+      - name: Probar
+        run: npx ng test --watch=false
+
+      - name: Revisar el formato
+        run: npx prettier --check src

@@ -311,7 +311,9 @@ Para medir además la cobertura:
 ./mvnw verify                          # el informe queda en target/site/jacoco/index.html
 ```
 
-Todo esto corre solo en cada push: ver [.github/workflows/ci.yml](.github/workflows/ci.yml).
+Todo esto corre solo en cada push a `main` o `develop` y en cada pull request, salvo que el cambio
+sea solo del frontend: ver [.github/workflows/ci.yml](.github/workflows/ci.yml). El frontend tiene
+el suyo, [.github/workflows/frontend.yml](.github/workflows/frontend.yml).
 
 ### 5. (Opcional) Habilitar pagos con MercadoPago en local
 
@@ -380,7 +382,7 @@ Zolea/
 │
 ├── src/test/                 # 127 pruebas + IntegrationTest (base y fixtures)
 ├── docs/                     # Modelo de datos, decisiones, flujo de pago y guía de frontend
-├── .github/workflows/        # ci.yml — compila, prueba y mide cobertura
+├── .github/workflows/        # ci.yml (backend) y frontend.yml: compilan y prueban
 │
 ├── frontend/                 # Interfaz en Angular 22 (en construcción)
 │

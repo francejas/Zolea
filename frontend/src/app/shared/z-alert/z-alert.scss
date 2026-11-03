@@ -1,0 +1,58 @@
+/* El bloque Aviso de Zolea-docs/diseno/componentes.css, con los mismos nombres de clase. */
+
+.z-alert {
+  display: flex;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-m);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.z-alert > .z-icon {
+  margin-top: 1px;
+}
+
+.z-alert__title {
+  display: block;
+  font-weight: 600;
+}
+
+.z-alert__text {
+  margin: 2px 0 0;
+}
+
+.z-alert__action {
+  margin-top: var(--space-3);
+}
+
+.z-alert--info {
+  background: var(--color-sky);
+  color: var(--color-ink);
+}
+
+.z-alert--success {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.z-alert--warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.z-alert--danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.z-alert--forbidden {
+  background: var(--color-surface);
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+}
+
+.z-alert--forbidden .z-alert__text {
+  color: var(--color-text-muted);
+}

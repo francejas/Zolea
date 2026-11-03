@@ -1,0 +1,179 @@
+<a class="z-skip" href="#contenido" (click)="skipToContent($event)">Saltar al contenido</a>
+
+<div class="admin">
+  <header class="admin__bar">
+    <button
+      class="z-icon-btn"
+      type="button"
+      aria-label="Abrir menú"
+      aria-haspopup="dialog"
+      (click)="openDrawer()"
+    >
+      <svg lucideMenu class="z-icon" aria-hidden="true"></svg>
+    </button>
+    <ng-container *ngTemplateOutlet="logo" />
+  </header>
+
+  <nav class="z-sidebar admin__sidebar" aria-label="Panel del balneario">
+    <ng-container *ngTemplateOutlet="sidebar" />
+  </nav>
+
+  <main class="admin__main" id="contenido" #main tabindex="-1">
+    <router-outlet />
+  </main>
+</div>
+
+<dialog class="admin__drawer" #drawer aria-label="Menú del panel" (click)="onDrawerClick($event)">
+  <nav class="z-sidebar" aria-label="Panel del balneario">
+    <button
+      class="z-icon-btn admin__close"
+      type="button"
+      aria-label="Cerrar menú"
+      (click)="closeDrawer()"
+    >
+      <svg lucideX class="z-icon" aria-hidden="true"></svg>
+    </button>
+    <ng-container *ngTemplateOutlet="sidebar" />
+  </nav>
+</dialog>
+
+<ng-template #logo>
+  <a class="z-logo" routerLink="/admin">
+    <img class="z-emblem" src="emblema.svg" alt="" width="32" height="32" />
+    <span class="z-logo__word" translate="no">Zolea</span>
+  </a>
+</ng-template>
+
+<!-- Lo mismo en la barra de la computadora y en el cajón del celular. -->
+<ng-template #sidebar>
+  <ng-container *ngTemplateOutlet="logo" />
+
+  <div class="z-sidebar__resort" [attr.aria-busy]="resort.isLoading()">
+    @if (resort.hasValue()) {
+      <strong>{{ resort.value().name }}</strong>
+      <span>{{ resort.value().location }}</span>
+    } @else if (withoutResort()) {
+      <strong>Sin balneario asignado</strong>
+    } @else if (resort.error()) {
+      <strong>No pudimos traer tu balneario</strong>
+      <span>Recargá la página para intentar de nuevo</span>
+    } @else {
+      <span class="skeleton skeleton--name" aria-hidden="true"></span>
+      <span class="skeleton skeleton--place" aria-hidden="true"></span>
+    }
+  </div>
+
+  <p class="z-sidebar__group">El día</p>
+  <ul class="z-sidebar__list">
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin"
+        routerLinkActive
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideLayoutDashboard class="z-icon" aria-hidden="true"></svg>
+        Panel
+      </a>
+    </li>
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin/walkin"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideUserPlus class="z-icon" aria-hidden="true"></svg>
+        Mostrador
+      </a>
+    </li>
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin/validate"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideScanLine class="z-icon" aria-hidden="true"></svg>
+        Validar ingreso
+      </a>
+    </li>
+  </ul>
+
+  <p class="z-sidebar__group">Gestión</p>
+  <ul class="z-sidebar__list">
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin/bookings"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideTicket class="z-icon" aria-hidden="true"></svg>
+        Reservas
+      </a>
+    </li>
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin/clients"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideUsers class="z-icon" aria-hidden="true"></svg>
+        Mis clientes
+      </a>
+    </li>
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin/units"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+        Unidades
+      </a>
+    </li>
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin/resort"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideHouse class="z-icon" aria-hidden="true"></svg>
+        Mi balneario
+      </a>
+    </li>
+    <li>
+      <a
+        class="z-sidebar__item"
+        routerLink="/admin/amenities"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideTag class="z-icon" aria-hidden="true"></svg>
+        Catálogo de servicios
+      </a>
+    </li>
+  </ul>
+
+  <div class="z-sidebar__foot">
+    <ul class="z-sidebar__list">
+      <li>
+        <a class="z-sidebar__item" routerLink="/">
+          <svg lucideArrowUpRight class="z-icon" aria-hidden="true"></svg>
+          Ver el sitio público
+        </a>
+      </li>
+      <li>
+        <button class="z-sidebar__item" type="button" (click)="logout()">
+          <svg lucideLogOut class="z-icon" aria-hidden="true"></svg>
+          Salir
+        </button>
+      </li>
+    </ul>
+  </div>
+</ng-template>

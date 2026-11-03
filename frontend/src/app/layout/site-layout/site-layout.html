@@ -1,0 +1,114 @@
+<a class="z-skip" href="#contenido" (click)="skipToContent($event)">Saltar al contenido</a>
+
+<header class="z-topbar">
+  <div class="z-topbar__inner">
+    <a class="z-logo" routerLink="/">
+      <img class="z-emblem" src="emblema.svg" alt="" width="34" height="34" />
+      <span class="z-logo__word" translate="no">Zolea</span>
+    </a>
+
+    <div class="z-topbar__actions">
+      @if (session.user(); as user) {
+        <div class="user" #userMenu (focusout)="onUserMenuFocusOut($event)">
+          <button
+            #userButton
+            class="z-user-btn"
+            type="button"
+            aria-controls="menu-usuario"
+            [attr.aria-expanded]="userMenuOpen()"
+            (click)="userMenuOpen.set(!userMenuOpen())"
+          >
+            <span class="z-avatar" aria-hidden="true">{{ initials() }}</span>
+            {{ user.firstName }}
+            <svg lucideChevronDown class="z-icon z-icon--s" aria-hidden="true"></svg>
+          </button>
+          <ul
+            class="z-menu"
+            id="menu-usuario"
+            [hidden]="!userMenuOpen()"
+            (click)="userMenuOpen.set(false)"
+          >
+            <ng-container *ngTemplateOutlet="account; context: { $implicit: user }" />
+          </ul>
+        </div>
+      } @else {
+        <a class="z-btn z-btn--secondary z-btn--compact" routerLink="/register">Crear cuenta</a>
+        <a class="z-btn z-btn--primary z-btn--compact" routerLink="/login">Ingresar</a>
+      }
+    </div>
+
+    <button
+      #sheetButton
+      class="z-icon-btn z-topbar__menu-btn"
+      type="button"
+      aria-controls="menu-celular"
+      [attr.aria-expanded]="sheetOpen()"
+      [attr.aria-label]="sheetOpen() ? 'Cerrar menú' : 'Abrir menú'"
+      (click)="sheetOpen.set(!sheetOpen())"
+    >
+      @if (sheetOpen()) {
+        <svg lucideX class="z-icon" aria-hidden="true"></svg>
+      } @else {
+        <svg lucideMenu class="z-icon" aria-hidden="true"></svg>
+      }
+    </button>
+  </div>
+</header>
+
+<nav class="z-sheet" id="menu-celular" aria-label="Menú" [hidden]="!sheetOpen()">
+  @if (session.user(); as user) {
+    <ul class="z-sheet__list" (click)="sheetOpen.set(false)">
+      <ng-container *ngTemplateOutlet="account; context: { $implicit: user }" />
+    </ul>
+  } @else {
+    <a class="z-btn z-btn--primary z-btn--block" routerLink="/login">Ingresar</a>
+    <a class="z-btn z-btn--secondary z-btn--block" routerLink="/register">Crear cuenta</a>
+  }
+</nav>
+
+<main id="contenido" #main tabindex="-1">
+  <router-outlet />
+</main>
+
+<!-- Lo mismo en el menú de la computadora y en el del celular. -->
+<ng-template #account let-user>
+  <li class="z-menu__head">
+    <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+    <span>{{ user.email }}</span>
+  </li>
+  <li class="z-menu__sep" role="separator"></li>
+  <!-- El admin no es un cliente: Mis reservas y Mi cuenta lo rebotarían a /admin. -->
+  @if (session.isAdmin()) {
+    <li>
+      <a class="z-menu__item" routerLink="/admin">
+        <svg lucideLayoutDashboard class="z-icon" aria-hidden="true"></svg>
+        Panel de mi balneario
+      </a>
+    </li>
+  } @else {
+    <li>
+      <a
+        class="z-menu__item"
+        routerLink="/my-bookings"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+      >
+        <svg lucideTicket class="z-icon" aria-hidden="true"></svg>
+        Mis reservas
+      </a>
+    </li>
+    <li>
+      <a class="z-menu__item" routerLink="/profile" routerLinkActive ariaCurrentWhenActive="page">
+        <svg lucideUser class="z-icon" aria-hidden="true"></svg>
+        Mi cuenta
+      </a>
+    </li>
+  }
+  <li class="z-menu__sep" role="separator"></li>
+  <li>
+    <button class="z-menu__item" type="button" (click)="logout()">
+      <svg lucideLogOut class="z-icon" aria-hidden="true"></svg>
+      Cerrar sesión
+    </button>
+  </li>
+</ng-template>

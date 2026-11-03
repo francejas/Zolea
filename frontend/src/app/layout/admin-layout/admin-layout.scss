@@ -1,0 +1,242 @@
+/* La barra lateral de Zolea-docs/diseno/componentes.css. Va en tinta, el reverso de la marca: en
+   todo momento queda claro que se está en el panel y no en el sitio. */
+
+:host {
+  display: block;
+}
+
+.admin__main {
+  display: block;
+  min-width: 0;
+  padding: var(--space-6) var(--gutter) var(--space-7);
+}
+
+.admin__main:focus {
+  outline: none;
+}
+
+.z-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-cream);
+  text-decoration: none;
+}
+
+.z-emblem {
+  display: block;
+  flex: none;
+}
+
+.z-logo__word {
+  font: 400 24px/1 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.z-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-cream);
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.z-icon-btn:hover {
+  background: rgb(250 243 227 / 0.08);
+}
+
+/* --- La barra ------------------------------------------------------------ */
+.z-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-width);
+  padding: var(--space-5) var(--space-3);
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.z-sidebar .z-logo {
+  padding: 0 var(--space-3);
+}
+
+.z-sidebar :focus-visible {
+  outline-color: var(--color-coral);
+}
+
+.z-sidebar__resort {
+  margin: var(--space-5) 0 var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-m);
+  background: rgb(250 243 227 / 0.08);
+}
+
+.z-sidebar__resort strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.z-sidebar__resort span {
+  font-size: 13px;
+  color: rgb(250 243 227 / 0.72);
+}
+
+.skeleton {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-s);
+  background: rgb(250 243 227 / 0.16);
+  animation: pulse 1.4s var(--ease) infinite alternate;
+}
+
+.skeleton--name {
+  width: 75%;
+  margin: 2px 0 9px;
+}
+
+.skeleton--place {
+  width: 50%;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.5;
+  }
+}
+
+.z-sidebar__group {
+  margin: var(--space-4) var(--space-3) var(--space-2);
+  font: 500 var(--text-label)/1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: rgb(250 243 227 / 0.72);
+}
+
+.z-sidebar__list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.z-sidebar__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: rgb(250 243 227 / 0.86);
+  font: 500 15px/1 var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.z-sidebar__item:hover {
+  background: rgb(250 243 227 / 0.08);
+  color: var(--color-cream);
+}
+
+.z-sidebar__item[aria-current='page'] {
+  background: rgb(250 243 227 / 0.14);
+  color: var(--color-cream);
+}
+
+.z-sidebar__item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-coral);
+}
+
+.z-sidebar__foot {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid rgb(250 243 227 / 0.16);
+}
+
+/* --- Computadora: la barra queda fija al costado ------------------------- */
+@media (min-width: 1024px) {
+  .admin {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  .admin__bar {
+    display: none;
+  }
+
+  .admin__sidebar {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+}
+
+/* --- Celular y tableta: la barra se abre como un cajón ------------------- */
+@media (max-width: 1023px) {
+  .admin__bar {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px var(--gutter) 6px calc(var(--gutter) - 10px);
+    background: var(--color-ink);
+  }
+
+  .admin__sidebar {
+    display: none;
+  }
+}
+
+.admin__drawer {
+  width: min(var(--sidebar-width), 85vw);
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--color-ink);
+}
+
+.admin__drawer::backdrop {
+  background: var(--color-scrim);
+}
+
+.admin__drawer .z-sidebar {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+}
+
+.admin__close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
