@@ -26,7 +26,7 @@
   list-style: none;
   color: var(--color-ink-soft);
   font-size: var(--text-lead);
-  
+
   li {
     display: flex;
     align-items: center;
@@ -36,7 +36,7 @@
 /* --- Buscador --- */
 .search-section {
   margin-bottom: var(--space-6);
-  max-width: 520px; 
+  max-width: 520px;
 }
 
 /* --- Grilla de Balnearios --- */
@@ -49,34 +49,38 @@
 /* --- Esqueletos de Carga --- */
 .resort-skeleton {
   background: var(--color-cream);
-  
+
   .skeleton-photo {
     aspect-ratio: 16 / 10;
     border-radius: 0;
   }
-  
+
   .skeleton-title {
     height: 26px;
     width: 70%;
     margin-bottom: var(--space-3);
   }
-  
+
   .skeleton-text {
     height: 14px;
     width: 50%;
     margin-bottom: var(--space-4);
   }
-  
+
   .skeleton-tags {
     display: flex;
     gap: 6px;
-    
+
     .skeleton-tag {
       height: 30px;
       border-radius: var(--radius-pill);
-      
-      &:first-child { width: 76px; }
-      &:last-child { width: 96px; }
+
+      &:first-child {
+        width: 76px;
+      }
+      &:last-child {
+        width: 96px;
+      }
     }
   }
 }
@@ -89,9 +93,9 @@
 
   .hero {
     padding: var(--space-4);
-    
+
     h1 {
-      font-size: var(--text-display-m); 
+      font-size: var(--text-display-m);
     }
   }
 

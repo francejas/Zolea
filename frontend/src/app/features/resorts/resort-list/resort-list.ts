@@ -18,65 +18,68 @@ export class ResortList implements OnInit {
   hasError = signal<boolean>(false);
   searchTerm = signal<string>('');
 
-filteredResorts = computed(() => {
-  const term = this.normalizeText(this.searchTerm());
-  if (!term) return this.resorts();
+  filteredResorts = computed(() => {
+    const term = this.normalizeText(this.searchTerm());
+    if (!term) return this.resorts();
 
-  return this.resorts().filter(resort => 
-    this.normalizeText(resort.name).includes(term) ||
-    this.normalizeText(resort.location).includes(term)
-  )
-});
-
-ngOnInit(): void {
-  this.loadResorts();
-}
-
-loadResorts(): void {
-  this.isLoading.set(true);
-  this.hasError.set(false);
-
-  this.resortsApi.list().subscribe({
-    next: (data) => {
-      this.resorts.set(data);
-      this.isLoading.set(false);
-    },
-    error: () => {
-      this.hasError.set(true);
-      this.isLoading.set(false);
-    }
+    return this.resorts().filter(
+      (resort) =>
+        this.normalizeText(resort.name).includes(term) ||
+        this.normalizeText(resort.location).includes(term),
+    );
   });
-}
 
-onSearch(event: Event): void {
-  const inputElement = event.target as HTMLInputElement;
-  this.searchTerm.set(inputElement.value);
-}
+  ngOnInit(): void {
+    this.loadResorts();
+  }
 
-clearSearch(): void {
-  this.searchTerm.set('');
-}
+  loadResorts(): void {
+    this.isLoading.set(true);
+    this.hasError.set(false);
 
-private normalizeText(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
+    this.resortsApi.list().subscribe({
+      next: (data) => {
+        this.resorts.set(data);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.hasError.set(true);
+        this.isLoading.set(false);
+      },
+    });
+  }
 
-formatPrice(price: number): string {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(price);
-}
+  onSearch(event: Event): void {
+    const inputElement = event.target as HTMLInputElement;
+    this.searchTerm.set(inputElement.value);
+  }
 
-getMinPrice(resort: Resort): number {
-  if (!resort.rentalUnits || resort.rentalUnits.length === 0) return 0;
-  return Math.min(...resort.rentalUnits.map((u: any) => u.dailyPrice || 0));
-}
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
 
-getTopAmenities(resort: Resort): Amenity[] {
+  private normalizeText(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  formatPrice(price: number): string {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      maximumFractionDigits: 0,
+    }).format(price);
+  }
+
+  getMinPrice(resort: Resort): number {
+    if (!resort.rentalUnits || resort.rentalUnits.length === 0) return 0;
+    return Math.min(...resort.rentalUnits.map((u: any) => u.dailyPrice || 0));
+  }
+
+  getTopAmenities(resort: Resort): Amenity[] {
     if (!resort.amenities) return [];
     return resort.amenities.slice(0, 3);
   }
-
-
 }
