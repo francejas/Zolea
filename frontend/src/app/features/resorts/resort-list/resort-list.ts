@@ -1,17 +1,27 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { ResortsApi } from '../../../core/api/resorts.api';
-import { Amenity, Resort } from '../../../core/api/resort.models';
+import { Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { LucideCheck, LucideMapPin, LucideSearch } from '@lucide/angular';
+import { Amenity, Resort } from '../../../core/api/resort.models';
+import { ResortsApi } from '../../../core/api/resorts.api';
+import { ZEmpty } from '../../../shared/z-empty/z-empty';
+import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 
+/** Cuántos servicios se ven en la tarjeta; el resto se resume en «+N». */
+const VISIBLE_AMENITIES = 3;
+
+/** La Portada: qué es Zolea y el listado de balnearios, con un buscador por nombre o ubicación. */
 @Component({
-  imports: [RouterLink],
-  standalone: true,
+  imports: [RouterLink, LucideCheck, LucideMapPin, LucideSearch, ZEmpty, ZProblem, ZSkeleton],
   selector: 'app-resort-list',
   styleUrl: './resort-list.scss',
   templateUrl: './resort-list.html',
 })
 export class ResortList implements OnInit {
   private resortsApi = inject(ResortsApi);
+  private searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
+
+  protected readonly visibleAmenities = VISIBLE_AMENITIES;
 
   resorts = signal<Resort[]>([]);
   isLoading = signal<boolean>(true);
@@ -27,6 +37,12 @@ export class ResortList implements OnInit {
         this.normalizeText(resort.name).includes(term) ||
         this.normalizeText(resort.location).includes(term),
     );
+  });
+
+  /** El texto corto que anuncia el lector de pantalla cuando cambia el resultado. */
+  resultsSummary = computed(() => {
+    const count = this.filteredResorts().length;
+    return count === 1 ? '1 balneario' : `${count} balnearios`;
   });
 
   ngOnInit(): void {
@@ -54,15 +70,19 @@ export class ResortList implements OnInit {
     this.searchTerm.set(inputElement.value);
   }
 
+  /** Borra la búsqueda y devuelve el foco al buscador: el botón que se tocó desaparece. */
   clearSearch(): void {
     this.searchTerm.set('');
+    this.searchInput().nativeElement.focus();
   }
 
+  /** Sin mayúsculas, sin tildes y sin espacios sobrantes en los bordes. */
   private normalizeText(text: string): string {
     return text
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+      .toLowerCase()
+      .trim();
   }
 
   formatPrice(price: number): string {
@@ -73,13 +93,15 @@ export class ResortList implements OnInit {
     }).format(price);
   }
 
-  getMinPrice(resort: Resort): number {
-    if (!resort.rentalUnits || resort.rentalUnits.length === 0) return 0;
-    return Math.min(...resort.rentalUnits.map((u: any) => u.dailyPrice || 0));
+  /** El precio por día más bajo entre las unidades disponibles, o null si no hay ninguna. */
+  getMinPrice(resort: Resort): number | null {
+    const prices = (resort.rentalUnits ?? [])
+      .filter((unit) => !unit.isBlocked)
+      .map((unit) => unit.dailyPrice);
+    return prices.length > 0 ? Math.min(...prices) : null;
   }
 
   getTopAmenities(resort: Resort): Amenity[] {
-    if (!resort.amenities) return [];
-    return resort.amenities.slice(0, 3);
+    return (resort.amenities ?? []).slice(0, VISIBLE_AMENITIES);
   }
 }

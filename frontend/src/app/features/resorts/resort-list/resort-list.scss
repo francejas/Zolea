@@ -1,15 +1,16 @@
+/* La Portada, pensada desde el celular (390 px): lo de la computadora va en @media (min-width: 768px). */
+
 .page-container {
   max-width: var(--container);
   margin: 0 auto;
-  padding: var(--space-5) var(--gutter) var(--space-8);
+  padding: var(--space-4) var(--gutter) var(--space-8);
 }
 
-/* --- Hero: ¿Qué es Zolea? --- */
 .hero {
-  background: var(--color-sky);
-  padding: var(--space-6);
-  border-radius: var(--radius-m);
   margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-sky);
 
   h1 {
     margin: 0 0 var(--space-3);
@@ -17,91 +18,142 @@
   }
 }
 
+.hero__lead {
+  max-width: 540px;
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-body);
+  color: var(--color-ink-soft);
+}
+
 .hero-steps {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
   color: var(--color-ink-soft);
-  font-size: var(--text-lead);
-
-  li {
-    display: flex;
-    align-items: center;
-  }
+  font-size: var(--text-body);
 }
 
-/* --- Buscador --- */
 .search-section {
-  margin-bottom: var(--space-6);
   max-width: 520px;
+  margin-bottom: var(--space-6);
 }
 
-/* --- Grilla de Balnearios --- */
 .resorts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-4);
 }
 
-/* --- Esqueletos de Carga --- */
-.resort-skeleton {
-  background: var(--color-cream);
+/* --- Tarjeta de balneario (componentes.css:608-631) --- */
+.z-resort-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+  transition: border-color var(--duration) var(--ease);
+}
 
-  .skeleton-photo {
-    aspect-ratio: 16 / 10;
-    border-radius: 0;
-  }
+.z-resort-card:hover {
+  border-color: var(--color-line-strong);
+}
 
-  .skeleton-title {
-    height: 26px;
-    width: 70%;
-    margin-bottom: var(--space-3);
-  }
+.z-resort-card:hover .z-resort-card__cta {
+  background: var(--color-ink-hover);
+}
 
-  .skeleton-text {
-    height: 14px;
-    width: 50%;
-    margin-bottom: var(--space-4);
-  }
+.z-resort-card__body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
 
-  .skeleton-tags {
-    display: flex;
-    gap: 6px;
+.z-resort-card__name {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
 
-    .skeleton-tag {
-      height: 30px;
-      border-radius: var(--radius-pill);
+.z-resort-card__name a {
+  color: inherit;
+  text-decoration: none;
+}
 
-      &:first-child {
-        width: 76px;
-      }
-      &:last-child {
-        width: 96px;
-      }
+/* El enlace cubre toda la tarjeta: un clic en cualquier parte abre el balneario. */
+.z-resort-card__name a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.z-resort-card__name a:focus-visible {
+  outline: none;
+}
+
+.z-resort-card:has(a:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.z-resort-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+
+  .z-price-from {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+
+    strong {
+      color: var(--color-ink);
+      font-size: 16px;
     }
   }
 }
 
-/* --- Ajustes Responsive --- */
-@media (max-width: 767px) {
+/* Sin precio, el botón no se pega a la izquierda. */
+.z-resort-card__cta {
+  margin-left: auto;
+}
+
+/* --- Esqueleto --- */
+.skeleton-photo {
+  aspect-ratio: 16 / 10;
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: 6px;
+}
+
+/* --- Computadora --- */
+@media (min-width: 768px) {
   .page-container {
-    padding-top: var(--space-4);
+    padding-top: var(--space-5);
   }
 
   .hero {
-    padding: var(--space-4);
+    padding: var(--space-6);
 
     h1 {
-      font-size: var(--text-display-m);
+      font-size: var(--text-display-xl);
+      line-height: var(--leading-display);
     }
   }
 
+  .hero__lead {
+    font-size: var(--text-lead);
+  }
+
   .hero-steps {
-    flex-direction: column;
-    gap: var(--space-2);
-    font-size: var(--text-body);
+    flex-direction: row;
+    gap: var(--space-4);
+    font-size: var(--text-lead);
   }
 }

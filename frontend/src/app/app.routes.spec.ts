@@ -100,7 +100,7 @@ describe('routes', () => {
 
   it('las rutas públicas se abren sin sesión', async () => {
     for (const [url, title] of [
-      ['/', 'Portada'],
+      ['/', '¿Qué es Zolea?'],
       ['/resorts/3', 'Ficha de balneario'],
       ['/login', 'Ingresar'],
       ['/register', 'Crear cuenta'],
@@ -133,7 +133,7 @@ describe('routes', () => {
     await harness.navigateByUrl('/admin');
 
     expect(router.url).toBe('/');
-    expect(heading()).toBe('Portada');
+    expect(heading()).toBe('¿Qué es Zolea?');
   });
 
   it('el cliente tampoco entra a las subrutas del panel', async () => {
