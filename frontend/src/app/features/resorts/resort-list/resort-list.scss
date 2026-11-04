@@ -1,0 +1,103 @@
+.page-container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-5) var(--gutter) var(--space-8);
+}
+
+/* --- Hero: ¿Qué es Zolea? --- */
+.hero {
+  background: var(--color-sky);
+  padding: var(--space-6);
+  border-radius: var(--radius-m);
+  margin-bottom: var(--space-6);
+
+  h1 {
+    margin: 0 0 var(--space-3);
+    font: 400 var(--text-display-l) / var(--leading-title) var(--font-display);
+  }
+}
+
+.hero-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-ink-soft);
+  font-size: var(--text-lead);
+  
+  li {
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* --- Buscador --- */
+.search-section {
+  margin-bottom: var(--space-6);
+  max-width: 520px; 
+}
+
+/* --- Grilla de Balnearios --- */
+.resorts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+/* --- Esqueletos de Carga --- */
+.resort-skeleton {
+  background: var(--color-cream);
+  
+  .skeleton-photo {
+    aspect-ratio: 16 / 10;
+    border-radius: 0;
+  }
+  
+  .skeleton-title {
+    height: 26px;
+    width: 70%;
+    margin-bottom: var(--space-3);
+  }
+  
+  .skeleton-text {
+    height: 14px;
+    width: 50%;
+    margin-bottom: var(--space-4);
+  }
+  
+  .skeleton-tags {
+    display: flex;
+    gap: 6px;
+    
+    .skeleton-tag {
+      height: 30px;
+      border-radius: var(--radius-pill);
+      
+      &:first-child { width: 76px; }
+      &:last-child { width: 96px; }
+    }
+  }
+}
+
+/* --- Ajustes Responsive --- */
+@media (max-width: 767px) {
+  .page-container {
+    padding-top: var(--space-4);
+  }
+
+  .hero {
+    padding: var(--space-4);
+    
+    h1 {
+      font-size: var(--text-display-m); 
+    }
+  }
+
+  .hero-steps {
+    flex-direction: column;
+    gap: var(--space-2);
+    font-size: var(--text-body);
+  }
+}

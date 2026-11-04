@@ -1,0 +1,130 @@
+<main class="page-container">
+  <header class="hero">
+    <h1>¿Qué es Zolea?</h1>
+    <ol class="hero-steps">
+      <li>Elegís tu lugar</li>
+      <li>Pagás</li>
+      <li>Entrás con el QR</li>
+      <li>Disfrutás!</li>
+    </ol>
+  </header>
+
+  <section class="search-section">
+    <div class="z-search">
+      <i data-i="search" class="z-icon" aria-hidden="true"></i>
+      <label class="z-visually-hidden" for="f-search"
+        >Buscar balneario por nombre o ubicación</label
+      >
+      <input
+        class="z-input"
+        id="f-search"
+        name="q"
+        type="search"
+        autocomplete="off"
+        placeholder="Buscar por nombre o ubicación..."
+        [value]="searchTerm()"
+        (input)="onSearch($event)"
+      />
+    </div>
+  </section>
+
+  <section class="resorts-section" aria-live="polite">
+    @if (isLoading()) {
+      <div class="resorts-grid">
+        @for (i of [1, 2, 3]; track i) {
+          <div
+            class="z-resort-card resort-skeleton"
+            aria-busy="true"
+            aria-label="Cargando balnearios"
+          >
+            <div class="z-skeleton skeleton-photo"></div>
+            <div class="z-resort-card__body">
+              <div class="z-skeleton skeleton-title"></div>
+              <div class="z-skeleton skeleton-text"></div>
+              <div class="skeleton-tags">
+                <div class="z-skeleton skeleton-tag"></div>
+                <div class="z-skeleton skeleton-tag"></div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (hasError()) {
+      <div class="z-problem">
+        <span class="z-problem__icon">
+          <i data-i="wifi-off" class="z-icon" aria-hidden="true"></i>
+        </span>
+        <h2 class="z-problem__title">No pudimos traer los balnearios</h2>
+        <p class="z-problem__text">Revisá tu conexión y probá de nuevo.</p>
+        <button class="z-btn z-btn--secondary" type="button" (click)="loadResorts()">
+          <i data-i="refresh" class="z-icon--s" aria-hidden="true"></i>Reintentar
+        </button>
+      </div>
+    } @else {
+      @if (filteredResorts().length === 0) {
+        <div class="z-empty">
+          <i data-emblem="72" class="z-empty__icon" aria-hidden="true"></i>
+          <h2 class="z-empty__title">No encontramos balnearios con esa búsqueda</h2>
+          <button class="z-btn z-btn--primary" type="button" (click)="clearSearch()">
+            Limpiar búsqueda
+          </button>
+        </div>
+      } @else {
+        <div class="resorts-grid">
+          @for (resort of filteredResorts(); track resort.idResort) {
+            <article class="z-resort-card">
+              <!-- ACA VA LA IMAGEN, HAY QUE VER DE DONDE LA SACAMOS O CREAMOS -->
+              <div class="z-photo">
+                @if (resort.coverPhotoUrl) {
+                  <img
+                    [src]="resort.coverPhotoUrl"
+                    [alt]="'Foto de portada de ' + resort.name"
+                    loading="lazy"
+                  />
+                } @else {
+                  <i data-umbrella="72" class="z-photo__fallback" aria-hidden="true"></i>
+                }
+              </div>
+
+              <div class="z-resort-card__body">
+                <h3 class="z-resort-card__name">
+                  <a [routerLink]="['/resorts', resort.idResort]">{{ resort.name }}</a>
+                </h3>
+                <p class="z-place">
+                  <i data-i="map-pin" class="z-icon" aria-hidden="true"></i>{{ resort.location }}
+                </p>
+
+                <div class="z-amenities">
+                  @for (amenity of getTopAmenities(resort); track amenity.idAmenity) {
+                    <span class="z-amenity">
+                      <i data-i="check" class="z-icon" aria-hidden="true"></i>{{ amenity.name }}
+                    </span>
+                  }
+
+                  @if (resort.amenities && resort.amenities.length > 3) {
+                    <span class="z-amenity z-amenity--more"
+                      >+{{ resort.amenities.length - 3 }}</span
+                    >
+                  }
+                </div>
+
+                <div class="z-resort-card__foot">
+                  <span class="z-price-from">
+                    desde
+                    <strong class="z-money">{{ formatPrice(getMinPrice(resort)) }}</strong> por día
+                  </span>
+                  <span
+                    class="z-btn z-btn--primary z-btn--compact z-resort-card__cta"
+                    aria-hidden="true"
+                  >
+                    Ver balneario
+                  </span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    }
+  </section>
+</main>
