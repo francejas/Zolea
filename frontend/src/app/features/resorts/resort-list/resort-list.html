@@ -114,7 +114,9 @@
                 @if (minPrice !== null) {
                   <span class="z-price-from">
                     desde
-                    <strong class="z-money">{{ formatPrice(minPrice) }}</strong> por día
+                    <span class="z-price-from__amount"
+                      ><strong class="z-money">{{ formatPrice(minPrice) }}</strong> por día</span
+                    >
                   </span>
                 }
                 <span

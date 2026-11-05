@@ -32,8 +32,29 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  counter-reset: step;
   color: var(--color-ink-soft);
   font-size: var(--text-body);
+}
+
+.hero-steps li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  counter-increment: step;
+}
+
+.hero-steps li::before {
+  content: counter(step);
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-cream);
+  font: 500 var(--text-caption) / 1 var(--font-mono);
 }
 
 .search-section {
@@ -117,7 +138,10 @@
   }
 }
 
-/* Sin precio, el botón no se pega a la izquierda. */
+.z-price-from__amount {
+  white-space: nowrap;
+}
+
 .z-resort-card__cta {
   margin-left: auto;
 }

@@ -10,6 +10,13 @@ import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 /** Cuántos servicios se ven en la tarjeta; el resto se resume en «+N». */
 const VISIBLE_AMENITIES = 3;
 
+/** Se crea una sola vez: un Intl.NumberFormat nuevo por cada tarjeta y cada dibujo es caro. */
+const pesos = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 0,
+});
+
 /** La Portada: qué es Zolea y el listado de balnearios, con un buscador por nombre o ubicación. */
 @Component({
   imports: [RouterLink, LucideCheck, LucideMapPin, LucideSearch, ZEmpty, ZProblem, ZSkeleton],
@@ -86,11 +93,7 @@ export class ResortList implements OnInit {
   }
 
   formatPrice(price: number): string {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      maximumFractionDigits: 0,
-    }).format(price);
+    return pesos.format(price);
   }
 
   /** El precio por día más bajo entre las unidades disponibles, o null si no hay ninguna. */
