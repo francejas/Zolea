@@ -1,0 +1,60 @@
+/* La etiqueta de estado de Zolea-docs/diseno/componentes.css: un banderín y el texto. Las banderas
+   del bañero: verde se puede, amarilla atención; cancelada y bloqueada van neutras, sin bandera.
+   Es global porque la usan el detalle de la reserva, Mis reservas y las reservas del balneario. */
+
+.z-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  font: 600 var(--text-caption) / 1 var(--font-body);
+  white-space: nowrap;
+}
+
+.z-status::before {
+  content: '';
+  width: 9px;
+  height: 12px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 30%, 1.6px 62%, 1.6px 100%, 0 100%);
+}
+
+.z-status--pending {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.z-status--pending::before {
+  background: var(--color-warning);
+}
+
+.z-status--confirmed {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.z-status--confirmed::before {
+  background: var(--color-success);
+}
+
+.z-status--canceled {
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-text);
+}
+
+.z-status--canceled::before,
+.z-status--neutral::before {
+  display: none;
+}
+
+.z-status--neutral {
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-text);
+}
+
+.z-status--neutral .z-icon {
+  width: 14px;
+  height: 14px;
+}
