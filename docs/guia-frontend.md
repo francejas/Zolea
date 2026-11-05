@@ -186,12 +186,17 @@ Si el pago falla, el cliente vuelve por `/failure`; para reintentar hay
 
 ## 6. Ingreso al balneario
 
-Para el escáner del acceso, los dos endpoints son públicos:
+Lo hace el **administrador**, desde el panel y con su token, y solo sobre las reservas de **su**
+balneario:
 
 ```
 POST /api/guests/validate/{qrToken}     el código que muestra el huésped
 POST /api/guests/validate/dni/{dni}     alternativa si no tiene el código a mano
 ```
+
+Sin token responde `401`; con una cuenta de cliente, o con el código de una reserva de otro
+balneario, `403`. Por DNI busca solo entre las reservas de su balneario: un DNI que tiene reserva en
+otro responde `404`, igual que uno que no existe.
 
 El ingreso **se marca como usado**: el mismo código no sirve dos veces, y el segundo intento
 devuelve 400 con el motivo. Los mensajes de error están escritos para que el operador los lea tal
