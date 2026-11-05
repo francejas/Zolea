@@ -6,6 +6,7 @@ import com.zolea.backend.models.Client;
 import com.zolea.backend.models.RentalUnit;
 import com.zolea.backend.models.Resort;
 import com.zolea.backend.models.Status;
+import com.zolea.backend.models.UnitType;
 import com.zolea.backend.repositories.AmenityRepository;
 import com.zolea.backend.security.JwtUtil;
 import com.zolea.backend.security.UserPrincipal;
@@ -185,5 +186,61 @@ class HttpReadTest extends IntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].guests", hasSize(1)))
                 .andExpect(jsonPath("$[0].resortName").exists());
+    }
+
+    // ---------------------------------------------------------------------
+    // Reservas — la unidad, por su identificador («A-01») y no solo su número interno
+    // ---------------------------------------------------------------------
+
+    @Test
+    @DisplayName("el detalle de una reserva trae el identificador y el tipo de la unidad")
+    void bookingDetail_bringsUnitIdentifierAndType() throws Exception {
+        Client client = aClient();
+        RentalUnit unit = aUnit(5_000.0);
+        unit.setType(UnitType.TENT);
+        rentalUnitRepository.save(unit);
+        Booking booking = aBooking(client, unit,
+                today().plusDays(5), today().plusDays(7), Status.CONFIRMED, now());
+
+        syncWithDatabase();
+
+        mockMvc.perform(get("/api/bookings/" + booking.getId())
+                        .header("Authorization", "Bearer " + tokenFor(client)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rentalUnitId").value(unit.getIdRentalUnit()))
+                .andExpect(jsonPath("$.rentalUnitIdentifier").value(unit.getIdentifier()))
+                .andExpect(jsonPath("$.rentalUnitType").value("TENT"));
+    }
+
+    @Test
+    @DisplayName("las reservas de un cliente traen el identificador y el tipo de la unidad")
+    void clientBookings_bringUnitIdentifierAndType() throws Exception {
+        Client client = aClient();
+        RentalUnit unit = aUnit(5_000.0);
+        aBooking(client, unit, today().plusDays(5), today().plusDays(7), Status.CONFIRMED, now());
+
+        syncWithDatabase();
+
+        mockMvc.perform(get("/api/bookings/client/" + client.getIdClient())
+                        .header("Authorization", "Bearer " + tokenFor(client)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].rentalUnitIdentifier").value(unit.getIdentifier()))
+                .andExpect(jsonPath("$[0].rentalUnitType").value("UMBRELLA"));
+    }
+
+    @Test
+    @DisplayName("las reservas del balneario traen el identificador y el tipo de la unidad")
+    void resortBookings_bringUnitIdentifierAndType() throws Exception {
+        Resort resort = aResort();
+        RentalUnit unit = aUnitIn(resort, 5_000.0);
+        aBooking(aClient(), unit, today().plusDays(5), today().plusDays(7), Status.CONFIRMED, now());
+
+        syncWithDatabase();
+
+        mockMvc.perform(get("/api/bookings")
+                        .header("Authorization", "Bearer " + tokenFor(anAdminOf(resort))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].rentalUnitIdentifier").value(unit.getIdentifier()))
+                .andExpect(jsonPath("$[0].rentalUnitType").value("UMBRELLA"));
     }
 }
