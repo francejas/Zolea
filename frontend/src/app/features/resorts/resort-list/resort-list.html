@@ -1,0 +1,135 @@
+<div class="page-container">
+  <header class="hero">
+    <h1>¿Qué es Zolea?</h1>
+    <p class="hero__lead">
+      Zolea es la forma de reservar tu carpa o sombrilla en un balneario, sin llamar ni hacer cola.
+    </p>
+    <ol class="hero-steps">
+      <li>Elegís tu lugar</li>
+      <li>Pagás</li>
+      <li>Entrás con el QR</li>
+    </ol>
+  </header>
+
+  <section class="search-section">
+    <div class="z-search">
+      <svg lucideSearch class="z-icon" aria-hidden="true"></svg>
+      <label class="z-visually-hidden" for="f-search"
+        >Buscar balneario por nombre o ubicación</label
+      >
+      <input
+        #searchInput
+        class="z-input"
+        id="f-search"
+        name="q"
+        type="search"
+        autocomplete="off"
+        placeholder="Buscar por nombre o ubicación..."
+        [value]="searchTerm()"
+        (input)="onSearch($event)"
+      />
+    </div>
+  </section>
+
+  <section class="resorts-section" aria-labelledby="resorts-title">
+    <h2 id="resorts-title" class="z-visually-hidden">Balnearios</h2>
+
+    <!-- Un texto corto aparte: el lector anuncia la cantidad, no las tarjetas enteras. -->
+    <p class="z-visually-hidden" role="status">
+      @if (!isLoading() && !hasError()) {
+        {{ resultsSummary() }}
+      }
+    </p>
+
+    @if (isLoading()) {
+      <div class="resorts-grid" aria-busy="true">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="z-resort-card">
+            <div class="skeleton-photo">
+              <z-skeleton height="100%" />
+            </div>
+            <div class="z-resort-card__body">
+              <z-skeleton width="70%" height="26px" />
+              <z-skeleton width="50%" height="14px" />
+              <div class="skeleton-tags">
+                <z-skeleton width="76px" height="30px" />
+                <z-skeleton width="96px" height="30px" />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (hasError()) {
+      <z-problem
+        title="No pudimos traer los balnearios"
+        text="Revisá tu conexión y probá de nuevo."
+        (retry)="loadResorts()"
+      />
+    } @else if (resorts().length === 0) {
+      <z-empty
+        title="Todavía no hay balnearios"
+        text="Cuando haya alguno publicado, lo vas a ver acá."
+      />
+    } @else if (filteredResorts().length === 0) {
+      <z-empty
+        title="No encontramos balnearios con esa búsqueda"
+        actionLabel="Limpiar búsqueda"
+        (action)="clearSearch()"
+      />
+    } @else {
+      <div class="resorts-grid">
+        @for (resort of filteredResorts(); track resort.idResort) {
+          <article class="z-resort-card">
+            <div class="z-photo">
+              @if (resort.coverPhotoUrl) {
+                <img [src]="resort.coverPhotoUrl" alt="" loading="lazy" />
+              }
+            </div>
+
+            <div class="z-resort-card__body">
+              <h3 class="z-resort-card__name">
+                <a [routerLink]="['/resorts', resort.idResort]">{{ resort.name }}</a>
+              </h3>
+              <p class="z-place">
+                <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
+              </p>
+
+              <div class="z-amenities">
+                @for (amenity of getTopAmenities(resort); track amenity.idAmenity) {
+                  <span class="z-amenity">
+                    <svg lucideCheck class="z-icon" aria-hidden="true"></svg>{{ amenity.name }}
+                  </span>
+                }
+
+                @if (resort.amenities.length > visibleAmenities) {
+                  <span class="z-amenity z-amenity--more">
+                    +{{ resort.amenities.length - visibleAmenities
+                    }}<span class="z-visually-hidden"> servicios más</span>
+                  </span>
+                }
+              </div>
+
+              <div class="z-resort-card__foot">
+                @let minPrice = getMinPrice(resort);
+                @if (minPrice !== null) {
+                  <span class="z-price-from">
+                    desde
+                    <span class="z-price-from__amount"
+                      ><strong class="z-money">{{ formatPrice(minPrice) }}</strong> por día</span
+                    >
+                  </span>
+                }
+                <span
+                  class="z-btn z-btn--primary z-btn--compact z-resort-card__cta"
+                  aria-hidden="true"
+                >
+                  Ver balneario
+                </span>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>
