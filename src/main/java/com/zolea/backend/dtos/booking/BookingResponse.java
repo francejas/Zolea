@@ -2,6 +2,7 @@ package com.zolea.backend.dtos.booking;
 
 import com.zolea.backend.dtos.guest.GuestSummaryResponse;
 import com.zolea.backend.models.Status;
+import com.zolea.backend.models.UnitType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,6 +18,10 @@ public record BookingResponse(
         LocalDateTime createdAt,
         Long idClient,
         Long rentalUnitId,
+        // Cómo la ve la persona («A-01», sombrilla o carpa): sin esto, el detalle y Mis reservas
+        // tenían que pedir el balneario entero para encontrar la unidad por su número interno.
+        String rentalUnitIdentifier,
+        UnitType rentalUnitType,
         List<GuestSummaryResponse> guests,
         String walkInName,
         String walkInDni,

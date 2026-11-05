@@ -208,7 +208,8 @@ public class BookingService {
                 .map(g -> new GuestSummaryResponse(g.getIdGuest(), g.getFullName(), g.getDni(), g.getIsEntryValidated(), g.getQrToken()))
                 .toList() : new ArrayList<>();
 
-        var resort = booking.getRentalUnit().getResort();
+        var unit = booking.getRentalUnit();
+        var resort = unit.getResort();
 
         return new BookingResponse(
                 booking.getId(),
@@ -218,7 +219,9 @@ public class BookingService {
                 booking.getStatus(),
                 booking.getCreatedAt(),
                 booking.getClient() != null ? booking.getClient().getIdClient() : null,
-                booking.getRentalUnit().getIdRentalUnit(),
+                unit.getIdRentalUnit(),
+                unit.getIdentifier(),
+                unit.getType(),
                 guestResponses,
                 booking.getWalkInName(),
                 booking.getWalkInDni(),
