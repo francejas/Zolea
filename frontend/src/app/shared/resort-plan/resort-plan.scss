@@ -1,0 +1,439 @@
+/* El plano del balneario de Zolea-docs/diseno/componentes.css (z-unit, z-plan, z-plan-legend,
+   z-unit-list y las pestañas z-tabs), con los mismos nombres de clase. El componente no está
+   encapsulado: la leyenda y la lista usan las mismas clases que el plano. */
+
+.z-resort-plan {
+  display: block;
+}
+
+/* --- Pestañas Plano / Lista --- */
+.z-tabs {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sand-soft);
+}
+
+.z-resort-plan__tabs {
+  margin-bottom: var(--space-4);
+}
+
+.z-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control-compact);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font: 600 15px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.z-tab:hover {
+  color: var(--color-ink);
+}
+
+.z-tab[aria-selected='true'] {
+  background: var(--color-surface);
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+}
+
+@media (max-width: 479px) {
+  .z-tab {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+}
+
+/* --- Unidad: la sombrilla y la carpa vistas desde arriba ---
+   Abierta (con sus gajos) está libre. Cerrada (solo el palo) no se puede reservar. La elegida
+   lleva un anillo de tinta y su código en negativo. */
+.z-unit {
+  display: inline-grid;
+  justify-items: center;
+  gap: 5px;
+  min-width: 52px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.z-unit__shape {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--color-ink);
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from -90deg,
+    var(--color-coral) 0deg 22.5deg,
+    var(--color-cream) 22.5deg 45deg
+  );
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--duration) var(--ease);
+}
+
+/* El palo, visto desde arriba */
+.z-unit__shape::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--color-ink);
+}
+
+.z-unit--tent .z-unit__shape {
+  width: 52px;
+  border-radius: var(--radius-m);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-coral) 0 6.5px,
+    var(--color-cream) 6.5px 13px
+  );
+}
+
+.z-unit--tent .z-unit__shape::after {
+  display: none;
+}
+
+.z-unit__id {
+  padding: 3px 6px;
+  border-radius: var(--radius-pill);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.z-unit:hover .z-unit__shape {
+  outline-color: var(--color-ink-soft);
+}
+
+.z-unit:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.z-unit[aria-pressed='true'] .z-unit__shape {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+.z-unit[aria-pressed='true'] .z-unit__id {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.z-unit[aria-disabled='true'] {
+  cursor: not-allowed;
+  color: var(--color-ink-soft);
+}
+
+.z-unit[aria-disabled='true'] .z-unit__shape {
+  border: 1.5px dashed var(--color-ink-soft);
+  background: transparent;
+  outline-color: transparent;
+}
+
+.z-unit[aria-disabled='true'] .z-unit__shape::after {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  background: var(--color-ink-soft);
+}
+
+.z-unit--tent[aria-disabled='true'] .z-unit__shape {
+  background: repeating-linear-gradient(
+    135deg,
+    rgb(107 82 68 / 0.28) 0 1.5px,
+    transparent 1.5px 7px
+  );
+}
+
+/* La miniatura de la leyenda */
+.z-unit--mini {
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  cursor: default;
+}
+
+.z-unit--mini .z-unit__shape {
+  width: 22px;
+  height: 22px;
+  border-width: 1px;
+}
+
+.z-unit--mini .z-unit__shape::after {
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+}
+
+.z-unit--mini.z-unit--tent .z-unit__shape {
+  width: 28px;
+}
+
+.z-unit--mini[aria-pressed='true'] .z-unit__shape {
+  outline-width: 2px;
+  outline-offset: 2px;
+}
+
+/* --- Plano ---
+   El mar arriba, las sombrillas adelante, el paseo, las carpas atrás y la entrada abajo. */
+.z-plan {
+  container-type: inline-size;
+  overflow: hidden;
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+}
+
+.z-plan__sea {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  padding-bottom: 10px;
+  /* La espuma: la única imagen del plano. El hex va escrito porque un SVG en línea no lee variables. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12' viewBox='0 0 40 12'%3E%3Cpath d='M0 7 Q10 0 20 7 T40 7 V12 H0Z' fill='%23E6CDA5'/%3E%3C/svg%3E")
+      bottom left / 40px 12px repeat-x,
+    var(--color-sea);
+}
+
+.z-plan__sea span {
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: var(--tracking-label-wide);
+  text-transform: uppercase;
+  color: var(--color-ink); /* tinta sobre agua: 5,0:1. Crema no pasa. */
+}
+
+.z-plan__zone {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-6);
+}
+
+.z-plan__zone-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font: 500 var(--text-label) / 1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.z-plan__zone-label .z-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.z-plan__row {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.z-plan__row-label {
+  display: grid;
+  gap: 3px;
+  padding-top: 12px;
+}
+
+.z-plan__row-label strong {
+  font-size: 15px;
+}
+
+.z-plan__row-label span {
+  font-size: 13px;
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.z-plan__cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 4px;
+}
+
+/* El esqueleto de una unidad: la forma de un botón cerrado. */
+.z-plan__skeleton-cell {
+  border-radius: 22px;
+}
+
+.z-plan__walk,
+.z-plan__entry {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border-block: 1px solid var(--color-line);
+  background:
+    repeating-linear-gradient(90deg, rgb(72 42 29 / 0.1) 0 1px, transparent 1px 18px),
+    var(--color-sand-soft);
+}
+
+.z-plan__entry {
+  height: 40px;
+  border-bottom: 0;
+  background: var(--color-cream);
+}
+
+.z-plan__walk span,
+.z-plan__entry span {
+  padding: 0 10px;
+  font: 500 var(--text-label) / 1 var(--font-mono);
+  letter-spacing: var(--tracking-label-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  background: var(--color-sand-soft);
+}
+
+.z-plan__entry span {
+  background: var(--color-cream);
+}
+
+.z-plan__empty {
+  margin: 0;
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  color: var(--color-ink-soft);
+}
+
+/* El plano mira el ancho de su contenedor, no el de la pantalla. */
+@container (max-width: 520px) {
+  .z-plan__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .z-plan__row-label {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding-top: 0;
+  }
+
+  .z-plan__zone {
+    padding: var(--space-4) var(--space-3) var(--space-5);
+  }
+}
+
+/* --- Leyenda --- */
+.z-plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-small);
+  color: var(--color-ink-soft);
+}
+
+.z-plan-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Lista de unidades: la alternativa al plano para teclado y lector de pantalla --- */
+.z-unit-list {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.z-unit-list__group {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.z-unit-list__group legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.z-unit-list__group legend span {
+  font-weight: 400;
+  color: var(--color-ink-soft);
+}
+
+.z-unit-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.z-unit-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-ink);
+}
+
+.z-unit-option .z-code {
+  min-width: 44px;
+  font: 500 0.92em / 1 var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.z-unit-option__state {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+
+/* Si la fila tiene precios distintos, cada opción dice el suyo, pegado al estado. */
+.z-unit-option__price {
+  margin-left: auto;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.z-unit-option__price + .z-unit-option__state {
+  margin-left: 0;
+}
+
+.z-unit-option:has(input:checked) {
+  border-color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.z-unit-option:has(input:disabled) {
+  cursor: not-allowed;
+  color: var(--color-ink-soft);
+  background: transparent;
+  border-style: dashed;
+}
