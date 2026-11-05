@@ -1,0 +1,149 @@
+/* La entrada con QR de Zolea-docs/diseno/componentes.css, con los mismos nombres de clase, y la
+   guarda de gajos del bloque Marca, que va solo en la portada, las entradas y el pie. */
+
+.z-guard {
+  height: 14px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-coral) 0 22px,
+    var(--color-cream) 22px 44px
+  );
+}
+
+.z-ticket {
+  --ticket-page: var(--color-cream);
+  position: relative;
+  width: min(340px, 100%);
+  overflow: hidden;
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.z-ticket__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+.z-ticket__resort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 600 15px/1.2 var(--font-body);
+}
+
+.z-ticket__resort img {
+  flex: none;
+}
+
+.z-ticket__qr {
+  display: grid;
+  place-items: center;
+  padding: var(--space-2) var(--space-5) var(--space-4);
+}
+
+.z-ticket__qr svg {
+  display: block;
+  width: 216px;
+  height: 216px;
+}
+
+.z-ticket__who {
+  padding: 0 var(--space-5) var(--space-5);
+  text-align: center;
+}
+
+.z-ticket__name {
+  margin: 0;
+  font: 400 28px/1.1 var(--font-display);
+}
+
+.z-ticket__dni {
+  margin: 6px 0 0;
+  font: 500 13px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.z-ticket__cut {
+  position: relative;
+  height: 1px;
+  margin: 0 var(--space-5);
+  border-top: 2px dashed var(--color-line-strong);
+}
+
+.z-ticket__cut::before,
+.z-ticket__cut::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  width: 22px;
+  height: 22px;
+  border: var(--border-strong);
+  border-radius: 50%;
+  background: var(--ticket-page);
+}
+
+.z-ticket__cut::before {
+  left: -34px;
+}
+
+.z-ticket__cut::after {
+  right: -34px;
+}
+
+.z-ticket__facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-5);
+}
+
+.z-ticket__facts div {
+  display: grid;
+  gap: 4px;
+}
+
+.z-ticket__facts dt {
+  font: 500 var(--text-label) / 1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.z-ticket__facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.z-ticket__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+/* Con una sola entrada no hay paso de una a otra: «Descargar» queda a la derecha igual. */
+.z-ticket__foot z-btn:only-child {
+  margin-left: auto;
+}
+
+.z-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font: 500 14px/1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.z-pager .z-icon-btn {
+  width: 40px;
+  height: 40px;
+}
