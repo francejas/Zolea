@@ -1,0 +1,57 @@
+/* La base del campo de Zolea-docs/diseno/componentes.css: la usa cualquier campo, esté o no dentro
+   de <z-field>. Lo de z-field (etiqueta, ayuda, error) sigue en su componente.
+   El orden importa: .z-search .z-input va después de la base porque le pisa la altura y el borde. */
+
+.z-input {
+  width: 100%;
+  height: var(--control);
+  padding: 0 14px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: 400 var(--text-body) / var(--leading-ui) var(--font-body);
+  transition: border-color var(--duration) var(--ease);
+}
+
+.z-input::placeholder {
+  color: var(--color-ink-soft);
+  opacity: 0.75;
+}
+
+.z-input:hover {
+  border-color: var(--color-ink-soft);
+}
+
+.z-input:focus-visible {
+  border-color: var(--color-ink);
+}
+
+select.z-input {
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23482A1D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 20px;
+}
+
+/* Buscador: campo en forma de pastilla con la lupa adentro. */
+.z-search {
+  position: relative;
+}
+
+.z-search .z-input {
+  height: 52px;
+  padding-left: 48px;
+  border-radius: var(--radius-pill);
+  font-size: 17px;
+}
+
+.z-search > .z-icon {
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  color: var(--color-ink-soft);
+  pointer-events: none;
+}

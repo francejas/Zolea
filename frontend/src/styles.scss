@@ -2,6 +2,9 @@
    Zolea-docs/diseno/tokens.css: si cambia allá, se vuelve a copiar acá. */
 @use 'styles/tokens';
 @use 'styles/buttons';
+@use 'styles/utilities';
+@use 'styles/inputs';
+@use 'styles/catalog';
 
 /* La base de Zolea-docs/diseno/componentes.css. Lo de cada pieza va en su componente, salvo los
    botones, que también los usan los enlaces (styles/buttons.scss). */
@@ -51,139 +54,6 @@ label {
 .z-icon--s {
   width: var(--icon-s);
   height: var(--icon-s);
-}
-
-.z-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.z-money {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* Base del campo: la usa cualquier campo, esté o no dentro de <z-field>. */
-.z-input {
-  width: 100%;
-  height: var(--control);
-  padding: 0 14px;
-  border: 1px solid var(--color-field-border);
-  border-radius: var(--radius-m);
-  background: var(--color-surface);
-  color: var(--color-ink);
-  font: 400 var(--text-body) / var(--leading-ui) var(--font-body);
-  transition: border-color var(--duration) var(--ease);
-}
-
-.z-input::placeholder {
-  color: var(--color-ink-soft);
-  opacity: 0.75;
-}
-
-.z-input:hover {
-  border-color: var(--color-ink-soft);
-}
-
-.z-input:focus-visible {
-  border-color: var(--color-ink);
-}
-
-select.z-input {
-  appearance: none;
-  padding-right: 44px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23482A1D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 20px;
-}
-
-/* Buscador: campo en forma de pastilla con la lupa adentro. */
-.z-search {
-  position: relative;
-}
-
-.z-search .z-input {
-  height: 52px;
-  padding-left: 48px;
-  border-radius: var(--radius-pill);
-  font-size: 17px;
-}
-
-.z-search > .z-icon {
-  position: absolute;
-  left: 18px;
-  top: 16px;
-  color: var(--color-ink-soft);
-  pointer-events: none;
-}
-
-/* Piezas del catálogo de balnearios, compartidas por la Portada y la Ficha. */
-.z-amenity {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 11px 0 9px;
-  border: var(--border-strong);
-  border-radius: var(--radius-pill);
-  font: 500 var(--text-small) / 1 var(--font-body);
-  white-space: nowrap;
-}
-
-.z-amenity .z-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.z-amenity--more {
-  border-style: dashed;
-  color: var(--color-text-muted);
-}
-
-.z-amenities {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* Foto de portada: sin foto queda el degradado de cielo, mar y arena. */
-.z-photo {
-  position: relative;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  background: linear-gradient(
-    var(--color-sky) 0 60%,
-    var(--color-sea) 60% 70%,
-    var(--color-sand) 70% 100%
-  );
-}
-
-.z-photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.z-place {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: -4px 0 0;
-  font-size: var(--text-small);
-  color: var(--color-text-muted);
-}
-
-.z-place .z-icon {
-  width: 16px;
-  height: 16px;
 }
 
 /* Salto al contenido: el primer elemento de las dos estructuras, visible solo con teclado. */
