@@ -1,16 +1,25 @@
 package com.zolea.backend.controllers;
 
 import com.zolea.backend.dtos.guest.GuestValidationResponse;
+import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.GuestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Validar el ingreso marca el código como usado y devuelve el nombre y la unidad del huésped, así
+ * que lo hace solo el administrador, y sobre las reservas de su balneario: el mismo criterio que el
+ * resto del panel.
+ */
 @RestController
 @RequestMapping("/api/guests")
 @RequiredArgsConstructor
@@ -19,25 +28,37 @@ public class GuestController {
 
     private final GuestService guestService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/validate/{token}")
-    @Operation(summary = "Validar ingreso por token QR", description = "Público. Marca el ingreso del huésped y devuelve sus datos.")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Validar ingreso por token QR (Admin)", description = "Marca el ingreso del huésped y devuelve sus datos. Solo para reservas del balneario del administrador.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Ingreso registrado. El código queda usado y no sirve una segunda vez"),
             @ApiResponse(responseCode = "400", description = "La reserva no está paga, no empezó todavía, ya venció, o el código ya se usó", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el código es de una reserva de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "El código no existe", content = @Content)
     })
-    public ResponseEntity<GuestValidationResponse> validateGuestEntry(@PathVariable String token) {
-        return ResponseEntity.ok(guestService.validateGuestEntry(token));
+    public ResponseEntity<GuestValidationResponse> validateGuestEntry(
+            @PathVariable String token,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(guestService.validateGuestEntry(token, principal.requireManagedResort()));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/validate/dni/{dni}")
-    @Operation(summary = "Validar ingreso por DNI", description = "Público. Alternativa al QR para validar ingreso.")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Validar ingreso por DNI (Admin)", description = "Alternativa al QR para validar ingreso. Busca solo entre las reservas del balneario del administrador.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Ingreso registrado"),
             @ApiResponse(responseCode = "400", description = "Hay una reserva con ese DNI, pero no está vigente hoy o ya registró su ingreso", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No hay ninguna reserva confirmada con ese DNI", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
+            @ApiResponse(responseCode = "404", description = "No hay ninguna reserva confirmada con ese DNI en el balneario", content = @Content)
     })
-    public ResponseEntity<GuestValidationResponse> validateGuestEntryByDni(@PathVariable String dni) {
-        return ResponseEntity.ok(guestService.validateGuestEntryByDni(dni));
+    public ResponseEntity<GuestValidationResponse> validateGuestEntryByDni(
+            @PathVariable String dni,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(guestService.validateGuestEntryByDni(dni, principal.requireManagedResort()));
     }
 }

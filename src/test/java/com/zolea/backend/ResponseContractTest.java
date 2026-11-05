@@ -196,8 +196,7 @@ class ResponseContractTest extends IntegrationTest {
                 "/api/bookings/pending", "get",
                 "/api/bookings/failure", "get",
                 "/api/bookings/notifications", "post",
-                "/api/auth/login", "post",
-                "/api/guests/validate/{token}", "post");
+                "/api/auth/login", "post");
 
         List<String> conCandado = new ArrayList<>();
         for (var entrada : publicos.entrySet()) {
