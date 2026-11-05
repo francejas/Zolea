@@ -19,6 +19,7 @@ interface PlanRow {
   name: string;
   /** «$ 8.500 por día», o «desde $ 7.000 por día» si no todas cuestan lo mismo. */
   priceLabel: string;
+  samePrice: boolean;
   units: RentalUnit[];
 }
 
@@ -103,6 +104,11 @@ export class ResortPlan {
     return `${TYPE_NAME[unit.type]} ${unit.identifier}, ${state}, ${pesos.format(unit.dailyPrice)} por día`;
   }
 
+  /** El precio de una unidad, para la lista: «$ 15.000». */
+  protected price(unit: RentalUnit): string {
+    return pesos.format(unit.dailyPrice);
+  }
+
   /** Tocar una libre la elige; tocar la elegida la deselecciona; una bloqueada no hace nada. */
   protected toggle(unit: RentalUnit): void {
     if (unit.isBlocked) return;
@@ -158,6 +164,7 @@ export class ResortPlan {
           prefix,
           name: prefix === OTHER_ROW ? OTHER_ROW : `Fila ${prefix}`,
           priceLabel: `${same ? '' : 'desde '}${pesos.format(min)} por día`,
+          samePrice: same,
           units: rowUnits,
         };
       });

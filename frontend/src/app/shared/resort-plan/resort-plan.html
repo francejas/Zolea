@@ -167,6 +167,9 @@
                 />
                 <span class="z-code">{{ unit.identifier }}</span>
                 {{ typeName[unit.type] }}
+                @if (!row.samePrice) {
+                  <span class="z-unit-option__price">{{ price(unit) }}</span>
+                }
                 <span class="z-unit-option__state">{{
                   unit.isBlocked ? 'No disponible' : 'Libre'
                 }}</span>

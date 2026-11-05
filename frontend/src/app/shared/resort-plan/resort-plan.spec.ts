@@ -274,6 +274,26 @@ describe('ResortPlan', () => {
       expect(text(option.querySelector('.z-unit-option__state'))).toBe('No disponible');
     });
 
+    it('si la fila dice «desde», cada opción dice cuánto cuesta; si no, alcanza con el título', async () => {
+      const units = zoleaClub();
+      units.find((u) => u.identifier === 'D-02')!.dailyPrice = 15000;
+      await render(units);
+      page.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      await fixture.whenStable();
+
+      const option = (identifier: string) =>
+        Array.from(page.querySelectorAll('.z-unit-option')).find((o) =>
+          text(o).includes(identifier),
+        )!;
+      const price = (identifier: string) =>
+        text(option(identifier).querySelector('.z-unit-option__price'));
+
+      expect(price('D-01')).toBe('$ 12.000');
+      expect(price('D-02')).toBe('$ 15.000');
+      expect(option('A-01').querySelector('.z-unit-option__price')).toBeNull();
+      expect(option('C-01').querySelector('.z-unit-option__price')).toBeNull();
+    });
+
     it('elegir en la lista elige también en el plano y avisa', async () => {
       await openList();
       const selected = vi.fn();
