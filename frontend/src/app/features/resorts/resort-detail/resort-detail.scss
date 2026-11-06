@@ -1,0 +1,254 @@
+/* La Ficha, pensada desde el celular (390 px): lo de la computadora va en @media (min-width: 768px).
+   Las clases z-book-card y z-bookbar son de componentes.css, con los mismos nombres. */
+
+:host {
+  display: block;
+}
+
+.detail {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-3) var(--gutter) var(--space-6);
+}
+
+.detail__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink-soft);
+  font: 500 var(--text-small) / 1 var(--font-body);
+  text-decoration: none;
+}
+
+.detail__back:hover {
+  color: var(--color-ink);
+}
+
+.detail__head {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+
+  h1 {
+    margin: 0;
+    font: 400 var(--text-display-l) / 1.06 var(--font-display);
+  }
+
+  .z-place {
+    margin: 0;
+    font-size: 15px;
+  }
+}
+
+.detail__photo {
+  aspect-ratio: 16 / 10;
+  border: var(--border);
+  border-radius: var(--radius-m);
+}
+
+.detail__photo-skeleton {
+  aspect-ratio: 16 / 10;
+}
+
+.detail__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-6);
+  margin-top: var(--space-5);
+}
+
+.detail__main {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.detail__section {
+  h2 {
+    margin: 0 0 var(--space-3);
+    font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+  }
+
+  > p {
+    margin: 0;
+    color: var(--color-ink-soft);
+  }
+
+  > .detail__hint {
+    margin-bottom: var(--space-4);
+    font-size: 15px;
+  }
+}
+
+.detail__amenities {
+  gap: var(--space-2);
+}
+
+.detail__tags {
+  display: flex;
+  gap: 6px;
+}
+
+/* En el celular la reserva está en la barra de abajo; la tarjeta es de la computadora. */
+.detail__aside {
+  display: none;
+}
+
+/* --- Tarjeta de reserva (componentes.css) --- */
+.z-book-card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.z-book-card__title {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.z-book-card__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 68px;
+  padding: var(--space-3);
+  border-radius: var(--radius-m);
+  background: var(--color-sand-soft);
+}
+
+.z-book-card__pick > div > strong {
+  display: block;
+  font-size: 16px;
+}
+
+.z-book-card__pick > div > span {
+  font-size: 14px;
+  color: var(--color-ink-soft);
+}
+
+.z-book-card__pick--empty {
+  justify-content: center;
+  border: 1px dashed var(--color-line-strong);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: 15px;
+  text-align: center;
+}
+
+.z-book-card__lines {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 15px;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  dt {
+    color: var(--color-ink-soft);
+  }
+
+  dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}
+
+.z-book-card__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--space-3);
+  border-top: var(--border);
+
+  strong {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.z-book-card__note {
+  margin: -4px 0 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--color-ink-soft);
+}
+
+/* --- Barra de reserva del celular: queda fija abajo (componentes.css) --- */
+.z-bookbar {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-nav);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--gutter) calc(var(--space-3) + env(safe-area-inset-bottom));
+  border-top: var(--border-strong);
+  background: var(--color-cream);
+
+  > div > strong {
+    display: block;
+    font-size: 15px;
+  }
+
+  > div > span {
+    font-size: 13px;
+    color: var(--color-ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* --- Computadora --- */
+@media (min-width: 768px) {
+  .detail {
+    padding-top: var(--space-5);
+    padding-bottom: 56px;
+  }
+
+  .detail__head {
+    margin: 18px 0 20px;
+  }
+
+  .detail__photo,
+  .detail__photo-skeleton {
+    aspect-ratio: 21 / 8;
+  }
+
+  .detail__layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 44px;
+    margin-top: 32px;
+  }
+
+  .detail__main {
+    gap: 40px;
+  }
+
+  .detail__section h2 {
+    font-size: 28px;
+  }
+
+  /* Las fechas van en la tarjeta, no arriba del plano. */
+  .detail__dates {
+    display: none;
+  }
+
+  .detail__aside {
+    display: block;
+    position: sticky;
+    top: 20px;
+  }
+
+  .z-bookbar {
+    display: none;
+  }
+}
