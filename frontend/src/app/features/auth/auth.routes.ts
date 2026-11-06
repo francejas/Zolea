@@ -4,7 +4,10 @@ import { authGuard } from '../../core/auth/auth.guard';
 import { roleGuard } from '../../core/auth/role.guard';
 
 export const authRoutes: Routes = [
-  { path: 'login', component: PlaceholderPage, data: { title: 'Ingresar' } },
+  {
+    path: 'login',
+    loadComponent: () => import('./login/login').then((m) => m.Login),
+  },
   { path: 'register', component: PlaceholderPage, data: { title: 'Crear cuenta' } },
   {
     path: 'profile',

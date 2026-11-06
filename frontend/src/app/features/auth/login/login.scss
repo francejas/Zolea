@@ -1,0 +1,72 @@
+/* Ingresar. Una tarjeta centrada con el bloque Tarjeta (superficie) de
+   Zolea-docs/diseno/componentes.css; el campo, el aviso y el botón son los de shared/ y styles/.
+   Se diseña desde el celular: la tarjeta ocupa el ancho, y de 768 px para arriba queda centrada. */
+
+:host {
+  display: block;
+}
+
+.login {
+  max-width: calc(440px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--space-5) var(--gutter) var(--space-8);
+}
+
+.login__card {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.login__head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.login__title {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.login__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.login__form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* La única acción principal ocupa todo el ancho de la tarjeta. El botón vive adentro de z-btn, que
+   no tiene una variante de ancho completo: se estira desde acá. */
+.login__submit {
+  display: block;
+  margin-top: var(--space-2);
+}
+
+.login__submit ::ng-deep .z-btn {
+  width: 100%;
+}
+
+.login__alt {
+  margin: 0;
+  padding-top: var(--space-4);
+  border-top: var(--border);
+  text-align: center;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .login {
+    padding-top: var(--space-7);
+  }
+
+  .login__card {
+    padding: var(--space-6);
+  }
+}
