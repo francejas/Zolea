@@ -9,6 +9,7 @@ import { Me } from './core/api/auth.models';
 import { SessionService } from './core/session/session.service';
 import { routes } from './app.routes';
 import { Login } from './features/auth/login/login';
+import { SiteLayout } from './layout/site-layout/site-layout';
 
 const client: Me = {
   idClient: 1,
@@ -100,7 +101,7 @@ describe('routes', () => {
   });
 
   it('sin sesión, /my-bookings lleva al login y, después de ingresar, vuelve a Mis reservas', async () => {
-    const login = await harness.navigateByUrl('/my-bookings', Login);
+    const login = await harness.navigateByUrl('/my-bookings', SiteLayout);
     const page = harness.routeNativeElement as HTMLElement;
     const type = (selector: string, value: string) => {
       const input = page.querySelector<HTMLInputElement>(selector)!;
@@ -108,7 +109,7 @@ describe('routes', () => {
       input.dispatchEvent(new Event('input'));
     };
 
-    expect(login).toBeInstanceOf(Login);
+    expect(router.url).toContain('/login');
     type('#login-email', 'santi.rodriguez@gmail.com');
     type('#login-password', 'admin123');
     await harness.fixture.whenStable();
