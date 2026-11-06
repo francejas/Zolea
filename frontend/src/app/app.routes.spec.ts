@@ -4,9 +4,12 @@ import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { of } from 'rxjs';
 import { Me } from './core/api/auth.models';
 import { SessionService } from './core/session/session.service';
 import { routes } from './app.routes';
+import { Login } from './features/auth/login/login';
+import { SiteLayout } from './layout/site-layout/site-layout';
 
 const client: Me = {
   idClient: 1,
@@ -56,6 +59,11 @@ describe('routes', () => {
             isLoggedIn: computed(() => user() !== null),
             isAdmin: computed(() => user()?.role === 'ADMIN'),
             logout: vi.fn(),
+            // El login real se prueba en login.spec.ts: acá solo deja la sesión del cliente puesta.
+            login: vi.fn(() => {
+              user.set(client);
+              return of(client);
+            }),
           },
         },
       ],
@@ -90,6 +98,26 @@ describe('routes', () => {
     expect(router.url.startsWith('/login')).toBe(true);
     expect(router.parseUrl(router.url).queryParams).toEqual({ volver: '/my-bookings' });
     expect(heading()).toBe('Ingresar');
+  });
+
+  it('sin sesión, /my-bookings lleva al login y, después de ingresar, vuelve a Mis reservas', async () => {
+    const login = await harness.navigateByUrl('/my-bookings', SiteLayout);
+    const page = harness.routeNativeElement as HTMLElement;
+    const type = (selector: string, value: string) => {
+      const input = page.querySelector<HTMLInputElement>(selector)!;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    };
+
+    expect(router.url).toContain('/login');
+    type('#login-email', 'santi.rodriguez@gmail.com');
+    type('#login-password', 'admin123');
+    await harness.fixture.whenStable();
+    page.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await harness.fixture.whenStable();
+
+    expect(router.url).toBe('/my-bookings');
+    expect(heading()).toBe('Mis reservas');
   });
 
   it('sin sesión, /admin lleva al login', async () => {

@@ -1,0 +1,68 @@
+<section class="login">
+  <div class="login__card">
+    <header class="login__head">
+      <h1 class="login__title">Ingresar</h1>
+      <p class="login__lead">Entrá con tu cuenta de Zolea.</p>
+    </header>
+
+    <!-- Arriba del formulario, un solo aviso a la vez. -->
+    @if (formError(); as message) {
+      <z-alert variant="danger" [text]="message" />
+    } @else if (sessionExpired()) {
+      <z-alert variant="info" text="Tu sesión venció. Volvé a ingresar." />
+    }
+
+    <form class="login__form" novalidate (submit)="onSubmit($event)">
+      <z-field [field]="loginForm.email" inputId="login-email" label="Email">
+        <input
+          #emailInput
+          id="login-email"
+          class="z-input"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          autocapitalize="none"
+          spellcheck="false"
+          [formField]="loginForm.email"
+          [attr.aria-invalid]="hasError(loginForm.email) ? 'true' : null"
+        />
+      </z-field>
+
+      <z-field [field]="loginForm.password" inputId="login-password" label="Contraseña">
+        <div class="z-input-wrap">
+          <input
+            #passwordInput
+            id="login-password"
+            class="z-input"
+            autocomplete="current-password"
+            [type]="showPassword() ? 'text' : 'password'"
+            [formField]="loginForm.password"
+            [attr.aria-invalid]="hasError(loginForm.password) ? 'true' : null"
+          />
+          <button
+            class="z-icon-btn"
+            type="button"
+            aria-controls="login-password"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="showPassword.set(!showPassword())"
+          >
+            @if (showPassword()) {
+              <svg lucideEyeOff class="z-icon" aria-hidden="true"></svg>
+            } @else {
+              <svg lucideEye class="z-icon" aria-hidden="true"></svg>
+            }
+          </button>
+        </div>
+      </z-field>
+
+      <z-btn class="login__submit" type="submit" block [loading]="loginForm().submitting()">
+        {{ loginForm().submitting() ? 'Ingresando…' : 'Ingresar' }}
+      </z-btn>
+    </form>
+
+    <p class="login__alt">
+      ¿Todavía no tenés cuenta? <a class="z-link" routerLink="/register">Crear cuenta</a>
+    </p>
+  </div>
+</section>

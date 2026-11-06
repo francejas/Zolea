@@ -29,3 +29,16 @@
   font: 500 0.92em / 1 var(--font-mono);
   letter-spacing: 0.02em;
 }
+
+/* Enlace de texto, dentro de una frase: «Crear cuenta» en Ingresar, «Ingresar» en Crear cuenta. */
+.z-link {
+  color: var(--color-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.z-link:hover {
+  color: var(--color-coral-text);
+}

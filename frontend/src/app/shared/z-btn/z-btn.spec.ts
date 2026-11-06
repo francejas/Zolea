@@ -27,4 +27,14 @@ describe('ZBtn', () => {
 
     expect(button().type).toBe('submit');
   });
+
+  it('con block, el botón lleva z-btn--block para ocupar todo el ancho', async () => {
+    expect(button().classList).not.toContain('z-btn--block');
+
+    fixture.componentRef.setInput('block', true);
+    await fixture.whenStable();
+
+    expect(button().classList).toContain('z-btn--block');
+    expect(button().classList).toContain('z-btn--primary');
+  });
 });

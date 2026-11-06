@@ -128,3 +128,24 @@
     animation-duration: 1.6s;
   }
 }
+
+/* El botón de un solo ícono (Zolea-docs/diseno/componentes.css): el ojo de la contraseña, el menú del
+   celular. Global porque lo usan varias pantallas; las barras y el detalle de la reserva todavía
+   traen su propia copia. */
+
+.z-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.z-icon-btn:hover {
+  background: var(--color-sand-soft);
+}
