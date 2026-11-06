@@ -101,7 +101,6 @@ describe('routes', () => {
   it('las rutas públicas se abren sin sesión', async () => {
     for (const [url, title] of [
       ['/', '¿Qué es Zolea?'],
-      ['/resorts/3', 'Ficha de balneario'],
       ['/login', 'Ingresar'],
       ['/register', 'Crear cuenta'],
     ]) {
@@ -109,6 +108,21 @@ describe('routes', () => {
       expect(router.url).toBe(url);
       expect(heading()).toBe(title);
     }
+  });
+
+  it('la ficha de un balneario se abre sin sesión', async () => {
+    await harness.navigateByUrl('/resorts/3');
+
+    expect(router.url).toBe('/resorts/3');
+    expect(harness.routeNativeElement?.querySelector('app-resort-detail')).not.toBeNull();
+  });
+
+  it('sin sesión, Reservar lleva a ingresar y guarda la unidad y las fechas para volver', async () => {
+    const book = '/book/3?unit=7&from=2027-01-15&to=2027-01-17';
+    await harness.navigateByUrl(book);
+
+    expect(router.url).toContain('/login');
+    expect(router.parseUrl(router.url).queryParams).toEqual({ volver: book });
   });
 
   it('el cliente entra a todas las rutas de cliente', async () => {

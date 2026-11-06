@@ -1,0 +1,172 @@
+/* El selector de fechas de Zolea-docs/diseno/componentes.css (z-range, z-cal y z-range__summary),
+   con los mismos nombres de clase. */
+
+.z-date-range {
+  display: block;
+}
+
+.z-range {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.z-range > * {
+  min-width: 0;
+}
+
+.z-range__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.z-range__field {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.z-range__field[aria-expanded='true'] {
+  border-color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.z-range__field span {
+  font: 500 var(--text-label) / 1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.z-range__field strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.z-cal {
+  padding: var(--space-4);
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.z-cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.z-cal__month {
+  font: 600 16px/1 var(--font-body);
+  text-transform: capitalize;
+}
+
+.z-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  row-gap: 4px;
+  text-align: center;
+}
+
+.z-cal__dow {
+  padding: 6px 0;
+  font: 500 var(--text-label) / 1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.z-cal__day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: 500 15px/1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.z-cal__day > span {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: min(40px, 100%);
+  height: 40px;
+  border-radius: 50%;
+}
+
+.z-cal__day:hover > span {
+  background: var(--color-sand-soft);
+}
+
+.z-cal__day.is-past {
+  color: var(--color-ink-soft);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.z-cal__day.is-past:hover > span {
+  background: transparent;
+}
+
+.z-cal__day.is-today > span {
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.z-cal__day.is-in-range {
+  background: var(--color-sand-soft);
+}
+
+.z-cal__day.is-start {
+  background: linear-gradient(90deg, transparent 50%, var(--color-sand-soft) 50%);
+}
+
+.z-cal__day.is-end {
+  background: linear-gradient(90deg, var(--color-sand-soft) 50%, transparent 50%);
+}
+
+/* Un solo día: entrada y salida son la misma, sin franja a los costados. */
+.z-cal__day.is-single {
+  background: transparent;
+}
+
+.z-cal__day.is-start > span,
+.z-cal__day.is-end > span {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.z-range__summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-sand-soft);
+}
+
+.z-range__summary p {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.z-range__summary strong {
+  display: block;
+  font-size: 16px;
+  color: var(--color-ink);
+}
