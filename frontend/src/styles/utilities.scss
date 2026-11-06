@@ -15,3 +15,17 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* Etiqueta chica en mayúsculas, arriba de un título o de un dato. */
+.z-eyebrow {
+  font: 500 var(--text-label) / 1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Códigos: el número de una reserva, el identificador de una unidad. */
+.z-code {
+  font: 500 0.92em / 1 var(--font-mono);
+  letter-spacing: 0.02em;
+}
