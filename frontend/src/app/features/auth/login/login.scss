@@ -41,15 +41,9 @@
   gap: var(--space-5);
 }
 
-/* La única acción principal ocupa todo el ancho de la tarjeta. El botón vive adentro de z-btn, que
-   no tiene una variante de ancho completo: se estira desde acá. */
+/* La única acción principal: ocupa todo el ancho de la tarjeta con `block`. */
 .login__submit {
-  display: block;
   margin-top: var(--space-2);
-}
-
-.login__submit ::ng-deep .z-btn {
-  width: 100%;
 }
 
 .login__alt {

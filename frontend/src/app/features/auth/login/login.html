@@ -56,7 +56,7 @@
         </div>
       </z-field>
 
-      <z-btn class="login__submit" type="submit" [loading]="loginForm().submitting()">
+      <z-btn class="login__submit" type="submit" block [loading]="loginForm().submitting()">
         {{ loginForm().submitting() ? 'Ingresando…' : 'Ingresar' }}
       </z-btn>
     </form>
