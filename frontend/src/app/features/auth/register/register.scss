@@ -1,0 +1,75 @@
+/* Crear cuenta. La misma tarjeta que Ingresar (bloque Tarjeta, superficie, de
+   Zolea-docs/diseno/componentes.css); el campo, el aviso y el botón son los de shared/ y styles/.
+   Se diseña desde el celular: una columna, y de 768 px para arriba nombre y apellido van juntos. */
+
+:host {
+  display: block;
+}
+
+.register {
+  max-width: calc(520px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--space-5) var(--gutter) var(--space-8);
+}
+
+.register__card {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.register__head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.register__title {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.register__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.register__form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.register__pair {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* La única acción principal: ocupa todo el ancho de la tarjeta con `block`. */
+.register__submit {
+  margin-top: var(--space-2);
+}
+
+.register__alt {
+  margin: 0;
+  padding-top: var(--space-4);
+  border-top: var(--border);
+  text-align: center;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .register {
+    padding-top: var(--space-7);
+  }
+
+  .register__card {
+    padding: var(--space-6);
+  }
+
+  .register__pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}

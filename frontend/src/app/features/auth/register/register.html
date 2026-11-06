@@ -1,0 +1,123 @@
+<section class="register">
+  <div class="register__card">
+    <header class="register__head">
+      <h1 class="register__title">Crear cuenta</h1>
+      <p class="register__lead">Con tu cuenta reservás tu lugar en la playa.</p>
+    </header>
+
+    <!-- Arriba del formulario. -->
+    @if (formError(); as message) {
+      <z-alert variant="danger" [text]="message" />
+    }
+
+    <form class="register__form" novalidate (submit)="onSubmit($event)">
+      <div class="register__pair">
+        <z-field [field]="registerForm.firstName" inputId="register-first-name" label="Nombre">
+          <input
+            #control
+            id="register-first-name"
+            class="z-input"
+            type="text"
+            autocomplete="given-name"
+            [formField]="registerForm.firstName"
+            [attr.aria-invalid]="hasError(registerForm.firstName) ? 'true' : null"
+          />
+        </z-field>
+
+        <z-field [field]="registerForm.lastName" inputId="register-last-name" label="Apellido">
+          <input
+            #control
+            id="register-last-name"
+            class="z-input"
+            type="text"
+            autocomplete="family-name"
+            [formField]="registerForm.lastName"
+            [attr.aria-invalid]="hasError(registerForm.lastName) ? 'true' : null"
+          />
+        </z-field>
+      </div>
+
+      <z-field [field]="registerForm.email" inputId="register-email" label="Email">
+        <input
+          #control
+          id="register-email"
+          class="z-input"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          autocapitalize="none"
+          spellcheck="false"
+          [formField]="registerForm.email"
+          [attr.aria-invalid]="hasError(registerForm.email) ? 'true' : null"
+        />
+      </z-field>
+
+      <z-field [field]="registerForm.phone" inputId="register-phone" label="Teléfono">
+        <input
+          #control
+          id="register-phone"
+          class="z-input"
+          type="tel"
+          autocomplete="tel"
+          [formField]="registerForm.phone"
+          [attr.aria-invalid]="hasError(registerForm.phone) ? 'true' : null"
+        />
+      </z-field>
+
+      <z-field
+        [field]="registerForm.dni"
+        inputId="register-dni"
+        label="DNI"
+        help="Sin puntos. Te sirve para entrar al balneario si no tenés el código QR a mano."
+      >
+        <input
+          #control
+          id="register-dni"
+          class="z-input"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          spellcheck="false"
+          [formField]="registerForm.dni"
+          [attr.aria-invalid]="hasError(registerForm.dni) ? 'true' : null"
+        />
+      </z-field>
+
+      <z-field [field]="registerForm.password" inputId="register-password" label="Contraseña">
+        <div class="z-input-wrap">
+          <input
+            #control
+            id="register-password"
+            class="z-input"
+            autocomplete="new-password"
+            [type]="showPassword() ? 'text' : 'password'"
+            [formField]="registerForm.password"
+            [attr.aria-invalid]="hasError(registerForm.password) ? 'true' : null"
+          />
+          <button
+            class="z-icon-btn"
+            type="button"
+            aria-controls="register-password"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="showPassword.set(!showPassword())"
+          >
+            @if (showPassword()) {
+              <svg lucideEyeOff class="z-icon" aria-hidden="true"></svg>
+            } @else {
+              <svg lucideEye class="z-icon" aria-hidden="true"></svg>
+            }
+          </button>
+        </div>
+      </z-field>
+
+      <z-btn class="register__submit" type="submit" block [loading]="registerForm().submitting()">
+        {{ registerForm().submitting() ? 'Creando tu cuenta…' : 'Crear cuenta' }}
+      </z-btn>
+    </form>
+
+    <p class="register__alt">
+      ¿Ya tenés cuenta? <a class="z-link" routerLink="/login">Ingresar</a>
+    </p>
+  </div>
+</section>
