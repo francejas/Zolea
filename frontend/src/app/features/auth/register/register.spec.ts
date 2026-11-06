@@ -154,6 +154,34 @@ describe('Register', () => {
     });
   });
 
+  describe('teléfono y DNI', () => {
+    it('solo aceptan números: las letras y los símbolos se descartan al escribir', async () => {
+      type('phone', '223 512-3456 ab');
+      type('dni', '40.123.456x');
+      await harness.fixture.whenStable();
+
+      expect(input('phone').value).toBe('2235123456');
+      expect(input('dni').value).toBe('40123456');
+    });
+
+    it('una letra en un campo vacío no queda a la vista', async () => {
+      type('dni', 'd');
+      await harness.fixture.whenStable();
+
+      expect(input('dni').value).toBe('');
+    });
+
+    it('lo que viaja al backend son solo dígitos', async () => {
+      await fill({ phone: '+54 223 512 3456', dni: '40.123.456' });
+      await submit();
+
+      expect(http.expectOne(CLIENTS).request.body).toMatchObject({
+        phone: '542235123456',
+        dni: '40123456',
+      });
+    });
+  });
+
   describe('las validaciones', () => {
     it('vacío, no envía nada y marca los seis campos, con el foco en el primero', async () => {
       await submit();

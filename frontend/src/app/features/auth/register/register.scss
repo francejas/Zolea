@@ -44,6 +44,9 @@
 .register__pair {
   display: grid;
   gap: var(--space-5);
+  /* Sin esto las dos columnas se estiran a la altura de la más alta: si una muestra un error, la
+     otra reparte el espacio sobrante entre su etiqueta y su campo y se desalinea. */
+  align-items: start;
 }
 
 /* La única acción principal: ocupa todo el ancho de la tarjeta con `block`. */

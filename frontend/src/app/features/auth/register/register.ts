@@ -72,6 +72,18 @@ export class Register {
     return state.touched() && state.errors().length > 0;
   }
 
+  /**
+   * Teléfono y DNI son solo números: lo que no es un dígito se descarta al escribir o pegar. Se
+   * corrige también el valor que muestra el navegador, porque si el modelo no cambia (una letra
+   * en un campo vacío) Angular no lo vuelve a escribir.
+   */
+  protected onlyDigits(event: Event, field: 'phone' | 'dni'): void {
+    const control = event.target as HTMLInputElement;
+    const digits = control.value.replace(/\D/g, '');
+    if (digits !== control.value) control.value = digits;
+    this.registerForm[field]().value.set(digits);
+  }
+
   protected onSubmit(event: Event): void {
     event.preventDefault();
     void this.register();

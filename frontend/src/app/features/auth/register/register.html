@@ -58,7 +58,9 @@
           id="register-phone"
           class="z-input"
           type="tel"
+          inputmode="numeric"
           autocomplete="tel"
+          (input)="onlyDigits($event, 'phone')"
           [formField]="registerForm.phone"
           [attr.aria-invalid]="hasError(registerForm.phone) ? 'true' : null"
         />
@@ -78,6 +80,7 @@
           inputmode="numeric"
           autocomplete="off"
           spellcheck="false"
+          (input)="onlyDigits($event, 'dni')"
           [formField]="registerForm.dni"
           [attr.aria-invalid]="hasError(registerForm.dni) ? 'true' : null"
         />
