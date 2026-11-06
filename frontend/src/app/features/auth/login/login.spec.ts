@@ -337,7 +337,10 @@ describe('Login', () => {
   });
 
   describe('cuando falla', () => {
-    async function failWith(status: number, body: string | number | boolean | object | null): Promise<void> {
+    async function failWith(
+      status: number,
+      body: string | number | boolean | object | null,
+    ): Promise<void> {
       http.expectOne(`${API}/login`).flush(body, { status, statusText: 'x' });
       await flushMicrotasks();
       await harness.fixture.whenStable();
