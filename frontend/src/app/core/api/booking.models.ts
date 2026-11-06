@@ -40,3 +40,25 @@ export interface Booking {
 export interface PaymentUrlResponse {
   paymentUrl: string;
 }
+
+/** Una persona que acompaña al titular, como se manda al reservar. El titular no va: el backend lo agrega solo. */
+export interface GuestRequest {
+  fullName: string;
+  dni: string;
+}
+
+/** El pedido de `POST /api/bookings`. Las fechas son `YYYY-MM-DD` y las dos cuentan. */
+export interface BookingRequest {
+  startDate: string;
+  endDate: string;
+  /** El `idClient` de la sesión: si es otro, el backend responde 403. */
+  clientId: number;
+  rentalUnitId: number;
+  guests: GuestRequest[];
+}
+
+/** Lo que devuelve crear una reserva: la reserva pendiente y adónde mandar a pagar. */
+export interface BookingCheckout {
+  booking: Booking;
+  paymentUrl: string;
+}

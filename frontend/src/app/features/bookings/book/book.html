@@ -1,0 +1,174 @@
+<section class="book">
+  <a class="book__back" [routerLink]="['/resorts', resortId()]">
+    <svg lucideChevronLeft class="z-icon z-icon--s" aria-hidden="true"></svg>
+    Volver al balneario
+  </a>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="book__loading" aria-busy="true" aria-label="Cargando el balneario">
+        <z-skeleton width="50%" height="36px" />
+        <z-skeleton width="30%" height="16px" />
+        @for (line of skeletonLines; track line) {
+          <z-skeleton height="56px" />
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem
+        title="No pudimos traer este balneario"
+        text="Revisá tu conexión y probá de nuevo."
+        (retry)="reload()"
+      />
+    }
+
+    @case ('not-found') {
+      <z-empty
+        title="No encontramos este balneario"
+        actionLabel="Volver a la portada"
+        (action)="goHome()"
+      />
+    }
+
+    @case ('ready') {
+      @if (resort(); as resort) {
+        <header class="book__head">
+          <p class="z-eyebrow">Reservar</p>
+          <h1 class="book__title">{{ resort.name }}</h1>
+          <p class="z-place">
+            <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
+          </p>
+        </header>
+
+        @if (!resort.active) {
+          <z-alert variant="warning" text="Este balneario no está recibiendo reservas." />
+        } @else {
+          <form class="book__layout" novalidate (submit)="onSubmit($event)">
+            <div class="book__steps">
+              <section class="book__section" aria-labelledby="book-dates">
+                <h2 id="book-dates" class="book__subtitle">Tus fechas</h2>
+                <z-date-range [(from)]="startDate" [(to)]="endDate" />
+              </section>
+
+              <section class="book__section" aria-labelledby="book-unit">
+                <h2 id="book-unit" class="book__subtitle">Tu lugar</h2>
+                <p class="book__hint">
+                  Tocá una sombrilla o una carpa libre. Las de adelante están más cerca del mar.
+                </p>
+                <z-resort-plan [units]="resort.rentalUnits" [(selectedId)]="selectedId" />
+              </section>
+
+              <section class="book__section" aria-labelledby="book-guests">
+                <h2 id="book-guests" class="book__subtitle">Quiénes van</h2>
+                <p class="book__hint">
+                  El titular sos vos{{ holderName() ? ' (' + holderName() + ')' : '' }}: tu entrada
+                  se agrega sola. Sumá a quienes te acompañan, cada uno con su entrada.
+                </p>
+
+                @for (guest of guestsForm.guests; track $index; let i = $index) {
+                  <div class="book__guest" role="group" [attr.aria-labelledby]="'guest-title-' + i">
+                    <p class="book__guest-title" [id]="'guest-title-' + i">
+                      Acompañante {{ i + 1 }}
+                    </p>
+                    <z-field
+                      [field]="guest.fullName"
+                      [inputId]="'guest-name-' + i"
+                      label="Nombre completo"
+                    >
+                      <input
+                        class="z-input"
+                        type="text"
+                        autocomplete="off"
+                        [id]="'guest-name-' + i"
+                        [formField]="guest.fullName"
+                      />
+                    </z-field>
+                    <z-field [field]="guest.dni" [inputId]="'guest-dni-' + i" label="DNI">
+                      <input
+                        class="z-input"
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        [id]="'guest-dni-' + i"
+                        [formField]="guest.dni"
+                      />
+                    </z-field>
+                    <button
+                      class="z-btn z-btn--ghost z-btn--small book__remove"
+                      type="button"
+                      [attr.aria-label]="'Quitar al acompañante ' + (i + 1)"
+                      (click)="removeGuest(i)"
+                    >
+                      <svg lucideTrash2 class="z-icon z-icon--s" aria-hidden="true"></svg>
+                      Quitar
+                    </button>
+                  </div>
+                }
+
+                <div>
+                  <z-btn variant="secondary" (click)="addGuest()">
+                    <svg lucidePlus class="z-icon z-icon--s" aria-hidden="true"></svg>
+                    Agregar acompañante
+                  </z-btn>
+                </div>
+              </section>
+            </div>
+
+            <!-- Al costado en la computadora; en el celular, al final. -->
+            <aside class="book__summary" aria-labelledby="book-summary">
+              <h2 id="book-summary" class="book__subtitle">Resumen</h2>
+
+              <dl class="book__lines">
+                <div>
+                  <dt>Lugar</dt>
+                  <dd>{{ selectedUnit() ? unitName() : '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Precio por día</dt>
+                  <dd class="z-money">{{ dailyPrice() }}</dd>
+                </div>
+                <div>
+                  <dt>Días</dt>
+                  <dd>{{ days() > 0 ? daysLabel() + ' · se cobran los dos extremos' : '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Personas</dt>
+                  <dd>{{ people() }}</dd>
+                </div>
+              </dl>
+
+              <div class="book__total">
+                <span>Total</span>
+                <strong class="z-money">{{ total() }}</strong>
+              </div>
+
+              @if (missingChoice() && !canBook()) {
+                <z-alert variant="warning" text="Elegí tu lugar y tus fechas para reservar." />
+              }
+
+              @if (formError(); as message) {
+                <z-alert variant="danger" title="No se pudo reservar" [text]="message" />
+              }
+
+              <z-alert
+                variant="warning"
+                text="La reserva queda pendiente hasta que se acredite el pago y se cancela sola a las 24 horas."
+              />
+
+              <z-btn
+                type="submit"
+                size="large"
+                block
+                [loading]="guestsForm().submitting()"
+                [disabled]="!canBook()"
+              >
+                {{ guestsForm().submitting() ? 'Reservando…' : 'Reservar y pagar' }}
+              </z-btn>
+            </aside>
+          </form>
+        }
+      }
+    }
+  }
+</section>
