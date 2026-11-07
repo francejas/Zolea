@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +40,9 @@ public class Booking {
 
     /** Centavos. Todo importe del sistema se guarda y se compara con esta escala. */
     public static final int MONEY_SCALE = 2;
+
+    /** Cancelando con al menos estos días de anticipación se reintegra todo lo pagado. */
+    private static final int FULL_REFUND_DAYS = 2;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -69,6 +73,19 @@ public class Booking {
     @Column(name = "walk_in_dni")
     private String walkInDni;
     // -----
+
+    // --- La cancelación, para el reintegro y para los avisos del panel del balneario ---
+    /** Cuándo se canceló, con el reloj de la aplicación. */
+    @Column(name = "canceled_at")
+    private LocalDateTime canceledAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "canceled_by")
+    private CanceledBy canceledBy;
+
+    /** Lo que se reintegró, con la escala de la plata; null si la reserva no estaba pagada. */
+    @Column(name = "refund_amount", precision = 12, scale = 2)
+    private BigDecimal refundAmount;
 
     // LAZY explícito: por defecto un @ManyToOne es EAGER, así que listar reservas traía el cliente
     // y la unidad de cada una en consultas aparte. Los mapeos que sí los necesitan los piden por
@@ -159,13 +176,71 @@ public class Booking {
         status = Status.CONFIRMED;
     }
 
-    /** Cancela la reserva. */
-    public void cancel() {
+    /**
+     * Cuánto se reintegra si la reserva se cancela {@code today}, o por qué no se puede. Es la
+     * política de cancelación del TFI, y el reintegro es simulado: no se toca MercadoPago.
+     *
+     * <p>Se cuenta por días, porque las reservas no tienen hora:
+     * <ul>
+     *   <li>pendiente: se cancela sin reintegro, porque no se pagó;</li>
+     *   <li>confirmada, hasta dos días antes del inicio: el 100 % del total;</li>
+     *   <li>confirmada, el día anterior al inicio: el 50 %;</li>
+     *   <li>desde el día de inicio, no se cancela;</li>
+     *   <li>si cancela el balneario: el 100 %, cualquiera sea el día.</li>
+     * </ul>
+     *
+     * @param today   hoy, con el reloj de la aplicación.
+     * @param byAdmin si cancela el administrador del balneario.
+     */
+    public CancellationTerms refundFor(LocalDate today, boolean byAdmin) {
+        if (status == Status.CANCELED) {
+            return CancellationTerms.rejected("La reserva ya está cancelada.");
+        }
+        if (status == Status.PENDING) {
+            return CancellationTerms.withoutPayment();
+        }
+        if (byAdmin) {
+            return CancellationTerms.refund(100, percentOfTotal(100));
+        }
+
+        long daysBefore = ChronoUnit.DAYS.between(today, startDate);
+        if (daysBefore >= FULL_REFUND_DAYS) {
+            return CancellationTerms.refund(100, percentOfTotal(100));
+        }
+        if (daysBefore == 1) {
+            return CancellationTerms.refund(50, percentOfTotal(50));
+        }
+        return CancellationTerms.rejected("Tu estadía ya empezó: no se puede cancelar.");
+    }
+
+    /**
+     * Cancela la reserva con la política de {@link #refundFor} y deja registrado cuándo, quién y
+     * cuánto se reintegró.
+     *
+     * @param now cuándo, con el reloj de la aplicación.
+     * @param by  quién cancela: el cliente, el balneario o el sistema, al vencer una pendiente.
+     * @throws com.zolea.backend.exceptions.booking.BookingAlreadyCanceledException si ya estaba
+     *         cancelada.
+     * @throws BookingStateException si la política no deja cancelarla, con el motivo.
+     */
+    public void cancel(LocalDateTime now, CanceledBy by) {
         if (status == Status.CANCELED) {
             throw new com.zolea.backend.exceptions.booking.BookingAlreadyCanceledException(
                     "La reserva ya está cancelada");
         }
+        CancellationTerms terms = refundFor(now.toLocalDate(), by == CanceledBy.ADMIN);
+        if (!terms.allowed()) {
+            throw new BookingStateException(terms.reason());
+        }
         status = Status.CANCELED;
+        canceledAt = now;
+        canceledBy = by;
+        refundAmount = terms.refundAmount();
+    }
+
+    private BigDecimal percentOfTotal(int percent) {
+        return totalPrice.multiply(BigDecimal.valueOf(percent))
+                .divide(BigDecimal.valueOf(100), MONEY_SCALE, RoundingMode.HALF_UP);
     }
 
     /** Si la reserva ya tiene al menos un huésped con su QR. */

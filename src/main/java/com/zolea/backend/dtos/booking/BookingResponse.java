@@ -1,6 +1,7 @@
 package com.zolea.backend.dtos.booking;
 
 import com.zolea.backend.dtos.guest.GuestSummaryResponse;
+import com.zolea.backend.models.CanceledBy;
 import com.zolea.backend.models.Status;
 import com.zolea.backend.models.UnitType;
 
@@ -28,6 +29,11 @@ public record BookingResponse(
         Long resortId,
         String resortName,
         String resortLocation,
-        String resortCoverPhotoUrl
+        String resortCoverPhotoUrl,
+        // La cancelación: cuándo, quién (CLIENT, ADMIN o SYSTEM) y cuánto se reintegró. Los tres
+        // en null mientras no se cancela; el reintegro, también si no estaba pagada.
+        LocalDateTime canceledAt,
+        CanceledBy canceledBy,
+        BigDecimal refundAmount
 ) {
 }
