@@ -186,6 +186,50 @@ class CancellationTest extends IntegrationTest {
     }
 
     @Test
+    @DisplayName("el admin, durante la estadía, todavía reintegra el 100 %")
+    void adminDuringTheStay_fullRefund() throws Exception {
+        Resort resort = aResort();
+        Booking booking = bookingStartingIn(-1, aClient(), resort, Status.CONFIRMED);
+
+        mockMvc.perform(patch("/api/bookings/" + booking.getId() + "/cancel")
+                        .header("Authorization", bearer(anAdminOf(resort))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.refundAmount").value(30000.0));
+    }
+
+    @Test
+    @DisplayName("una estadía que ya terminó no se cancela, tampoco el admin: 400, y la consulta lo dice")
+    void endedStay_rejectedEvenForTheAdmin() throws Exception {
+        Resort resort = aResort();
+        Booking booking = bookingStartingIn(-5, aClient(), resort, Status.CONFIRMED);
+        String admin = bearer(anAdminOf(resort));
+
+        mockMvc.perform(get("/api/bookings/" + booking.getId() + "/cancellation")
+                        .header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canCancel").value(false))
+                .andExpect(jsonPath("$.reason").value("La estadía ya terminó: no se puede cancelar."));
+        mockMvc.perform(patch("/api/bookings/" + booking.getId() + "/cancel")
+                        .header("Authorization", admin))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("La estadía ya terminó: no se puede cancelar."));
+
+        assertThat(reload(booking).getStatus()).isEqualTo(Status.CONFIRMED);
+    }
+
+    @Test
+    @DisplayName("al cliente, una estadía que ya terminó le dice que terminó, no que empezó")
+    void endedStay_clientGetsTheSameReason() throws Exception {
+        Client client = aClient();
+        Booking booking = confirmedStartingIn(-5, client);
+
+        mockMvc.perform(get("/api/bookings/" + booking.getId() + "/cancellation")
+                        .header("Authorization", bearer(client)))
+                .andExpect(jsonPath("$.canCancel").value(false))
+                .andExpect(jsonPath("$.reason").value("La estadía ya terminó: no se puede cancelar."));
+    }
+
+    @Test
     @DisplayName("el admin de otro balneario: 403")
     void adminOfAnotherResort_forbidden() throws Exception {
         Booking booking = confirmedStartingIn(5, aClient());
