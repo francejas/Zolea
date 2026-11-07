@@ -10,7 +10,7 @@ export const bookingsRoutes: Routes = [
     canActivate: [authGuard, roleGuard('USER')],
     children: [
       { path: 'dashboard', component: PlaceholderPage, data: { title: 'Inicio' } },
-      { path: 'book/:resortId', component: PlaceholderPage, data: { title: 'Reservar' } },
+      { path: 'book/:resortId', loadComponent: () => import('./book/book').then((m) => m.Book) },
       { path: 'my-bookings', component: PlaceholderPage, data: { title: 'Mis reservas' } },
       {
         path: 'bookings/:id',

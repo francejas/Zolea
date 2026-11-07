@@ -251,7 +251,7 @@ describe('ResortDetail', () => {
 
     it('sin sesión avisa que va a pedir ingresar, y con sesión no', async () => {
       expect(text(card().querySelector('.z-book-card__note'))).toBe(
-        'Te vamos a pedir que ingreses, y volvés acá.',
+        'Te vamos a pedir que ingreses, y seguís con la reserva.',
       );
 
       loggedIn.set(true);

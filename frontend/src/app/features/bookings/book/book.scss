@@ -1,0 +1,184 @@
+/* Reservar. Se diseña desde el celular (390 px): una sola columna con el resumen al final; de 1024 px
+   para arriba, los pasos a la izquierda y el resumen fijo a la derecha. Los bloques son los de
+   Zolea-docs/diseno/componentes.css (Tarjeta de reserva) y los de shared/. */
+
+:host {
+  display: block;
+}
+
+.book {
+  display: grid;
+  gap: var(--space-5);
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) var(--space-8);
+}
+
+.book__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  justify-self: start;
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+  font: 500 var(--text-small) / 1 var(--font-body);
+  text-decoration: none;
+}
+
+.book__back:hover {
+  color: var(--color-coral-text);
+}
+
+.book__loading {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.book__head {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+
+  .z-eyebrow,
+  .z-place {
+    margin: 0;
+  }
+}
+
+.book__title {
+  margin: 0;
+  font: 400 32px / var(--leading-title) var(--font-display);
+}
+
+.book__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.book__steps {
+  display: grid;
+  gap: var(--space-7);
+  min-width: 0;
+}
+
+.book__section {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.book__subtitle {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.book__hint {
+  margin: 0;
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+
+/* Un acompañante: nombre, DNI y quitarlo. En el celular, todo apilado. */
+.book__guest {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.book__guest-title {
+  margin: 0;
+  font: 600 var(--text-small) / var(--leading-ui) var(--font-body);
+}
+
+.book__remove {
+  justify-self: start;
+}
+
+/* El resumen: la tarjeta de reserva, con el total y la acción. */
+.book__summary {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  padding: var(--space-5);
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.book__lines {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  dt {
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.book__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--space-4);
+  border-top: var(--border);
+
+  span {
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+
+  strong {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (min-width: 768px) {
+  .book__title {
+    font-size: var(--text-display-l);
+  }
+
+  /* El título ocupa toda la fila; abajo, nombre, DNI y quitar. */
+  .book__guest {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 200px) auto;
+    align-items: start;
+  }
+
+  .book__guest-title {
+    grid-column: 1 / -1;
+  }
+
+  .book__remove {
+    margin-top: 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .book__layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .book__summary {
+    position: sticky;
+    top: var(--space-5);
+  }
+}
