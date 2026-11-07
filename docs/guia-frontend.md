@@ -181,7 +181,8 @@ El reintegro es **simulado**: no se toca MercadoPago. La política se cuenta por
 | El cliente, el día anterior al inicio | 50 % |
 | El cliente, desde el día de inicio | No se cancela: `400` «Tu estadía ya empezó: no se puede cancelar.» |
 | Una reserva pendiente (sin pagar) | Se cancela sin reintegro |
-| El administrador de su balneario | 100 %, cualquiera sea el día |
+| El administrador de su balneario | 100 %, antes o durante la estadía |
+| Cualquiera, con la estadía ya terminada | No se cancela: `400` «La estadía ya terminó: no se puede cancelar.» |
 
 Antes de confirmar, la pantalla pregunta cuánto se reintegraría hoy, sin cancelar:
 

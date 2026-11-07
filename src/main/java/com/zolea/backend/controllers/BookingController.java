@@ -152,7 +152,8 @@ public class BookingController {
             description = "No cancela: dice si hoy se puede y cuánto se reintegraría, para mostrarlo antes de "
                     + "confirmar. PATCH /{id}/cancel aplica exactamente esto. El cliente: 100 % hasta dos días "
                     + "antes del inicio, 50 % el día anterior, y desde el inicio no se cancela; una pendiente, sin "
-                    + "reintegro. El administrador de su balneario: 100 %.")
+                    + "reintegro. El administrador de su balneario: 100 %, antes o durante la estadía. Una "
+                    + "estadía que ya terminó no la cancela nadie.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Si se puede cancelar, con el reintegro, o el motivo si no"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
@@ -175,7 +176,7 @@ public class BookingController {
                     + "canceledAt, canceledBy y refundAmount. El reintegro es simulado: no se toca MercadoPago.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "La reserva cancelada, con su reintegro. La unidad queda libre para esas fechas"),
-            @ApiResponse(responseCode = "400", description = "La reserva ya estaba cancelada, o la estadía ya empezó", content = @Content),
+            @ApiResponse(responseCode = "400", description = "La reserva ya estaba cancelada, la estadía ya empezó (si cancela el cliente) o ya terminó", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)

@@ -186,7 +186,9 @@ public class Booking {
      *   <li>confirmada, hasta dos días antes del inicio: el 100 % del total;</li>
      *   <li>confirmada, el día anterior al inicio: el 50 %;</li>
      *   <li>desde el día de inicio, no se cancela;</li>
-     *   <li>si cancela el balneario: el 100 %, cualquiera sea el día.</li>
+     *   <li>si cancela el balneario: el 100 %, antes o durante la estadía;</li>
+     *   <li>una estadía que ya terminó no se cancela, tampoco el balneario: ya se usó, y
+     *       reintegrarla le restaría ingresos al Panel y le sacaría la reseña al cliente.</li>
      * </ul>
      *
      * @param today   hoy, con el reloj de la aplicación.
@@ -198,6 +200,10 @@ public class Booking {
         }
         if (status == Status.PENDING) {
             return CancellationTerms.withoutPayment();
+        }
+        // Antes que el caso del balneario: una estadía terminada no la cancela nadie.
+        if (today.isAfter(endDate)) {
+            return CancellationTerms.rejected("La estadía ya terminó: no se puede cancelar.");
         }
         if (byAdmin) {
             return CancellationTerms.refund(100, percentOfTotal(100));
