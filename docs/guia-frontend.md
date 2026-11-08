@@ -171,6 +171,32 @@ demorado.
 Si el pago falla, el cliente vuelve por `/failure`; para reintentar hay
 `POST /api/bookings/{id}/pay`, que genera una dirección de pago nueva para la misma reserva.
 
+### Cancelar con reintegro
+
+El reintegro es **simulado**: no se toca MercadoPago. La política se cuenta por días:
+
+| Quién y cuándo | Reintegro |
+|---|---|
+| El cliente, hasta dos días antes del inicio | 100 % del total |
+| El cliente, el día anterior al inicio | 50 % |
+| El cliente, desde el día de inicio | No se cancela: `400` «Tu estadía ya empezó: no se puede cancelar.» |
+| Una reserva pendiente (sin pagar) | Se cancela sin reintegro |
+| El administrador de su balneario | 100 %, antes o durante la estadía |
+| Cualquiera, con la estadía ya terminada | No se cancela: `400` «La estadía ya terminó: no se puede cancelar.» |
+
+Antes de confirmar, la pantalla pregunta cuánto se reintegraría hoy, sin cancelar:
+
+```
+GET /api/bookings/{id}/cancellation
+→ { "canCancel": true, "refundAmount": 15000.00, "refundPercent": 50, "reason": null }
+```
+
+Si no se puede, `canCancel` es `false` y `reason` dice por qué. Después,
+`PATCH /api/bookings/{id}/cancel` aplica exactamente eso y devuelve la reserva con tres campos más:
+`canceledAt`, `canceledBy` (`CLIENT`, `ADMIN` o `SYSTEM`, cuando una pendiente vence sola) y
+`refundAmount` (`null` si no estaba pagada). El administrador solo cancela reservas de su
+balneario: las de otro responden `403`.
+
 ### Detalles que ahorran errores
 
 - **Las fechas incluyen los dos extremos.** Del 15 al 17 son **tres** días, y eso es lo que se

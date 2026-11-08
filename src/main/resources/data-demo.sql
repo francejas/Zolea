@@ -597,3 +597,35 @@ SET b.total_price = (DATEDIFF(b.end_date, b.start_date) + 1) * u.daily_price;
 UPDATE client c
 JOIN resort r ON c.email = r.admin_email
 SET c.id_managed_resort = r.id_resort;
+
+-- =============================================================================
+-- 9. CANCELACIONES CON REINTEGRO (TFI, 14.3)
+--
+-- Tres reservas del balneario 1 canceladas por el cliente en los últimos días,
+-- para que el panel tenga avisos de cancelación y Mis reservas muestre un
+-- reintegro. Van al final, con el total ya calculado contra el precio de la
+-- unidad, y con el reintegro de la política (Booking.refundFor):
+--   - 48: canceló con más de dos días de anticipación → 100 %.
+--   - 49: canceló el día anterior al inicio → 50 %.
+--   - 50: canceló con más de dos días de anticipación → 100 %.
+-- Las fechas son relativas al arranque, como el resto de la demo. La 49 empieza
+-- hoy y se canceló hace un día: es el día anterior a cualquier hora.
+-- =============================================================================
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
+                     canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
+SELECT 48, CURDATE() + INTERVAL 12 DAY, CURDATE() + INTERVAL 15 DAY, 4 * u.daily_price, 'CANCELED',
+       NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 2 DAY, 'CLIENT', 4 * u.daily_price, 7, u.id_rental_unit
+FROM rental_unit u WHERE u.id_rental_unit = 5;
+
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
+                     canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
+SELECT 49, CURDATE(), CURDATE() + INTERVAL 2 DAY, 3 * u.daily_price, 'CANCELED',
+       NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 1 DAY, 'CLIENT', ROUND(3 * u.daily_price * 0.5, 2), 8,
+       u.id_rental_unit
+FROM rental_unit u WHERE u.id_rental_unit = 6;
+
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
+                     canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
+SELECT 50, CURDATE() + INTERVAL 20 DAY, CURDATE() + INTERVAL 24 DAY, 5 * u.daily_price, 'CANCELED',
+       NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 4 DAY, 'CLIENT', 5 * u.daily_price, 9, u.id_rental_unit
+FROM rental_unit u WHERE u.id_rental_unit = 7;

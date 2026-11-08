@@ -3,6 +3,7 @@ package com.zolea.backend.controllers;
 import com.zolea.backend.dtos.booking.BookingCheckoutResponse;
 import com.zolea.backend.dtos.booking.BookingRequest;
 import com.zolea.backend.dtos.booking.BookingResponse;
+import com.zolea.backend.dtos.booking.CancellationResponse;
 import com.zolea.backend.dtos.booking.PaymentUrlResponse;
 import com.zolea.backend.dtos.booking.WalkInBookingResponse;
 import com.zolea.backend.security.UserPrincipal;
@@ -21,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -145,23 +145,49 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getBookingById(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @bookingAccess.canAccess(#id, principal.idClient)")
     @SecurityRequirement(name = "bearerAuth")
-    @PatchMapping("/{id}/cancel")
-    @Operation(summary = "Cancelar reserva (Admin o cliente dueño)")
+    @GetMapping("/{id}/cancellation")
+    @Operation(summary = "Cuánto se reintegraría si se cancela hoy",
+            description = "No cancela: dice si hoy se puede y cuánto se reintegraría, para mostrarlo antes de "
+                    + "confirmar. PATCH /{id}/cancel aplica exactamente esto. El cliente: 100 % hasta dos días "
+                    + "antes del inicio, 50 % el día anterior, y desde el inicio no se cancela; una pendiente, sin "
+                    + "reintegro. El administrador de su balneario: 100 %, antes o durante la estadía. Una "
+                    + "estadía que ya terminó no la cancela nadie.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "La reserva cancelada. La unidad queda libre para esas fechas"),
-            @ApiResponse(responseCode = "400", description = "La reserva ya estaba cancelada", content = @Content),
+            @ApiResponse(responseCode = "200", description = "Si se puede cancelar, con el reintegro, o el motivo si no"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
     })
-    public ResponseEntity<BookingResponse> cancelBooking(@PathVariable Long id, Authentication authentication) {
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin) {
-            return ResponseEntity.ok(bookingService.cancelBooking(id));
+    public ResponseEntity<CancellationResponse> getCancellationTerms(
+            @PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal.isAdmin()) {
+            return ResponseEntity.ok(
+                    bookingService.getCancellationTermsAsAdmin(id, principal.requireManagedResort()));
         }
-        return ResponseEntity.ok(bookingService.cancelBookingAsClient(id, authentication.getName()));
+        return ResponseEntity.ok(bookingService.getCancellationTermsAsClient(id, principal.getUsername()));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/{id}/cancel")
+    @Operation(summary = "Cancelar reserva (Admin de su balneario o cliente dueño)",
+            description = "Aplica la política de reintegro de GET /{id}/cancellation y devuelve la reserva con "
+                    + "canceledAt, canceledBy y refundAmount. El reintegro es simulado: no se toca MercadoPago.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "La reserva cancelada, con su reintegro. La unidad queda libre para esas fechas"),
+            @ApiResponse(responseCode = "400", description = "La reserva ya estaba cancelada, la estadía ya empezó (si cancela el cliente) o ya terminó", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
+    })
+    public ResponseEntity<BookingResponse> cancelBooking(
+            @PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal.isAdmin()) {
+            return ResponseEntity.ok(
+                    bookingService.cancelBookingAsAdmin(id, principal.requireManagedResort()));
+        }
+        return ResponseEntity.ok(bookingService.cancelBookingAsClient(id, principal.getUsername()));
     }
 
     // ── Callbacks MercadoPago ────────────────────────────────────────────────
