@@ -1,0 +1,273 @@
+<section class="units">
+  <header class="units__head">
+    <div class="units__title">
+      <h1 class="units__h1">Unidades</h1>
+      <p class="units__lead">
+        Las carpas y sombrillas de tu balneario. Una unidad bloqueada no se puede reservar.
+      </p>
+    </div>
+
+    @if (state() === 'ready' && !creating()) {
+      <z-btn (click)="openCreate()">
+        <svg lucidePlus class="z-icon" aria-hidden="true"></svg>
+        Nueva unidad
+      </z-btn>
+    }
+  </header>
+
+  <!-- El aviso es un role="status": el lector de pantalla anuncia lo que pasó sin leer la tabla. -->
+  @if (notice(); as message) {
+    <z-alert variant="success" [text]="message" />
+  }
+
+  @if (actionError(); as message) {
+    <z-alert variant="danger" title="No se pudo hacer" [text]="message" />
+  }
+
+  @if (creating()) {
+    <form
+      id="unit-create"
+      class="units__create"
+      novalidate
+      aria-labelledby="unit-create-title"
+      (submit)="onCreateSubmit($event)"
+    >
+      <h2 id="unit-create-title" class="units__create-title">Nueva unidad</h2>
+
+      @if (formError(); as message) {
+        <z-alert variant="danger" [text]="message" />
+      }
+
+      <div class="units__fields">
+        <z-field [field]="createForm.type" inputId="unit-type" label="Tipo">
+          <select
+            #control
+            id="unit-type"
+            class="z-input"
+            [formField]="createForm.type"
+            [attr.aria-invalid]="hasError(createForm.type) ? 'true' : null"
+          >
+            @for (option of typeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </z-field>
+
+        <z-field
+          [field]="createForm.identifier"
+          inputId="unit-identifier"
+          label="Identificador"
+          help="Cómo la llaman en el balneario, por ejemplo A-03. No se puede repetir."
+        >
+          <input
+            #control
+            id="unit-identifier"
+            class="z-input"
+            type="text"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            [formField]="createForm.identifier"
+            [attr.aria-invalid]="hasError(createForm.identifier) ? 'true' : null"
+          />
+        </z-field>
+
+        <z-field
+          [field]="createForm.dailyPrice"
+          inputId="unit-price"
+          label="Precio por día"
+          help="En pesos. Tiene que ser mayor que cero."
+        >
+          <input
+            #control
+            id="unit-price"
+            class="z-input"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            autocomplete="off"
+            [formField]="createForm.dailyPrice"
+            [attr.aria-invalid]="hasError(createForm.dailyPrice) ? 'true' : null"
+          />
+        </z-field>
+      </div>
+
+      <div class="units__create-actions">
+        <z-btn variant="secondary" [disabled]="createForm().submitting()" (click)="closeCreate()">
+          Cerrar
+        </z-btn>
+        <z-btn type="submit" [loading]="createForm().submitting()">
+          {{ createForm().submitting() ? 'Creando la unidad…' : 'Crear unidad' }}
+        </z-btn>
+      </div>
+    </form>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="units__skeleton" aria-busy="true" aria-label="Cargando las unidades">
+        <z-skeleton width="40%" height="14px" />
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="units__skeleton-row">
+            <z-skeleton width="18%" height="18px" />
+            <z-skeleton width="16%" height="18px" />
+            <z-skeleton width="22%" height="18px" />
+            <z-skeleton width="14%" height="26px" />
+          </div>
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer las unidades" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (units().length === 0) {
+        <z-empty
+          title="Todavía no cargaste unidades"
+          text="Creá la primera carpa o sombrilla para que se pueda reservar."
+          actionLabel="Nueva unidad"
+          (action)="openCreate()"
+        />
+      } @else {
+        <p class="units__summary">{{ summary() }}</p>
+
+        <div class="z-table-wrap">
+          <table class="z-table">
+            <thead>
+              <tr>
+                <th scope="col">Unidad</th>
+                <th scope="col">Tipo</th>
+                <th scope="col" class="is-num">Precio por día</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="is-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (unit of units(); track unit.idRentalUnit) {
+                <tr [class.is-blocked]="unit.isBlocked">
+                  <td data-label="Unidad" [class.is-muted]="unit.isBlocked">
+                    <span class="z-code">{{ unit.identifier }}</span>
+                  </td>
+
+                  <td data-label="Tipo" [class.is-muted]="unit.isBlocked">
+                    <span class="units__type">
+                      @if (unit.type === 'TENT') {
+                        <svg lucideTent class="z-icon z-icon--s" aria-hidden="true"></svg>
+                      } @else {
+                        <svg lucideUmbrella class="z-icon z-icon--s" aria-hidden="true"></svg>
+                      }
+                      {{ typeLabel(unit.type) }}
+                    </span>
+                  </td>
+
+                  <td class="is-num" data-label="Precio por día" [class.is-muted]="unit.isBlocked">
+                    @if (editingId() === unit.idRentalUnit) {
+                      <z-field
+                        [field]="priceForm.newPrice"
+                        inputId="unit-new-price"
+                        class="units__price"
+                      >
+                        <input
+                          #priceInput
+                          id="unit-new-price"
+                          class="z-input"
+                          type="number"
+                          inputmode="decimal"
+                          step="0.01"
+                          autocomplete="off"
+                          [attr.aria-label]="'Nuevo precio por día de ' + label(unit)"
+                          [formField]="priceForm.newPrice"
+                          [attr.aria-invalid]="hasError(priceForm.newPrice) ? 'true' : null"
+                          (keydown.enter)="onPriceKey($event)"
+                          (keydown.escape)="cancelPrice()"
+                        />
+                      </z-field>
+                    } @else {
+                      <span class="z-money">{{ price(unit.dailyPrice) }}</span>
+                    }
+                  </td>
+
+                  <td data-label="Estado">
+                    @if (unit.isBlocked) {
+                      <span class="z-status z-status--neutral">
+                        <svg lucideLock class="z-icon" aria-hidden="true"></svg>
+                        Bloqueada
+                      </span>
+                    } @else {
+                      <span class="z-status z-status--confirmed">Disponible</span>
+                    }
+                  </td>
+
+                  <td class="is-actions">
+                    <div class="z-table__actions">
+                      @if (editingId() === unit.idRentalUnit) {
+                        <z-btn
+                          variant="secondary"
+                          size="small"
+                          [disabled]="priceForm().submitting()"
+                          (click)="cancelPrice()"
+                        >
+                          Cancelar
+                        </z-btn>
+                        <z-btn
+                          size="small"
+                          [loading]="priceForm().submitting()"
+                          (click)="savePrice()"
+                        >
+                          {{ priceForm().submitting() ? 'Guardando…' : 'Guardar' }}
+                        </z-btn>
+                      } @else {
+                        <z-btn variant="secondary" size="small" (click)="editPrice(unit)">
+                          Precio<span class="z-visually-hidden"> de {{ label(unit) }}</span>
+                        </z-btn>
+                        <z-btn variant="secondary" size="small" (click)="askBlock(unit)">
+                          {{ unit.isBlocked ? 'Desbloquear' : 'Bloquear'
+                          }}<span class="z-visually-hidden"> {{ label(unit) }}</span>
+                        </z-btn>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+
+  <!-- La baja de la unidad: no hay borrado, se bloquea. El botón que confirma repite el verbo. -->
+  <dialog
+    #blockDialog
+    class="z-modal"
+    aria-labelledby="block-title"
+    (close)="pendingBlock.set(null)"
+  >
+    @if (pendingBlock(); as pending) {
+      @if (pending.block) {
+        <h2 id="block-title" class="z-modal__title">¿Bloqueás la {{ label(pending.unit) }}?</h2>
+        <p class="z-modal__body">
+          Deja de poder reservarse y se ve no disponible en el plano. Las reservas que ya tiene
+          siguen en pie. Podés desbloquearla cuando quieras.
+        </p>
+      } @else {
+        <h2 id="block-title" class="z-modal__title">¿Desbloqueás la {{ label(pending.unit) }}?</h2>
+        <p class="z-modal__body">Vuelve a poder reservarse y a verse disponible en el plano.</p>
+      }
+      <div class="z-modal__actions">
+        <z-btn variant="secondary" [disabled]="blocking()" (click)="closeBlock()">
+          {{ pending.block ? 'Dejarla disponible' : 'Dejarla bloqueada' }}
+        </z-btn>
+        <z-btn
+          [variant]="pending.block ? 'danger' : 'primary'"
+          [loading]="blocking()"
+          (click)="confirmBlock()"
+        >
+          {{ pending.block ? 'Bloquear unidad' : 'Desbloquear unidad' }}
+        </z-btn>
+      </div>
+    }
+  </dialog>
+</section>

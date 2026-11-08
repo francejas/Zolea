@@ -16,6 +16,15 @@ export interface RentalUnit {
   resortId: number;
 }
 
+/** El pedido de `POST /api/rental-units`. `resortId` es el `idManagedResort` de la sesión. */
+export interface RentalUnitRequest {
+  type: UnitType;
+  identifier: string;
+  dailyPrice: number;
+  isBlocked: boolean;
+  resortId: number;
+}
+
 export interface Resort {
   idResort: number;
   name: string;
