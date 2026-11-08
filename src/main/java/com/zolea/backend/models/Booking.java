@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -43,6 +44,13 @@ public class Booking {
 
     /** Cancelando con al menos estos días de anticipación se reintegra todo lo pagado. */
     private static final int FULL_REFUND_DAYS = 2;
+
+    /**
+     * Cuánto tiempo hay para pagar una reserva pendiente, desde que se creó. Pasado el plazo, la
+     * limpieza automática la cancela y el link de pago ya no sirve: vencen a la misma hora. Era de
+     * 24 horas, y con eso una persona podía dejar ocupadas muchas unidades un día entero.
+     */
+    public static final Duration PAYMENT_WINDOW = Duration.ofHours(1);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

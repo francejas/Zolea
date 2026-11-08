@@ -74,7 +74,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByResortId(@Param("idResort") Long idResort);
 
     /**
-     * Busca reservas que sigan PENDING y hayan sido creadas antes de la fecha límite (Hace 24 hs)
+     * Busca reservas que sigan PENDING y hayan sido creadas antes de la fecha límite: hace una
+     * hora, el plazo de pago ({@code Booking.PAYMENT_WINDOW}).
      */
     @Query("SELECT b FROM Booking b WHERE b.status = 'PENDING' AND b.createdAt <= :limitDate")
     List<Booking> findExpiredPendingBookings(@Param("limitDate") LocalDateTime limitDate);

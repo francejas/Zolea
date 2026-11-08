@@ -202,7 +202,10 @@ public class BookingCheckoutService {
                 baseUrl + "/api/bookings/success",
                 baseUrl + "/api/bookings/pending",
                 baseUrl + "/api/bookings/failure",
-                baseUrl + "/api/bookings/notifications"));
+                baseUrl + "/api/bookings/notifications",
+                // Desde la creación de la reserva, no desde que se pide el link: un link nuevo
+                // vence a la misma hora que el primero, igual que la reserva.
+                booking.createdAt().plus(Booking.PAYMENT_WINDOW)));
     }
 
     /** Una reserva recién creada junto con la dirección donde se paga. */

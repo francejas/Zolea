@@ -332,17 +332,18 @@ public class BookingService {
     // ==========================================
 
     /**
-     * Este método se ejecuta automáticamente cada 1 hora exacto.
-     * Busca las reservas con más de 24hs pendientes y las cancela.
+     * Cancela las reservas que quedaron pendientes más del plazo de pago ({@link Booking#PAYMENT_WINDOW},
+     * una hora), como canceladas por el sistema. Corre cada cinco minutos, así una reserva sin pagar
+     * no queda ocupando la unidad mucho más que esa hora.
      */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     @Transactional
     public void cancelExpiredBookings() {
-        // 1. Calculamos qué hora era hace exactamente 24 horas
-        LocalDateTime twentyFourHoursAgo = now().minusHours(24);
+        // 1. Las pendientes creadas antes de este momento ya pasaron el plazo de pago.
+        LocalDateTime deadline = now().minus(Booking.PAYMENT_WINDOW);
 
-        // 2. Buscamos las reservas vencidas usando el método nuevo del repositorio
-        List<Booking> expiredBookings = bookingRepository.findExpiredPendingBookings(twentyFourHoursAgo);
+        // 2. Buscamos las reservas vencidas
+        List<Booking> expiredBookings = bookingRepository.findExpiredPendingBookings(deadline);
 
         // 3. Si encontramos alguna, le cambiamos el estado a CANCELED y la guardamos
         if (!expiredBookings.isEmpty()) {
