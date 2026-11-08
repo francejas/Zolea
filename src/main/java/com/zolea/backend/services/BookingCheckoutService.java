@@ -61,12 +61,22 @@ public class BookingCheckoutService {
         return new Checkout(booking, paymentUrlFor(booking));
     }
 
-    /** Genera un cobro nuevo para una reserva que quedó pendiente. */
+    /**
+     * Genera un cobro nuevo para una reserva que quedó pendiente.
+     *
+     * <p>Pasada la hora, la reserva puede figurar todavía como pendiente hasta que corra la
+     * limpieza (cada cinco minutos). Ese rato no da un link nuevo: ya vencería al crearse.
+     */
     public String retry(Long bookingId) {
         BookingResponse booking = bookingService.getBookingById(bookingId);
         if (booking.status() != Status.PENDING) {
             throw new com.zolea.backend.exceptions.booking.BookingStateException(
                     "La reserva no está pendiente de pago.");
+        }
+        // Mismo corte que la limpieza: a los 60 minutos justos ya venció.
+        if (!LocalDateTime.now(clock).isBefore(paymentDeadline(booking))) {
+            throw new com.zolea.backend.exceptions.booking.BookingStateException(
+                    "La reserva venció.");
         }
         return paymentUrlFor(booking);
     }
@@ -205,7 +215,11 @@ public class BookingCheckoutService {
                 baseUrl + "/api/bookings/notifications",
                 // Desde la creación de la reserva, no desde que se pide el link: un link nuevo
                 // vence a la misma hora que el primero, igual que la reserva.
-                booking.createdAt().plus(Booking.PAYMENT_WINDOW)));
+                paymentDeadline(booking)));
+    }
+
+    private static LocalDateTime paymentDeadline(BookingResponse booking) {
+        return booking.createdAt().plus(Booking.PAYMENT_WINDOW);
     }
 
     /** Una reserva recién creada junto con la dirección donde se paga. */
