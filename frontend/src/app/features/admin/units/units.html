@@ -93,10 +93,10 @@
       </div>
 
       <div class="units__create-actions">
-        <z-btn variant="secondary" [disabled]="createForm().submitting()" (click)="closeCreate()">
+        <z-btn variant="secondary" block [disabled]="createForm().submitting()" (click)="closeCreate()">
           Cerrar
         </z-btn>
-        <z-btn type="submit" [loading]="createForm().submitting()">
+        <z-btn type="submit" block [loading]="createForm().submitting()">
           {{ createForm().submitting() ? 'Creando la unidad…' : 'Crear unidad' }}
         </z-btn>
       </div>
@@ -257,11 +257,12 @@
         <p class="z-modal__body">Vuelve a poder reservarse y a verse disponible en el plano.</p>
       }
       <div class="z-modal__actions">
-        <z-btn variant="secondary" [disabled]="blocking()" (click)="closeBlock()">
+        <z-btn variant="secondary" block [disabled]="blocking()" (click)="closeBlock()">
           {{ pending.block ? 'Dejarla disponible' : 'Dejarla bloqueada' }}
         </z-btn>
         <z-btn
           [variant]="pending.block ? 'danger' : 'primary'"
+          block
           [loading]="blocking()"
           (click)="confirmBlock()"
         >

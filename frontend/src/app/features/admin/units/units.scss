@@ -1,6 +1,6 @@
-/* Unidades del balneario. La tabla es global (styles/tables.scss); acá, la cabecera de la pantalla,
-   el formulario de alta y la confirmación. Se diseña desde la computadora: la tabla se muestra
-   completa y debajo de 768 px cada fila pasa a ser una tarjeta. */
+/* Unidades del balneario. La tabla y la confirmación son globales (styles/tables.scss y
+   styles/modal.scss); acá, la cabecera de la pantalla y el formulario de alta. Se diseña desde la
+   computadora: la tabla se muestra completa y debajo de 768 px cada fila pasa a ser una tarjeta. */
 
 :host {
   display: block;
@@ -105,10 +105,6 @@
 @media (max-width: 479px) {
   .units__create-actions z-btn {
     flex: 1 1 100%;
-  }
-
-  .units__create-actions ::ng-deep .z-btn {
-    width: 100%;
   }
 }
 
