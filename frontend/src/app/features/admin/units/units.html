@@ -93,7 +93,12 @@
       </div>
 
       <div class="units__create-actions">
-        <z-btn variant="secondary" block [disabled]="createForm().submitting()" (click)="closeCreate()">
+        <z-btn
+          variant="secondary"
+          block
+          [disabled]="createForm().submitting()"
+          (click)="closeCreate()"
+        >
           Cerrar
         </z-btn>
         <z-btn type="submit" block [loading]="createForm().submitting()">
