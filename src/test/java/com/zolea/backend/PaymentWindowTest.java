@@ -33,6 +33,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -150,6 +151,32 @@ class PaymentWindowTest extends IntegrationTest {
         mockMvc.perform(post("/api/bookings/" + booking.getId() + "/pay")
                         .header("Authorization", bearer(booking.getClient())))
                 .andExpect(status().isBadRequest());
+
+        assertThat(gateway.requests).isEmpty();
+    }
+
+    @Test
+    @DisplayName("una pendiente de hace 61 minutos que la limpieza no canceló todavía no genera link: 400")
+    void retry_afterTheHourBeforeTheCleanup_rejected() throws Exception {
+        Booking booking = bookingCreatedMinutesAgo(61, Status.PENDING);
+
+        mockMvc.perform(post("/api/bookings/" + booking.getId() + "/pay")
+                        .header("Authorization", bearer(booking.getClient())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("La reserva venció."));
+
+        assertThat(gateway.requests).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a los 60 minutos justos ya venció, igual que para la limpieza")
+    void retry_atExactlyTheHour_rejected() throws Exception {
+        Booking booking = bookingCreatedMinutesAgo(60, Status.PENDING);
+
+        mockMvc.perform(post("/api/bookings/" + booking.getId() + "/pay")
+                        .header("Authorization", bearer(booking.getClient())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("La reserva venció."));
 
         assertThat(gateway.requests).isEmpty();
     }
