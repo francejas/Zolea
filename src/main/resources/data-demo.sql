@@ -542,16 +542,19 @@ WHERE id IN (13, 25);
 -- Reservas PENDING: dos problemas, los dos por tener fechas absolutas.
 --
 -- 1) created_at fijo en 2025/2026. BookingService.cancelExpiredBookings corre
---    cada hora y cancela toda PENDING creada hace más de 24 h, así que a la
---    primera ejecución del cron la demo se quedaba sin ninguna PENDING: se caía
---    el flujo de "reintentar pago" y la columna PENDING del panel de admin.
+--    cada cinco minutos y cancela toda PENDING creada hace más de una hora
+--    (Booking.PAYMENT_WINDOW; hasta el 07/11 eran 24 h), así que a la primera
+--    ejecución del cron la demo se quedaba sin ninguna PENDING: se caía el flujo
+--    de "reintentar pago" y la columna PENDING del panel de admin.
 -- 2) start_date en jul/dic 2026. Las de julio ya son pasado, así que dejaron de
 --    ser "reservas futuras".
 --
--- Se anclan las dos cosas a la fecha de arranque. La duración original de cada
--- reserva se preserva: end_date se calcula con el DATEDIFF viejo ANTES de que
--- start_date se pise (MySQL evalúa el SET de izquierda a derecha).
-UPDATE booking SET created_at = NOW() - INTERVAL 2 HOUR WHERE status = 'PENDING';
+-- Se anclan las dos cosas a la fecha de arranque. Las pendientes se crean hace
+-- diez minutos: se ven pendientes al arrancar y vencen una hora después. La
+-- duración original de cada reserva se preserva: end_date se calcula con el
+-- DATEDIFF viejo ANTES de que start_date se pise (MySQL evalúa el SET de
+-- izquierda a derecha).
+UPDATE booking SET created_at = NOW() - INTERVAL 10 MINUTE WHERE status = 'PENDING';
 
 UPDATE booking
 SET end_date   = CURDATE() + INTERVAL (30 + (id MOD 20)) DAY
