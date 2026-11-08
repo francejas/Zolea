@@ -1,5 +1,5 @@
 import { BookingStatus } from '../../core/api/booking.models';
-import { UnitType } from '../../core/api/resort.models';
+import { money, unitLabel } from '../../shared/utils/format';
 
 /** Cómo se dice cada estado, y su variante de `z-status`: verde, amarilla o sin bandera. */
 export const BOOKING_STATUS: Record<BookingStatus, { label: string; modifier: string }> = {
@@ -8,16 +8,8 @@ export const BOOKING_STATUS: Record<BookingStatus, { label: string; modifier: st
   CANCELED: { label: 'Cancelada', modifier: 'canceled' },
 };
 
-const UNIT_TYPE: Record<UnitType, string> = { UMBRELLA: 'Sombrilla', TENT: 'Carpa' };
-
 /** Se crean una sola vez: un formateador nuevo por cada dibujo es caro. */
 const dayMonth = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' });
-const pesos = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-
-/** «Sombrilla A-03». */
-export function unitLabel(type: UnitType, identifier: string): string {
-  return `${UNIT_TYPE[type]} ${identifier}`;
-}
 
 /** `YYYY-MM-DD` como fecha local: `new Date(texto)` la toma en UTC y en Argentina cae el día antes. */
 function parseDate(text: string): Date {
@@ -39,11 +31,6 @@ export function dayCount(start: string, end: string): number {
   return Math.round(days) + 1;
 }
 
-/** «$ 36.000,00»: la plata llega con dos decimales exactos y se muestra igual. */
-export function money(amount: number): string {
-  return pesos.format(amount);
-}
-
 /** «#0047». */
 export function bookingNumber(id: number): string {
   return `#${String(id).padStart(4, '0')}`;
@@ -53,3 +40,9 @@ export function bookingNumber(id: number): string {
 export function formatDni(dni: string): string {
   return dni.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
+
+/**
+ * `money` y `unitLabel` viven en shared/utils/format.ts, porque los usa también el panel. Se
+ * reexportan para que Reservar, el Detalle y la entrada sigan importándolos de acá.
+ */
+export { money, unitLabel };

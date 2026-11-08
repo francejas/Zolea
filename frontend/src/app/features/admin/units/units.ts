@@ -29,8 +29,8 @@ import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { money, UNIT_TYPE_LABEL, unitLabel } from '../../../shared/utils/format';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
-import { money, UNIT_TYPE_LABEL, unitLabel } from './units-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
