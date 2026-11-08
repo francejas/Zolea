@@ -204,7 +204,9 @@ balneario: las de otro responden `403`.
 - **La plata viene con dos decimales exactos** (`12000.00`). No la pases por `parseFloat` para
   redondearla de nuevo.
 - **Los estados de una reserva** son `PENDING`, `CONFIRMED` y `CANCELED`. Una reserva pendiente se
-  cancela sola a las 24 horas.
+  cancela sola si no se paga en **una hora** desde que se creó (hasta el 07/11 eran 24 horas). El
+  link de MercadoPago vence a esa misma hora, también el que se pide de nuevo con
+  `POST /api/bookings/{id}/pay`, y no ofrece pagar en efectivo, que acredita días después.
 - **Una reserva de mostrador** (la carga un administrador para alguien sin cuenta) va por
   `POST /api/bookings/walkin` y se confirma en el acto, sin pasar por MercadoPago.
 
