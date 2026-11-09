@@ -40,8 +40,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Una reserva sin pagar vence a la hora (desde el 07/11; antes, a las 24 horas).
  *
  * <p>Con 24 horas, una persona podía reservar muchas unidades sin pagar y dejarlas ocupadas un día
- * entero. Para que la hora se cumpla de verdad, la limpieza automática corre cada cinco minutos y
- * el link de pago vence a la misma hora que la reserva.
+ * entero. El link de pago vence a la hora, y desde ahí no se pide uno nuevo. La limpieza automática
+ * corre cada cinco minutos y cancela recién a los 75: el margen deja confirmar un pago que se empezó
+ * antes de la hora y MercadoPago aprobó un poco después (decisión del 09/11).
  *
  * <p>El reloj queda fijo y la pasarela es de mentira: guarda los pedidos para ver qué vencimiento
  * le llegó.
@@ -82,10 +83,10 @@ class PaymentWindowTest extends IntegrationTest {
     // ---------------------------------------------------------------------
 
     @Test
-    @DisplayName("una pendiente de hace 61 minutos se cancela como del sistema; una de hace 59, sigue")
-    void pendingOlderThanAnHour_canceledBySystem() {
-        Booking expired = bookingCreatedMinutesAgo(61, Status.PENDING);
-        Booking stillOpen = bookingCreatedMinutesAgo(59, Status.PENDING);
+    @DisplayName("una pendiente de hace 75 minutos se cancela como del sistema; una de hace 74, sigue")
+    void pendingFrom75Minutes_canceledBySystem() {
+        Booking expired = bookingCreatedMinutesAgo(75, Status.PENDING);
+        Booking stillOpen = bookingCreatedMinutesAgo(74, Status.PENDING);
 
         bookingService.cancelExpiredBookings();
 
@@ -93,6 +94,21 @@ class PaymentWindowTest extends IntegrationTest {
         assertThat(canceled.getStatus()).isEqualTo(Status.CANCELED);
         assertThat(canceled.getCanceledBy()).isEqualTo(CanceledBy.SYSTEM);
         assertThat(reload(stillOpen).getStatus()).isEqualTo(Status.PENDING);
+    }
+
+    @Test
+    @DisplayName("a los 70 minutos la limpieza no la cancela, pero ya no da un link nuevo")
+    void pendingAt70Minutes_keptByTheCleanupButNoNewLink() throws Exception {
+        Booking booking = bookingCreatedMinutesAgo(70, Status.PENDING);
+
+        bookingService.cancelExpiredBookings();
+
+        assertThat(reload(booking).getStatus()).isEqualTo(Status.PENDING);
+        mockMvc.perform(post("/api/bookings/" + booking.getId() + "/pay")
+                        .header("Authorization", bearer(booking.getClient())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("La reserva venció."));
+        assertThat(gateway.requests).isEmpty();
     }
 
     @Test
@@ -169,7 +185,7 @@ class PaymentWindowTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("a los 60 minutos justos ya venció, igual que para la limpieza")
+    @DisplayName("a los 60 minutos justos el link ya venció")
     void retry_atExactlyTheHour_rejected() throws Exception {
         Booking booking = bookingCreatedMinutesAgo(60, Status.PENDING);
 
