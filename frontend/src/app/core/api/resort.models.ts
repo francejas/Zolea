@@ -7,6 +7,11 @@ export interface Amenity {
   name: string;
 }
 
+/** El pedido de `POST /api/amenities` y de `PUT /api/amenities/{id}`: solo el nombre. */
+export interface AmenityRequest {
+  name: string;
+}
+
 export interface RentalUnit {
   idRentalUnit: number;
   type: UnitType;

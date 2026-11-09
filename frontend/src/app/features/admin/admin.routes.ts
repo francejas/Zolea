@@ -6,7 +6,10 @@ export const adminRoutes: Routes = [
   { path: '', component: PlaceholderPage, data: { title: 'Panel' } },
   { path: 'resort', component: PlaceholderPage, data: { title: 'Mi balneario' } },
   { path: 'units', loadComponent: () => import('./units/units').then((m) => m.Units) },
-  { path: 'amenities', component: PlaceholderPage, data: { title: 'Catálogo de servicios' } },
+  {
+    path: 'amenities',
+    loadComponent: () => import('./amenities/amenities').then((m) => m.Amenities),
+  },
   { path: 'bookings', component: PlaceholderPage, data: { title: 'Reservas' } },
   { path: 'bookings/:id', component: PlaceholderPage, data: { title: 'Detalle de reserva' } },
   { path: 'clients', component: PlaceholderPage, data: { title: 'Mis clientes' } },
