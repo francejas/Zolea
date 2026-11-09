@@ -1,6 +1,7 @@
 package com.zolea.backend.payments;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * Lo que la aplicación le pide a la pasarela para cobrar una reserva.
@@ -13,6 +14,8 @@ import java.math.BigDecimal;
  * @param pendingUrl adónde vuelve si queda pendiente
  * @param failureUrl adónde vuelve si falla
  * @param notificationUrl adónde avisa la pasarela por su cuenta, sin pasar por el navegador
+ * @param expiresAt  hasta cuándo se puede pagar, en la hora del balneario: la creación de la
+ *                   reserva más el plazo de pago. El link vence a la misma hora que la reserva
  */
 public record CheckoutRequest(
         Long bookingId,
@@ -21,6 +24,7 @@ public record CheckoutRequest(
         String successUrl,
         String pendingUrl,
         String failureUrl,
-        String notificationUrl
+        String notificationUrl,
+        LocalDateTime expiresAt
 ) {
 }

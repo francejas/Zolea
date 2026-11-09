@@ -6,6 +6,8 @@ import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
 import com.mercadopago.client.preference.PreferenceClient;
 import com.mercadopago.client.preference.PreferenceItemRequest;
+import com.mercadopago.client.preference.PreferencePaymentMethodsRequest;
+import com.mercadopago.client.preference.PreferencePaymentTypeRequest;
 import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.core.MPRequestOptions;
 import com.mercadopago.exceptions.MPApiException;
@@ -37,31 +39,7 @@ public class MercadoPagoGateway implements PaymentGateway {
 
     @Override
     public String createCheckout(CheckoutRequest request) {
-        PreferenceItemRequest item = PreferenceItemRequest.builder()
-                .title(request.concept())
-                .quantity(1)
-                // El importe ya viene exacto. Antes acá había un new BigDecimal(double), que es el
-                // constructor que copia el error binario del double en lugar de redondearlo: un
-                // total de 25500.300000000003 llegaba tal cual a la pasarela.
-                .unitPrice(request.amount())
-                .currencyId("ARS")
-                .build();
-
-        PreferenceRequest preference = PreferenceRequest.builder()
-                .items(List.of(item))
-                .backUrls(PreferenceBackUrlsRequest.builder()
-                        .success(request.successUrl())
-                        .pending(request.pendingUrl())
-                        .failure(request.failureUrl())
-                        .build())
-                .autoReturn("approved")
-                // Viaja con el pago y vuelve en la consulta: es lo que después permite comprobar
-                // que un pago corresponde a esta reserva y no a otra.
-                .externalReference(request.bookingId().toString())
-                // Adónde avisa MercadoPago por su cuenta cuando el pago cambia de estado. Sin esto
-                // no hay aviso automático y el cobro queda colgado de que el cliente vuelva.
-                .notificationUrl(request.notificationUrl())
-                .build();
+        PreferenceRequest preference = preferenceFor(request);
 
         try {
             Preference creada = new PreferenceClient().create(preference, requestOptions());
@@ -79,6 +57,46 @@ public class MercadoPagoGateway implements PaymentGateway {
             throw new PaymentGatewayException(
                     "No se pudo generar el pago. Intentalo de nuevo en unos minutos.", e);
         }
+    }
+
+    /** La preferencia que se le manda a MercadoPago. Aparte, para probarla sin llamarlo. */
+    PreferenceRequest preferenceFor(CheckoutRequest request) {
+        PreferenceItemRequest item = PreferenceItemRequest.builder()
+                .title(request.concept())
+                .quantity(1)
+                // El importe ya viene exacto. Antes acá había un new BigDecimal(double), que es el
+                // constructor que copia el error binario del double en lugar de redondearlo: un
+                // total de 25500.300000000003 llegaba tal cual a la pasarela.
+                .unitPrice(request.amount())
+                .currencyId("ARS")
+                .build();
+
+        return PreferenceRequest.builder()
+                .items(List.of(item))
+                .backUrls(PreferenceBackUrlsRequest.builder()
+                        .success(request.successUrl())
+                        .pending(request.pendingUrl())
+                        .failure(request.failureUrl())
+                        .build())
+                .autoReturn("approved")
+                // Viaja con el pago y vuelve en la consulta: es lo que después permite comprobar
+                // que un pago corresponde a esta reserva y no a otra.
+                .externalReference(request.bookingId().toString())
+                // Adónde avisa MercadoPago por su cuenta cuando el pago cambia de estado. Sin esto
+                // no hay aviso automático y el cobro queda colgado de que el cliente vuelva.
+                .notificationUrl(request.notificationUrl())
+                // El link vence a la misma hora que la reserva pendiente: después ya la canceló la
+                // limpieza automática, y un pago tardío no tendría qué confirmar.
+                .expires(true)
+                .expirationDateTo(request.expiresAt().atZone(TimeConfig.RESORT_ZONE).toOffsetDateTime())
+                // Solo medios que acreditan al momento. El efectivo (cupón de Rapipago o Pago
+                // Fácil, y cajeros) acredita días después, cuando la reserva ya venció.
+                .paymentMethods(PreferencePaymentMethodsRequest.builder()
+                        .excludedPaymentTypes(List.of(
+                                PreferencePaymentTypeRequest.builder().id("ticket").build(),
+                                PreferencePaymentTypeRequest.builder().id("atm").build()))
+                        .build())
+                .build();
     }
 
     /**

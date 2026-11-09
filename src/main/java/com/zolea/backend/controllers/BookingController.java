@@ -68,7 +68,7 @@ public class BookingController {
     @Operation(summary = "Reintentar pago (reserva pendiente)", description = "Genera una nueva URL de MercadoPago para una reserva PENDING existente.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Una dirección de pago nueva para la misma reserva"),
-            @ApiResponse(responseCode = "400", description = "La reserva ya no está pendiente: está confirmada o cancelada", content = @Content),
+            @ApiResponse(responseCode = "400", description = "La reserva ya no está pendiente (está confirmada o cancelada), o pasó la hora para pagarla", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content),

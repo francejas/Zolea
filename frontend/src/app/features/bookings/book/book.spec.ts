@@ -220,11 +220,11 @@ describe('Book', () => {
       expect(page.querySelector('form')).toBeNull();
     });
 
-    it('avisa que la reserva queda pendiente y se cancela sola a las 24 horas', async () => {
+    it('avisa que la reserva queda pendiente y se cancela sola si no se paga en una hora', async () => {
       await open(fromFicha);
 
       expect(summary()).toContain(
-        'La reserva queda pendiente hasta que se acredite el pago y se cancela sola a las 24 horas.',
+        'La reserva queda pendiente hasta que se acredite el pago, y si no se paga en una hora se cancela sola.',
       );
     });
   });

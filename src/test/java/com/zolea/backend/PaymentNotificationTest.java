@@ -6,6 +6,7 @@ import com.zolea.backend.models.Status;
 import com.zolea.backend.payments.CheckoutRequest;
 import com.zolea.backend.payments.PaymentGateway;
 import com.zolea.backend.payments.PaymentStatus;
+import com.zolea.backend.repositories.PaymentRepository;
 import com.zolea.backend.security.JwtUtil;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.support.IntegrationTest;
@@ -37,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Hasta ahora la reserva se confirmaba cuando el cliente volvía del sitio de MercadoPago. Eso
  * deja el cobro colgado de algo que no controlamos: si el cliente cierra la pestaña, se queda sin
  * señal o simplemente no vuelve, <b>nunca nos enteramos de que pagó</b>. La reserva queda pendiente
- * y a las 24 horas el trabajo automático la cancela, con la plata ya cobrada.
+ * y pasado el plazo de pago el trabajo automático la cancela, con la plata ya cobrada.
  *
  * <p>El aviso automático —lo que la documentación de MercadoPago llama <i>webhook</i> o <i>IPN</i>—
  * saca al navegador del medio: los servidores de MercadoPago llaman a los nuestros apenas el pago
@@ -61,6 +62,7 @@ class PaymentNotificationTest extends IntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private FakePaymentGateway gateway;
     @Autowired private JwtUtil jwtUtil;
+    @Autowired private PaymentRepository paymentRepository;
 
     @BeforeEach
     void clearTheGateway() {
@@ -147,6 +149,28 @@ class PaymentNotificationTest extends IntegrationTest {
         assertThat(statusOf(booking.getId()))
                 .withFailMessage("se confirmó una reserva con un aviso inventado")
                 .isEqualTo(Status.PENDING);
+    }
+
+    @Test
+    @DisplayName("un pago aprobado para una reserva ya cancelada se guarda una sola vez, responde 200 y la reserva sigue cancelada")
+    void approvedPaymentForCanceledBooking_isRecordedOnceAndAcknowledged() throws Exception {
+        // La limpieza la canceló mientras MercadoPago aprobaba un pago que había empezado antes.
+        Booking booking = aBooking(aClient(), aUnit(new BigDecimal("10000.00")),
+                today().plusDays(10), today().plusDays(12), Status.CANCELED, now().minusMinutes(80));
+        gateway.registerPayment("PAGO-TARDE", "approved", booking.getId());
+        syncWithDatabase();
+
+        // Si respondiera con error, MercadoPago lo reintentaría sin fin: llega dos veces igual.
+        mercadoPagoNotifies("PAGO-TARDE");
+        mercadoPagoNotifies("PAGO-TARDE");
+
+        syncWithDatabase();
+        assertThat(paymentRepository.count())
+                .withFailMessage("el cobro de una reserva cancelada no quedó registrado una sola vez")
+                .isEqualTo(1);
+        assertThat(paymentRepository.findByGatewayPaymentId("PAGO-TARDE").orElseThrow()
+                .getBooking().getId()).isEqualTo(booking.getId());
+        assertThat(statusOf(booking.getId())).isEqualTo(Status.CANCELED);
     }
 
     @Test

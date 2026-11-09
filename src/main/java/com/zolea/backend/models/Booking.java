@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -43,6 +44,20 @@ public class Booking {
 
     /** Cancelando con al menos estos días de anticipación se reintegra todo lo pagado. */
     private static final int FULL_REFUND_DAYS = 2;
+
+    /**
+     * Cuánto tiempo hay para pagar una reserva pendiente, desde que se creó. Pasado el plazo, el link
+     * de pago vence y no se puede pedir uno nuevo. Era de 24 horas, y con eso una persona podía dejar
+     * ocupadas muchas unidades un día entero.
+     */
+    public static final Duration PAYMENT_WINDOW = Duration.ofHours(1);
+
+    /**
+     * Cuánto espera la limpieza automática después de que vence el plazo de pago para cancelar la
+     * reserva. Es para el pago que se empezó antes de la hora y MercadoPago aprueba un poco después:
+     * la reserva todavía está pendiente y se confirma normalmente.
+     */
+    public static final Duration CLEANUP_GRACE = Duration.ofMinutes(15);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -6,6 +6,7 @@ import com.zolea.backend.models.Status;
 import com.zolea.backend.payments.CheckoutRequest;
 import com.zolea.backend.payments.PaymentGateway;
 import com.zolea.backend.payments.PaymentStatus;
+import com.zolea.backend.repositories.PaymentRepository;
 import com.zolea.backend.support.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +25,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -49,6 +52,7 @@ class VerifiedPaymentTest extends IntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private FakePaymentGateway pasarela;
+    @Autowired private PaymentRepository paymentRepository;
 
     @BeforeEach
     void clearTheGateway() {
@@ -130,6 +134,26 @@ class VerifiedPaymentTest extends IntegrationTest {
         assertThat(statusOf(miReserva.getId()))
                 .withFailMessage("se confirmó una reserva con el comprobante de otra")
                 .isEqualTo(Status.PENDING);
+    }
+
+    @Test
+    @DisplayName("con un pago aprobado para una reserva ya cancelada, redirige sin error, guarda el pago y no la revive")
+    void approvedPaymentForCanceledBooking_redirectsAndKeepsItCanceled() throws Exception {
+        Booking reserva = aBooking(aClient(), aUnit(new BigDecimal("10000.00")),
+                today().plusDays(10), today().plusDays(12), Status.CANCELED, now().minusMinutes(80));
+        pasarela.registerPayment("PAGO-TARDE", "approved", reserva.getId());
+        syncWithDatabase();
+
+        mockMvc.perform(get("/api/bookings/success")
+                        .param("collection_id", "PAGO-TARDE")
+                        .param("external_reference", String.valueOf(reserva.getId())))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", endsWith("/payment/pending")));
+
+        assertThat(statusOf(reserva.getId())).isEqualTo(Status.CANCELED);
+        assertThat(paymentRepository.existsByGatewayPaymentId("PAGO-TARDE"))
+                .withFailMessage("el cobro de una reserva cancelada no quedó registrado")
+                .isTrue();
     }
 
     @Test
