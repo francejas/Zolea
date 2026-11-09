@@ -16,9 +16,21 @@ export const bookingsRoutes: Routes = [
         path: 'bookings/:id',
         loadComponent: () => import('./booking-detail/booking-detail').then((m) => m.BookingDetail),
       },
-      { path: 'payment/success', component: PlaceholderPage, data: { title: 'Pago confirmado' } },
-      { path: 'payment/pending', component: PlaceholderPage, data: { title: 'Pago pendiente' } },
-      { path: 'payment/failure', component: PlaceholderPage, data: { title: 'Pago rechazado' } },
+      {
+        path: 'payment/success',
+        loadComponent: () =>
+          import('../payment-result/payment-success/payment-success').then((m) => m.PaymentSuccess),
+      },
+      {
+        path: 'payment/pending',
+        loadComponent: () =>
+          import('../payment-result/payment-pending/payment-pending').then((m) => m.PaymentPending),
+      },
+      {
+        path: 'payment/failure',
+        loadComponent: () =>
+          import('../payment-result/payment-failure/payment-failure').then((m) => m.PaymentFailure),
+      },
     ],
   },
 ];
