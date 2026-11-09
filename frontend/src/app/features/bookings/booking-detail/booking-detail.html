@@ -109,10 +109,10 @@
                   La {{ unit() }} queda libre para esos días. No se puede deshacer.
                 </p>
                 <div class="z-modal__actions">
-                  <z-btn variant="secondary" [disabled]="canceling()" (click)="closeCancel()">
+                  <z-btn variant="secondary" block [disabled]="canceling()" (click)="closeCancel()">
                     Volver
                   </z-btn>
-                  <z-btn variant="danger" [loading]="canceling()" (click)="confirmCancel()">
+                  <z-btn variant="danger" block [loading]="canceling()" (click)="confirmCancel()">
                     Cancelar reserva
                   </z-btn>
                 </div>

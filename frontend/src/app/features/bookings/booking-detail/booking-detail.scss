@@ -150,37 +150,6 @@
   cursor: default;
 }
 
-.z-modal {
-  width: min(440px, calc(100% - 2 * var(--gutter)));
-  padding: var(--space-6);
-  border: var(--border-strong);
-  border-radius: var(--radius-m);
-  background: var(--color-cream);
-  color: var(--color-text);
-}
-
-.z-modal::backdrop {
-  background: var(--color-scrim);
-}
-
-.z-modal__title {
-  margin: 0 0 var(--space-3);
-  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
-}
-
-.z-modal__body {
-  margin: 0;
-  color: var(--color-text-muted);
-}
-
-.z-modal__actions {
-  display: flex;
-  flex-wrap: wrap-reverse;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  margin-top: var(--space-6);
-}
-
 @media (min-width: 768px) {
   .booking__title {
     font-size: var(--text-display-l);
