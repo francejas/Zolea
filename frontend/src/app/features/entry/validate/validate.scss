@@ -1,0 +1,234 @@
+/* Validar ingreso. El escáner y el resultado son los bloques z-scanner y z-scan-result de
+   Zolea-docs/diseno/componentes.css, con los mismos nombres de clase; las pestañas son las globales
+   de styles/tabs.scss. Es del panel, pero se diseña desde el celular: se usa de pie, con sol y con
+   una fila esperando. Sin encapsular: el video lo agrega html5-qrcode. */
+
+.entry {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 480px;
+}
+
+.entry__head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.entry__h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.entry__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* Más altas que las de siempre: se tocan con el pulgar y sin mirar. */
+.entry__tabs .z-tab {
+  height: 48px;
+  font-size: 16px;
+}
+
+.entry__panel,
+.entry__form,
+.entry__unknown {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.entry__form {
+  gap: var(--space-5);
+}
+
+.entry__input {
+  height: var(--control-large);
+  font-size: 20px;
+}
+
+.entry__input--code {
+  font-family: var(--font-mono);
+  font-size: 18px;
+}
+
+.entry__fallback {
+  margin: 0;
+  font-size: 15px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+/* --- Escáner --- */
+.z-scanner {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-m);
+  background: var(--color-ink);
+  color: var(--color-cream);
+  overflow: hidden;
+}
+
+.entry__camera {
+  position: absolute;
+  inset: 0;
+}
+
+.entry__reader {
+  width: 100%;
+  height: 100%;
+}
+
+/* html5-qrcode le pone al video el ancho en píxeles: acá llena el cuadro, recortado. */
+.entry__reader video {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+.z-scanner__frame {
+  position: relative;
+  width: 64%;
+  aspect-ratio: 1;
+}
+
+.z-scanner__frame i {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border: 0 solid var(--color-cream);
+}
+
+.z-scanner__frame i:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-top-width: 4px;
+  border-left-width: 4px;
+  border-top-left-radius: 6px;
+}
+
+.z-scanner__frame i:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-top-width: 4px;
+  border-right-width: 4px;
+  border-top-right-radius: 6px;
+}
+
+.z-scanner__frame i:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 4px;
+  border-left-width: 4px;
+  border-bottom-left-radius: 6px;
+}
+
+.z-scanner__frame i:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-right-width: 4px;
+  border-bottom-width: 4px;
+  border-bottom-right-radius: 6px;
+}
+
+/* Sobre el video, en una pastilla de tinta: se lee aunque la imagen sea clara. */
+.z-scanner__hint {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  max-width: calc(100% - 2 * var(--space-4));
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: rgb(72 42 29 / 0.82);
+  text-align: center;
+  font: 600 16px / 1.3 var(--font-body);
+  transform: translateX(-50%);
+}
+
+.entry__camera-problem {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.entry__camera-problem .z-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.entry__camera-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+/* --- Resultado --- */
+.z-scan-result {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  min-height: min(64vh, 520px);
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-m);
+  text-align: center;
+  color: var(--color-cream);
+}
+
+.z-scan-result--ok {
+  background: var(--color-success);
+}
+
+.z-scan-result--fail {
+  background: var(--color-danger);
+}
+
+.z-scan-result__icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgb(250 243 227 / 0.16);
+}
+
+.z-scan-result__icon .z-icon {
+  width: 40px;
+  height: 40px;
+  stroke-width: 2.25;
+}
+
+.z-scan-result__verdict {
+  margin: 0;
+  font: 400 var(--text-display-l) / 1 var(--font-display);
+}
+
+.z-scan-result__name {
+  margin: 0;
+  font: 600 24px / 1.2 var(--font-body);
+  overflow-wrap: anywhere;
+}
+
+.z-scan-result__detail {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.4;
+  opacity: 0.92;
+}
+
+.z-scan-result z-btn {
+  justify-self: stretch;
+  margin-top: var(--space-3);
+}
+
+/* El anillo de foco de siempre es coral: sobre el verde y el rojo no se vería. */
+.z-scan-result :focus-visible {
+  outline-color: var(--color-cream);
+  outline-offset: 3px;
+}
