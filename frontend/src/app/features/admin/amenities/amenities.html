@@ -1,0 +1,225 @@
+<section class="amenities">
+  <header class="amenities__head">
+    <div class="amenities__title">
+      <h1 class="amenities__h1">Catálogo de servicios</h1>
+      <p class="amenities__lead">
+        Los servicios que pueden ofrecer los balnearios: Wi-Fi, duchas, estacionamiento…
+      </p>
+    </div>
+
+    @if (state() === 'ready' && !creating()) {
+      <z-btn (click)="openCreate()">
+        <svg lucidePlus class="z-icon" aria-hidden="true"></svg>
+        Nuevo servicio
+      </z-btn>
+    }
+  </header>
+
+  <!-- Fijo, en los cuatro estados: el catálogo no es del balneario, es de todos. -->
+  <z-alert
+    variant="info"
+    title="El catálogo es de todos los balnearios"
+    text="Lo que crees, renombres o borres acá cambia en todos los balnearios, no solo en el tuyo. Los servicios que ofrece el tuyo se marcan en Mi balneario."
+  />
+
+  <!-- El aviso es un role="status": el lector de pantalla anuncia lo que pasó sin leer la tabla. -->
+  @if (notice(); as message) {
+    <z-alert variant="success" [text]="message" />
+  }
+
+  @if (actionError(); as message) {
+    <z-alert variant="danger" title="No se pudo borrar" [text]="message" />
+  }
+
+  @if (creating()) {
+    <form
+      id="amenity-create"
+      class="amenities__create"
+      novalidate
+      aria-labelledby="amenity-create-title"
+      (submit)="onCreateSubmit($event)"
+    >
+      <h2 id="amenity-create-title" class="amenities__create-title">Nuevo servicio</h2>
+
+      @if (formError(); as message) {
+        <z-alert variant="danger" [text]="message" />
+      }
+
+      <z-field
+        [field]="createForm.name"
+        inputId="amenity-name"
+        label="Nombre"
+        help="Como lo van a ver los clientes en la ficha del balneario, por ejemplo «Duchas y vestuarios»."
+      >
+        <input
+          #createInput
+          id="amenity-name"
+          class="z-input"
+          type="text"
+          autocomplete="off"
+          [formField]="createForm.name"
+          [attr.aria-invalid]="hasError(createForm.name) ? 'true' : null"
+        />
+      </z-field>
+
+      <div class="amenities__create-actions">
+        <z-btn
+          variant="secondary"
+          block
+          [disabled]="createForm().submitting()"
+          (click)="closeCreate()"
+        >
+          Cerrar
+        </z-btn>
+        <z-btn type="submit" block [loading]="createForm().submitting()">
+          {{ createForm().submitting() ? 'Creando el servicio…' : 'Crear servicio' }}
+        </z-btn>
+      </div>
+    </form>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="amenities__skeleton" aria-busy="true" aria-label="Cargando el catálogo">
+        <z-skeleton width="30%" height="14px" />
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="amenities__skeleton-row">
+            <z-skeleton width="36%" height="18px" />
+            <z-skeleton width="16%" height="18px" />
+            <z-skeleton width="22%" height="26px" />
+          </div>
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer el catálogo" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (amenities().length === 0) {
+        <z-empty
+          title="El catálogo está vacío"
+          text="Sumá el primer servicio para que los balnearios puedan ofrecerlo."
+          actionLabel="Nuevo servicio"
+          (action)="openCreate()"
+        />
+      } @else {
+        <p class="amenities__summary">{{ summary() }}</p>
+
+        <div class="z-table-wrap">
+          <table class="z-table">
+            <thead>
+              <tr>
+                <th scope="col">Servicio</th>
+                @if (usage()) {
+                  <th scope="col">Lo ofrecen</th>
+                }
+                <th scope="col" class="is-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (amenity of amenities(); track amenity.idAmenity) {
+                <tr>
+                  <td data-label="Servicio">
+                    @if (editingId() === amenity.idAmenity) {
+                      <z-field
+                        [field]="renameForm.name"
+                        inputId="amenity-new-name"
+                        class="amenities__rename"
+                      >
+                        <input
+                          #renameInput
+                          id="amenity-new-name"
+                          class="z-input"
+                          type="text"
+                          autocomplete="off"
+                          [attr.aria-label]="'Nuevo nombre de ' + amenity.name"
+                          [formField]="renameForm.name"
+                          [attr.aria-invalid]="hasError(renameForm.name) ? 'true' : null"
+                          (keydown.enter)="onRenameKey($event)"
+                          (keydown.escape)="cancelRename()"
+                        />
+                      </z-field>
+                    } @else {
+                      <span class="amenities__name">
+                        <svg
+                          [lucideIcon]="amenityIcon(amenity.name)"
+                          class="z-icon z-icon--s"
+                          aria-hidden="true"
+                        ></svg>
+                        {{ amenity.name }}
+                      </span>
+                    }
+                  </td>
+
+                  @if (usage()) {
+                    <td data-label="Lo ofrecen">
+                      <span class="amenities__usage">
+                        {{ usageLabel(amenity) }}
+                        @if (includesMine(amenity)) {
+                          <span class="amenities__mine">incluido el tuyo</span>
+                        }
+                      </span>
+                    </td>
+                  }
+
+                  <td class="is-actions">
+                    <div class="z-table__actions">
+                      @if (editingId() === amenity.idAmenity) {
+                        <z-btn
+                          variant="secondary"
+                          size="small"
+                          [disabled]="renameForm().submitting()"
+                          (click)="cancelRename()"
+                        >
+                          Cancelar
+                        </z-btn>
+                        <z-btn
+                          size="small"
+                          [loading]="renameForm().submitting()"
+                          (click)="saveRename()"
+                        >
+                          {{ renameForm().submitting() ? 'Guardando…' : 'Guardar' }}
+                        </z-btn>
+                      } @else {
+                        <z-btn variant="secondary" size="small" (click)="startRename(amenity)">
+                          Renombrar<span class="z-visually-hidden"> {{ amenity.name }}</span>
+                        </z-btn>
+                        <z-btn variant="secondary" size="small" (click)="askDelete(amenity)">
+                          Borrar<span class="z-visually-hidden"> {{ amenity.name }}</span>
+                        </z-btn>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+
+  <!-- El único borrado real de la aplicación. El botón que confirma repite el verbo. -->
+  <dialog
+    #deleteDialog
+    class="z-modal"
+    aria-labelledby="delete-title"
+    aria-describedby="delete-body"
+    (close)="pendingDelete.set(null)"
+  >
+    @if (pendingDelete(); as amenity) {
+      <h2 id="delete-title" class="z-modal__title">¿Borrar «{{ amenity.name }}» del catálogo?</h2>
+      <p id="delete-body" class="z-modal__body">{{ deleteConsequence() }}</p>
+      <div class="z-modal__actions">
+        <z-btn variant="secondary" block [disabled]="deleting()" (click)="closeDelete()">
+          Volver
+        </z-btn>
+        <z-btn variant="danger" block [loading]="deleting()" (click)="confirmDelete()">
+          Borrar del catálogo
+        </z-btn>
+      </div>
+    }
+  </dialog>
+</section>
