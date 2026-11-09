@@ -162,7 +162,7 @@ class ResponseContractTest extends IntegrationTest {
         // Con ellos, «Try it out» sale andando y de paso el ejemplo documenta el formato.
         List<String> pedidos = List.of(
                 "BookingRequest", "ClientRequest", "AuthRequest",
-                "ResortRequest", "RentalUnitRequest", "AmenityRequest");
+                "ResortRequest", "RentalUnitRequest", "AmenityRequest", "ReviewRequest");
 
         JsonNode schemas = apiDocs().path("components").path("schemas");
         List<String> sinEjemplo = new ArrayList<>();
@@ -196,7 +196,8 @@ class ResponseContractTest extends IntegrationTest {
                 "/api/bookings/pending", "get",
                 "/api/bookings/failure", "get",
                 "/api/bookings/notifications", "post",
-                "/api/auth/login", "post");
+                "/api/auth/login", "post",
+                "/api/resorts/{id}/reviews", "get");
 
         List<String> conCandado = new ArrayList<>();
         for (var entrada : publicos.entrySet()) {

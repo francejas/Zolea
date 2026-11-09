@@ -20,6 +20,7 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DELETE FROM review;
 DELETE FROM guest;
 DELETE FROM booking;
 DELETE FROM resort_amenities;
@@ -28,6 +29,7 @@ DELETE FROM amenity;
 DELETE FROM resort;
 DELETE FROM client;
 
+ALTER TABLE review      AUTO_INCREMENT = 1;
 ALTER TABLE guest       AUTO_INCREMENT = 1;
 ALTER TABLE booking     AUTO_INCREMENT = 1;
 ALTER TABLE rental_unit AUTO_INCREMENT = 1;
@@ -641,3 +643,35 @@ INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
 SELECT 50, CURDATE() + INTERVAL 20 DAY, CURDATE() + INTERVAL 24 DAY, 5 * u.daily_price, 'CANCELED',
        NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 4 DAY, 'CLIENT', 5 * u.daily_price, 9, u.id_rental_unit
 FROM rental_unit u WHERE u.id_rental_unit = 7;
+
+-- =============================================================================
+-- 10. RESEÑAS (TFI, 14.1)
+--
+-- Una por reserva, solo en reservas confirmadas cuya estadía ya terminó (las de
+-- la temporada 2025/2026). Las 48 a 50 son las cancelaciones de la 14.3 y no
+-- llevan reseña. Promedios: Mar del Plata 4,2; Pinamar 4,7; Villa Gesell 3,5;
+-- Miramar 4,5; Necochea 5,0.
+--
+-- santi.rodriguez@gmail.com (cliente 7) calificó la 1 y la 19, y le quedan la
+-- 10 y la 44 sin calificar: con su cuenta se puede mostrar «Calificar».
+-- La fecha de cada reseña es relativa al arranque, como el resto de la demo.
+-- =============================================================================
+INSERT INTO review (id_review, id_booking, rating, comment, created_at) VALUES
+-- Resort 1: Zolea Club de Playa (MdP)
+(1,  1,  5, 'Primera fila de verdad: el mar a diez metros y la sombrilla lista al llegar.', CURDATE() - INTERVAL 70 DAY + INTERVAL 19 HOUR),
+(2,  2,  4, 'Muy lindo el lugar. El estacionamiento se llena temprano.',                  CURDATE() - INTERVAL 64 DAY + INTERVAL 11 HOUR),
+(3,  4,  5, 'La carpa premium vale cada peso. Atención impecable.',                       CURDATE() - INTERVAL 45 DAY + INTERVAL 20 HOUR),
+(4,  6,  3, NULL,                                                                          CURDATE() - INTERVAL 30 DAY + INTERVAL 18 HOUR),
+(5,  9,  4, 'Buena carpa y buen bar. Los baños podrían estar más limpios a la tarde.',    CURDATE() - INTERVAL 12 DAY + INTERVAL 21 HOUR),
+-- Resort 2: Ocean View Resort (Pinamar)
+(6,  17, 5, 'Tranquilo, sin ruido y con un servicio de playa excelente.',                 CURDATE() - INTERVAL 75 DAY + INTERVAL 17 HOUR),
+(7,  19, 4, 'La sombrilla está bien ubicada y el personal es muy amable. Volvería.',      CURDATE() - INTERVAL 50 DAY + INTERVAL 19 HOUR),
+(8,  22, 5, 'Lo mejor de Pinamar. Te resuelven todo.',                                    CURDATE() - INTERVAL 20 DAY + INTERVAL 16 HOUR),
+-- Resort 3: Arena Dorada (Villa Gesell)
+(9,  28, 4, 'Mucha onda y buena música. Ideal para ir con amigos.',                       CURDATE() - INTERVAL 72 DAY + INTERVAL 22 HOUR),
+(10, 31, 3, 'Lindo lugar, pero la carpa tenía la lona rota.',                             CURDATE() - INTERVAL 35 DAY + INTERVAL 13 HOUR),
+-- Resort 4: Costa Sur (Miramar)
+(11, 35, 5, 'Perfecto para ir con chicos: tranquilo y con guardavidas atentos.',          CURDATE() - INTERVAL 68 DAY + INTERVAL 18 HOUR),
+(12, 37, 4, NULL,                                                                          CURDATE() - INTERVAL 40 DAY + INTERVAL 10 HOUR),
+-- Resort 5: Mar del Sur (Necochea)
+(13, 42, 5, 'Playa ancha y casi vacía. Ideal para desconectar.',                          CURDATE() - INTERVAL 66 DAY + INTERVAL 20 HOUR);

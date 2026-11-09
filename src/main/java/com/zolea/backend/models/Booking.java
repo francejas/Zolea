@@ -259,6 +259,20 @@ public class Booking {
         refundAmount = terms.refundAmount();
     }
 
+    /**
+     * Si la reserva se puede calificar {@code today}: solo una confirmada cuya estadía ya terminó.
+     * El último día todavía es parte de la estadía, así que se califica desde el día siguiente. Una
+     * pendiente nunca se pagó y una cancelada no se usó: ninguna de las dos se califica.
+     *
+     * <p>Que no se haya calificado antes no es una regla de la reserva sino de las reseñas, y la
+     * comprueba el servicio.
+     *
+     * @param today hoy, con el reloj de la aplicación.
+     */
+    public boolean canBeReviewed(LocalDate today) {
+        return status == Status.CONFIRMED && today.isAfter(endDate);
+    }
+
     private BigDecimal percentOfTotal(int percent) {
         return totalPrice.multiply(BigDecimal.valueOf(percent))
                 .divide(BigDecimal.valueOf(100), MONEY_SCALE, RoundingMode.HALF_UP);
