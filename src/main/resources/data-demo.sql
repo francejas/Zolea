@@ -15,8 +15,25 @@
 -- levante por convención sin que nadie lo haya decidido.
 --
 -- Es MySQL puro (SET FOREIGN_KEY_CHECKS, ALTER TABLE AUTO_INCREMENT,
--- UPDATE ... JOIN, LPAD, CURDATE): no corre en otro motor.
+-- UPDATE ... JOIN, LPAD, UTC_TIMESTAMP, variables @): no corre en otro motor.
 -- =============================================================================
+
+-- =============================================================================
+-- FECHAS Y HORAS
+--
+-- Las fechas salen del día de Buenos Aires, no del de la base: @today es ese
+-- día y se usa en todo el archivo en lugar de CURDATE(). El contenedor de MySQL
+-- corre en UTC, y CURDATE() después de las 21 h daba el día siguiente. Argentina
+-- no cambia la hora en verano, así que restar 3 horas alcanza. La variable vale
+-- en todo el archivo porque Spring corre el script entero en una sola conexión.
+--
+-- Las horas (created_at, canceled_at) van en UTC, que es como las guarda la
+-- aplicación: la conexión lleva serverTimezone=UTC y la aplicación fija su zona
+-- en la del balneario al arrancar (BackendApplication), así que la base queda en
+-- UTC en cualquier máquina y en Compose. Por eso salen de UTC_TIMESTAMP() y no
+-- de NOW(), que depende de la zona de la base. Ver docs/decisiones.md, 17.
+-- =============================================================================
+SET @today = DATE(UTC_TIMESTAMP() - INTERVAL 3 HOUR);
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -529,16 +546,16 @@ WHERE g.full_name = CONCAT(c.first_name, ' ', c.last_name) AND c.dni IS NOT NULL
 -- =============================================================================
 -- FECHAS RELATIVAS — mantiene reservas "actuales" vigentes el día de la demo.
 -- El gate de validación de ingreso exige inicio <= hoy <= fin (ver GuestService),
--- así que las reservas demo se anclan a CURDATE() para no vencerse con el tiempo.
+-- así que las reservas demo se anclan a @today para no vencerse con el tiempo.
 -- =============================================================================
 -- Reservas confirmadas vigentes hoy (una por balneario): permiten validar QR/DNI.
-UPDATE booking SET start_date = CURDATE() - INTERVAL 1 DAY,
-                   end_date   = CURDATE() + INTERVAL 4 DAY
+UPDATE booking SET start_date = @today - INTERVAL 1 DAY,
+                   end_date   = @today + INTERVAL 4 DAY
 WHERE id IN (12, 24, 32, 39, 45);
 
 -- Walk-ins presenciales vigentes hoy.
-UPDATE booking SET start_date = CURDATE(),
-                   end_date   = CURDATE() + INTERVAL 1 DAY
+UPDATE booking SET start_date = @today,
+                   end_date   = @today + INTERVAL 1 DAY
 WHERE id IN (13, 25);
 
 -- Reservas PENDING: dos problemas, los dos por tener fechas absolutas.
@@ -552,25 +569,20 @@ WHERE id IN (13, 25);
 -- 2) start_date en jul/dic 2026. Las de julio ya son pasado, así que dejaron de
 --    ser "reservas futuras".
 --
--- Se anclan las dos cosas a la fecha de arranque. Las pendientes se crean hace
--- diez minutos: se ven pendientes al arrancar y su link vence una hora después.
+-- Se anclan las dos cosas al arranque. Las pendientes se crean hace diez
+-- minutos: se ven pendientes al arrancar, su link vence a la hora de creadas y
+-- la limpieza las cancela entre los 75 y los 80 minutos. La hora va en UTC, como
+-- todas (ver FECHAS Y HORAS, al principio).
 -- La duración original de cada reserva se preserva: end_date se calcula con el
 -- DATEDIFF viejo ANTES de que start_date se pise (MySQL evalúa el SET de
 -- izquierda a derecha).
---
--- La hora de creación va en hora de Buenos Aires, que es como la guarda la
--- aplicación (el Clock de TimeConfig). NOW() devuelve la hora de la zona de la
--- base, y el contenedor de MySQL corre en UTC: con NOW() las pendientes
--- quedaban tres horas en el futuro y vencían casi cuatro horas después de
--- arrancar. UTC_TIMESTAMP() - 3 horas da la hora argentina sea cual sea la zona
--- de la base, porque Argentina no cambia la hora en verano.
-UPDATE booking SET created_at = UTC_TIMESTAMP() - INTERVAL 3 HOUR - INTERVAL 10 MINUTE
+UPDATE booking SET created_at = UTC_TIMESTAMP() - INTERVAL 10 MINUTE
 WHERE status = 'PENDING';
 
 UPDATE booking
-SET end_date   = CURDATE() + INTERVAL (30 + (id MOD 20)) DAY
+SET end_date   = @today + INTERVAL (30 + (id MOD 20)) DAY
                            + INTERVAL DATEDIFF(end_date, start_date) DAY,
-    start_date = CURDATE() + INTERVAL (30 + (id MOD 20)) DAY
+    start_date = @today + INTERVAL (30 + (id MOD 20)) DAY
 WHERE status = 'PENDING';
 
 -- Huéspedes de las reservas vigentes: el ingreso tiene que estar SIN validar
@@ -627,21 +639,21 @@ SET c.id_managed_resort = r.id_resort;
 -- =============================================================================
 INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
                      canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
-SELECT 48, CURDATE() + INTERVAL 12 DAY, CURDATE() + INTERVAL 15 DAY, 4 * u.daily_price, 'CANCELED',
-       NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 2 DAY, 'CLIENT', 4 * u.daily_price, 7, u.id_rental_unit
+SELECT 48, @today + INTERVAL 12 DAY, @today + INTERVAL 15 DAY, 4 * u.daily_price, 'CANCELED',
+       UTC_TIMESTAMP() - INTERVAL 8 DAY, UTC_TIMESTAMP() - INTERVAL 2 DAY, 'CLIENT', 4 * u.daily_price, 7, u.id_rental_unit
 FROM rental_unit u WHERE u.id_rental_unit = 5;
 
 INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
                      canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
-SELECT 49, CURDATE(), CURDATE() + INTERVAL 2 DAY, 3 * u.daily_price, 'CANCELED',
-       NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 1 DAY, 'CLIENT', ROUND(3 * u.daily_price * 0.5, 2), 8,
+SELECT 49, @today, @today + INTERVAL 2 DAY, 3 * u.daily_price, 'CANCELED',
+       UTC_TIMESTAMP() - INTERVAL 5 DAY, UTC_TIMESTAMP() - INTERVAL 1 DAY, 'CLIENT', ROUND(3 * u.daily_price * 0.5, 2), 8,
        u.id_rental_unit
 FROM rental_unit u WHERE u.id_rental_unit = 6;
 
 INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
                      canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
-SELECT 50, CURDATE() + INTERVAL 20 DAY, CURDATE() + INTERVAL 24 DAY, 5 * u.daily_price, 'CANCELED',
-       NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 4 DAY, 'CLIENT', 5 * u.daily_price, 9, u.id_rental_unit
+SELECT 50, @today + INTERVAL 20 DAY, @today + INTERVAL 24 DAY, 5 * u.daily_price, 'CANCELED',
+       UTC_TIMESTAMP() - INTERVAL 10 DAY, UTC_TIMESTAMP() - INTERVAL 4 DAY, 'CLIENT', 5 * u.daily_price, 9, u.id_rental_unit
 FROM rental_unit u WHERE u.id_rental_unit = 7;
 
 -- =============================================================================
@@ -654,24 +666,29 @@ FROM rental_unit u WHERE u.id_rental_unit = 7;
 --
 -- santi.rodriguez@gmail.com (cliente 7) calificó la 1 y la 19, y le quedan la
 -- 10 y la 44 sin calificar: con su cuenta se puede mostrar «Calificar».
--- La fecha de cada reseña es relativa al arranque, como el resto de la demo.
+-- La fecha de cada reseña es relativa al arranque, como el resto de la demo. Las
+-- horas están escritas en hora de Buenos Aires, que es como se van a ver, y el
+-- UPDATE de abajo las pasa a UTC, que es como las guarda la base.
 -- =============================================================================
 INSERT INTO review (id_review, id_booking, rating, comment, created_at) VALUES
 -- Resort 1: Zolea Club de Playa (MdP)
-(1,  1,  5, 'Primera fila de verdad: el mar a diez metros y la sombrilla lista al llegar.', CURDATE() - INTERVAL 70 DAY + INTERVAL 19 HOUR),
-(2,  2,  4, 'Muy lindo el lugar. El estacionamiento se llena temprano.',                  CURDATE() - INTERVAL 64 DAY + INTERVAL 11 HOUR),
-(3,  4,  5, 'La carpa premium vale cada peso. Atención impecable.',                       CURDATE() - INTERVAL 45 DAY + INTERVAL 20 HOUR),
-(4,  6,  3, NULL,                                                                          CURDATE() - INTERVAL 30 DAY + INTERVAL 18 HOUR),
-(5,  9,  4, 'Buena carpa y buen bar. Los baños podrían estar más limpios a la tarde.',    CURDATE() - INTERVAL 12 DAY + INTERVAL 21 HOUR),
+(1,  1,  5, 'Primera fila de verdad: el mar a diez metros y la sombrilla lista al llegar.', @today - INTERVAL 70 DAY + INTERVAL 19 HOUR),
+(2,  2,  4, 'Muy lindo el lugar. El estacionamiento se llena temprano.',                  @today - INTERVAL 64 DAY + INTERVAL 11 HOUR),
+(3,  4,  5, 'La carpa premium vale cada peso. Atención impecable.',                       @today - INTERVAL 45 DAY + INTERVAL 20 HOUR),
+(4,  6,  3, NULL,                                                                          @today - INTERVAL 30 DAY + INTERVAL 18 HOUR),
+(5,  9,  4, 'Buena carpa y buen bar. Los baños podrían estar más limpios a la tarde.',    @today - INTERVAL 12 DAY + INTERVAL 21 HOUR),
 -- Resort 2: Ocean View Resort (Pinamar)
-(6,  17, 5, 'Tranquilo, sin ruido y con un servicio de playa excelente.',                 CURDATE() - INTERVAL 75 DAY + INTERVAL 17 HOUR),
-(7,  19, 4, 'La sombrilla está bien ubicada y el personal es muy amable. Volvería.',      CURDATE() - INTERVAL 50 DAY + INTERVAL 19 HOUR),
-(8,  22, 5, 'Lo mejor de Pinamar. Te resuelven todo.',                                    CURDATE() - INTERVAL 20 DAY + INTERVAL 16 HOUR),
+(6,  17, 5, 'Tranquilo, sin ruido y con un servicio de playa excelente.',                 @today - INTERVAL 75 DAY + INTERVAL 17 HOUR),
+(7,  19, 4, 'La sombrilla está bien ubicada y el personal es muy amable. Volvería.',      @today - INTERVAL 50 DAY + INTERVAL 19 HOUR),
+(8,  22, 5, 'Lo mejor de Pinamar. Te resuelven todo.',                                    @today - INTERVAL 20 DAY + INTERVAL 16 HOUR),
 -- Resort 3: Arena Dorada (Villa Gesell)
-(9,  28, 4, 'Mucha onda y buena música. Ideal para ir con amigos.',                       CURDATE() - INTERVAL 72 DAY + INTERVAL 22 HOUR),
-(10, 31, 3, 'Lindo lugar, pero la carpa tenía la lona rota.',                             CURDATE() - INTERVAL 35 DAY + INTERVAL 13 HOUR),
+(9,  28, 4, 'Mucha onda y buena música. Ideal para ir con amigos.',                       @today - INTERVAL 72 DAY + INTERVAL 22 HOUR),
+(10, 31, 3, 'Lindo lugar, pero la carpa tenía la lona rota.',                             @today - INTERVAL 35 DAY + INTERVAL 13 HOUR),
 -- Resort 4: Costa Sur (Miramar)
-(11, 35, 5, 'Perfecto para ir con chicos: tranquilo y con guardavidas atentos.',          CURDATE() - INTERVAL 68 DAY + INTERVAL 18 HOUR),
-(12, 37, 4, NULL,                                                                          CURDATE() - INTERVAL 40 DAY + INTERVAL 10 HOUR),
+(11, 35, 5, 'Perfecto para ir con chicos: tranquilo y con guardavidas atentos.',          @today - INTERVAL 68 DAY + INTERVAL 18 HOUR),
+(12, 37, 4, NULL,                                                                          @today - INTERVAL 40 DAY + INTERVAL 10 HOUR),
 -- Resort 5: Mar del Sur (Necochea)
-(13, 42, 5, 'Playa ancha y casi vacía. Ideal para desconectar.',                          CURDATE() - INTERVAL 66 DAY + INTERVAL 20 HOUR);
+(13, 42, 5, 'Playa ancha y casi vacía. Ideal para desconectar.',                          @today - INTERVAL 66 DAY + INTERVAL 20 HOUR);
+
+-- De hora de Buenos Aires a UTC (ver FECHAS Y HORAS, al principio).
+UPDATE review SET created_at = created_at + INTERVAL 3 HOUR;
