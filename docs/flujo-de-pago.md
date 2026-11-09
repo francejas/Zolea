@@ -92,15 +92,122 @@ justo en ese momento, ese aviso se pierde — y ahí queda el camino B.
 
 ## Probarlo en una máquina de desarrollo
 
-MercadoPago necesita una dirección pública HTTPS a la que llamar, y `localhost` no lo es. La
-solución en local es un túnel:
+MercadoPago necesita una dirección pública HTTPS a la que llamar, y `localhost` no lo es. En local
+se resuelve con un túnel de ngrok, y el cobro se hace en el modo prueba de MercadoPago: con la
+aplicación de Zolea, una cuenta compradora de prueba y tarjetas de prueba. No se mueve plata real.
 
-```bash
-ngrok http 8080
+### 1. ngrok, una vez por integrante
+
+Cada uno usa su propia cuenta gratis de [ngrok](https://ngrok.com). La cuenta gratis trae un
+dominio fijo, así que la dirección del túnel es siempre la misma y se configura una sola vez.
+
+1. Crear la cuenta e instalar ngrok.
+2. Registrar el token de la cuenta, que está en el panel de ngrok («Your Authtoken»):
+
+   ```bash
+   ngrok config add-authtoken <tu-token-de-ngrok>
+   ```
+
+3. Abrir el túnel al backend:
+
+   ```bash
+   ngrok http 8080
+   ```
+
+   La línea «Forwarding» muestra la dirección https de tu dominio fijo. Si no es la del dominio
+   que figura en el panel, se la indicás: `ngrok http --url=https://<tu-dominio> 8080`.
+
+### 2. El `.env`
+
+Va en la raíz del repositorio y no se versiona: está en `.gitignore`. Para el cobro hacen falta
+tres variables:
+
+```properties
+MP_ACCESS_TOKEN=<access-token-de-prueba>
+NGROK_BASE_URL=https://<tu-dominio-de-ngrok>
+FRONTEND_URL=http://localhost:4200
 ```
 
-y poner esa dirección en `NGROK_BASE_URL` dentro del `.env`. Con eso, las URLs de retorno y la
-del aviso se arman solas.
+- `MP_ACCESS_TOKEN`: el Access Token de prueba de la aplicación de Zolea en MercadoPago (Tus
+  integraciones → la aplicación → Credenciales, en el entorno de Prueba). Se pasa por privado:
+  nunca va al repositorio, a Jira ni a un grupo.
+- `NGROK_BASE_URL`: la dirección https del túnel, sin barra al final. Con ella el backend arma
+  solo las direcciones de retorno y la del aviso.
+- `FRONTEND_URL`: donde corre Angular.
+
+El backend lee el `.env` al arrancar: si lo cambiás, hay que reiniciarlo.
+
+### 3. La cuenta compradora de prueba
+
+Se crea en Tus integraciones → la aplicación de Zolea → Cuentas de prueba, de tipo **Comprador** y
+de Argentina. Tiene que ser otra cuenta que la que vende: nadie se puede comprar a sí mismo. La
+aplicación admite hasta 15 cuentas de prueba, así que puede haber una por integrante. Quien
+administra la aplicación la crea y le pasa por privado el usuario, la contraseña y el código de
+verificación que muestra la tabla.
+
+### 4. No hace falta sumar a nadie en MercadoPago
+
+Para probar alcanza con el Access Token de prueba y una cuenta compradora. No hay que invitar a
+nadie como colaborador de la aplicación.
+
+### 5. Arrancar, en este orden
+
+Cada uno en su terminal:
+
+```bash
+docker compose up -d db
+./mvnw spring-boot:run
+ngrok http 8080
+cd frontend && npm start
+```
+
+### 6. La compra
+
+1. Abrir una **ventana de incógnito**, así MercadoPago no toma una cuenta real que esté abierta en
+   el navegador.
+2. Entrar a `http://localhost:4200` como `santi.rodriguez@gmail.com` (contraseña `admin123`),
+   elegir un balneario y reservar. Zolea manda a MercadoPago en la misma ventana.
+3. En MercadoPago, entrar con la cuenta compradora de prueba. Si pide un código por mail, es el
+   código de verificación de 6 dígitos de esa cuenta, el de la tabla de Cuentas de prueba.
+4. Pagar con una de las
+   [tarjetas de prueba de MercadoPago](https://www.mercadopago.com.ar/developers/es/docs/your-integrations/test/cards).
+   El resultado lo decide el nombre del titular:
+
+   | Titular | Documento | Resultado |
+   |---|---|---|
+   | `APRO` | DNI 12345678 | Aprobado |
+   | `CONT` | — | Pendiente |
+   | `OTHE` | DNI 12345678 | Rechazado |
+
+### 7. La vuelta
+
+Después de pagar, MercadoPago devuelve el navegador al backend por el túnel. La cuenta gratis de
+ngrok muestra primero un aviso propio («You are about to visit…»): se toca **Visit Site** y sigue.
+Ese aviso sale solo en el navegador; al aviso automático de MercadoPago, que llega de servidor a
+servidor, no le afecta.
+
+### 8. Por qué cada uno con su túnel
+
+Cada link de pago lleva adentro la dirección del aviso del backend que lo creó, armada con su
+`NGROK_BASE_URL`. Así cada integrante recibe los avisos de sus propias compras, y no hay que
+configurar nada en el panel de MercadoPago.
+
+### 9. Qué verificar
+
+- Con `APRO`, la reserva pasa a confirmada y su detalle (`http://localhost:4200/bookings/<id>`)
+  muestra los QR.
+- El pago queda registrado en la tabla `payment`:
+
+  ```bash
+  docker exec zolea-mysql mysql -uroot -proot zolea_db -e "SELECT id_booking, gateway_payment_id, status, amount FROM payment"
+  ```
+
+- El checkout no ofrece pagar en efectivo (Rapipago, Pago Fácil), y el link vence a la hora de
+  creada la reserva: pasado ese plazo, MercadoPago ya no deja pagarlo.
+- Sin pagar, pasada la hora la limpieza cancela la reserva (corre cada cinco minutos), y pedir un
+  link nuevo responde `400` «La reserva venció.».
+- Hasta que esté la pantalla de vuelta del pago (11.2), la vuelta cae en una página provisoria
+  («Pago confirmado»), pero la reserva se confirma igual: se ve en su detalle.
 
 **Sin ngrok igual se puede probar el flujo entero**: las pruebas automáticas
 (`VerifiedPaymentTest`, `PaymentNotificationTest`, `PaymentRecordTest`) sustituyen la pasarela
