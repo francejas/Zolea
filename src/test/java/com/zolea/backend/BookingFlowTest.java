@@ -135,12 +135,12 @@ class BookingFlowTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("el job cancela las reservas pendientes de más de 24 horas")
+    @DisplayName("el job cancela las reservas pendientes de hace 75 minutos o más")
     void cleanupJob_cancelsExpiredPending() {
         Client client = aClient();
         RentalUnit unit = aUnit(10_000.0);
         Booking vencida = aBooking(client, unit, today().plusDays(30), today().plusDays(33),
-                Status.PENDING, now().minusHours(25));
+                Status.PENDING, now().minusMinutes(80));
 
         bookingService.cancelExpiredBookings();
 
