@@ -64,8 +64,8 @@ public class BookingCheckoutService {
     /**
      * Genera un cobro nuevo para una reserva que quedó pendiente.
      *
-     * <p>Pasada la hora, la reserva puede figurar todavía como pendiente hasta que corra la
-     * limpieza (cada cinco minutos). Ese rato no da un link nuevo: ya vencería al crearse.
+     * <p>Pasada la hora, la reserva sigue pendiente hasta que la limpieza la cancela, entre los 75 y
+     * los 80 minutos. Ese rato no da un link nuevo: ya vencería al crearse.
      */
     public String retry(Long bookingId) {
         BookingResponse booking = bookingService.getBookingById(bookingId);
@@ -73,7 +73,7 @@ public class BookingCheckoutService {
             throw new com.zolea.backend.exceptions.booking.BookingStateException(
                     "La reserva no está pendiente de pago.");
         }
-        // Mismo corte que la limpieza: a los 60 minutos justos ya venció.
+        // A los 60 minutos justos ya venció, aunque la limpieza todavía no la haya cancelado.
         if (!LocalDateTime.now(clock).isBefore(paymentDeadline(booking))) {
             throw new com.zolea.backend.exceptions.booking.BookingStateException(
                     "La reserva venció.");
@@ -112,7 +112,10 @@ public class BookingCheckoutService {
             return false;
         }
 
-        record(status, bookingId);
+        boolean newlyRecorded = record(status, bookingId);
+        if (paidAfterCanceled(bookingId, status.paymentId(), newlyRecorded)) {
+            return false;
+        }
         bookingService.confirmBookingPayment(bookingId);
         return true;
     }
@@ -154,6 +157,10 @@ public class BookingCheckoutService {
             return false;
         }
 
+        if (paidAfterCanceled(status.bookingId(), status.paymentId(), true)) {
+            return false;
+        }
+
         bookingService.confirmBookingPayment(status.bookingId());
         log.info("Reserva {} confirmada por el aviso del pago {}",
                 status.bookingId(), status.paymentId());
@@ -186,6 +193,28 @@ public class BookingCheckoutService {
         payment.setBooking(booking);
         paymentRepository.save(payment);
         return true;
+    }
+
+    /**
+     * Si la reserva ya está cancelada, el pago queda registrado pero no la revive. Pasa cuando la
+     * limpieza la canceló mientras MercadoPago aprobaba un pago que había empezado antes, por
+     * ejemplo una tarjeta que quedó en revisión. Antes la confirmación fallaba, se deshacía también
+     * el registro del pago y el aviso se reintentaba siempre con el mismo error: el cliente pagaba y
+     * no quedaba constancia. Ahora queda la fila del pago y un aviso en el log para reintegrarlo a
+     * mano desde MercadoPago.
+     *
+     * @param newlyRecorded si el pago se acaba de registrar; uno repetido no se vuelve a anotar.
+     * @return si la reserva estaba cancelada.
+     */
+    private boolean paidAfterCanceled(Long bookingId, String paymentId, boolean newlyRecorded) {
+        boolean canceled = bookingRepository.findById(bookingId)
+                .map(booking -> booking.getStatus() == Status.CANCELED)
+                .orElse(false);
+        if (canceled && newlyRecorded) {
+            log.warn("Reintegro manual: el pago {} se aprobó para la reserva {}, que ya estaba cancelada."
+                    + " Quedó registrado; hay que reintegrarlo desde MercadoPago.", paymentId, bookingId);
+        }
+        return canceled;
     }
 
     /** El pago, solo si la pasarela lo conoce y lo da por aprobado. */
