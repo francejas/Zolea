@@ -59,6 +59,14 @@ classDiagram
         +cancel() void
         +addGuest(String, String) Guest
         +holderDetails() String[]
+        +canBeReviewed(LocalDate) boolean
+    }
+
+    class Review {
+        +Long idReview
+        +Integer rating
+        +String comment
+        +LocalDateTime createdAt
     }
 
     class Guest {
@@ -103,6 +111,7 @@ classDiagram
     RentalUnit "1" --> "0..*" Booking : se reserva en
     Booking "1" *-- "0..*" Guest : huéspedes
     Booking "1" --> "0..*" Payment : cobros
+    Booking "1" <-- "0..1" Review : califica
     Booking ..> Status
     RentalUnit ..> UnitType
 ```
@@ -121,6 +130,9 @@ classDiagram
 - **`Booking` → `Payment`** es de uno a varios y no de uno a uno, porque un cobro que falla y
   se reintenta genera un pago nuevo. De cada pago de la pasarela queda una sola fila:
   `gatewayPaymentId` es único.
+- **`Review` → `Booking`** es de uno a uno: una reseña por reserva, y solo de una confirmada
+  cuya estadía ya terminó (`canBeReviewed`). La reseña no apunta al balneario ni al cliente:
+  llega a los dos a través de la reserva.
 
 **Los métodos que se listan son solo los de `Booking`,** y están ahí porque son el punto del
 modelo donde viven las reglas del negocio: cuántos días ocupa una reserva, cuánto sale, qué
@@ -195,6 +207,14 @@ erDiagram
         bigint id_booking FK
     }
 
+    REVIEW {
+        bigint id_review PK
+        bigint id_booking FK, UK
+        int rating
+        varchar comment
+        datetime created_at
+    }
+
     AMENITY {
         bigint id_amenity PK
         varchar name
@@ -213,6 +233,7 @@ erDiagram
     RENTAL_UNIT ||--o{ BOOKING       : "se reserva"
     BOOKING  ||--o{ GUEST            : "ingresa con"
     BOOKING  ||--o{ PAYMENT          : "se cobra con"
+    BOOKING  ||--o| REVIEW           : "se califica con"
 ```
 
 ### Restricciones de unicidad
@@ -229,6 +250,7 @@ previo en el servicio lo pasan dos peticiones simultáneas, una restricción de 
 | `rental_unit` | `uk_unidad_por_balneario` (`id_resort`, `identifier`) | Dos carpas «A-01» en el mismo balneario |
 | `guest` | `qr_token` único | Dos huéspedes con el mismo código QR |
 | `payment` | `uk_pago_de_pasarela` (`gateway_payment_id`) | Que un mismo pago de MercadoPago deje dos filas — y con ellas dos juegos de códigos QR |
+| `review` | `uk_resena_de_reserva` (`id_booking`) | Dos reseñas de la misma reserva, aunque los dos pedidos lleguen a la vez |
 
 La última es la que sostiene el cobro: MercadoPago reintenta sus avisos, y dos que lleguen
 exactamente a la vez leerían los dos la reserva como pendiente. La explicación completa está
