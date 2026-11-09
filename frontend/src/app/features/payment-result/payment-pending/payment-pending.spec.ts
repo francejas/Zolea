@@ -1,21 +1,17 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { PaymentPending } from './payment-pending';
 
 describe('PaymentPending', () => {
-  let component: PaymentPending;
-  let fixture: ComponentFixture<PaymentPending>;
-
-  beforeEach(async () => {
+  it('se crea', async () => {
     await TestBed.configureTestingModule({
       imports: [PaymentPending],
+      providers: [provideRouter([])],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PaymentPending);
-    component = fixture.componentInstance;
-    await fixture.whenStable();
-  });
+    const fixture = TestBed.createComponent(PaymentPending);
+    fixture.detectChanges();
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 });

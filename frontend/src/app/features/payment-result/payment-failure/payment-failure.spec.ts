@@ -1,21 +1,20 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { PaymentFailure } from './payment-failure';
 
 describe('PaymentFailure', () => {
-  let component: PaymentFailure;
-  let fixture: ComponentFixture<PaymentFailure>;
-
-  beforeEach(async () => {
+  it('se crea', async () => {
+    sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [PaymentFailure],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PaymentFailure);
-    component = fixture.componentInstance;
-    await fixture.whenStable();
-  });
+    const fixture = TestBed.createComponent(PaymentFailure);
+    fixture.detectChanges();
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 });
