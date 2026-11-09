@@ -1,0 +1,52 @@
+<section class="result">
+  @if (confirmed()) {
+    <div class="result__wait">
+      <p class="z-eyebrow">Buenas noticias</p>
+      <h1 class="result__title">Esta reserva ya está pagada</h1>
+      <p class="result__text">
+        El pago se acreditó mientras tanto. No hace falta que hagas nada más: tus entradas están en
+        la reserva.
+      </p>
+      <a class="z-btn z-btn--primary" [routerLink]="['/bookings', bookingId]">Ver mis entradas</a>
+    </div>
+  } @else if (expired()) {
+    <div class="result__wait">
+      <svg lucideCircleAlert class="result__icon" aria-hidden="true"></svg>
+      <h1 class="result__title">La reserva venció</h1>
+      <p class="result__text">
+        Pasó el plazo para pagarla y se canceló sola. La unidad quedó libre: si todavía te sirve,
+        podés reservarla de nuevo.
+      </p>
+      <a class="z-btn z-btn--primary" [routerLink]="rebook().link" [queryParams]="rebook().query">
+        Volver a reservar
+      </a>
+      <a class="z-btn z-btn--ghost" routerLink="/my-bookings">Mis reservas</a>
+    </div>
+  } @else {
+    <div class="result__wait">
+      <svg lucideCircleAlert class="result__icon" aria-hidden="true"></svg>
+      <h1 class="result__title">No se pudo completar el pago</h1>
+      <p class="result__text">
+        MercadoPago no aprobó el pago. Pasa seguido y casi nunca es culpa tuya: puede ser el medio
+        de pago, un límite o un corte de la conexión.
+      </p>
+
+      <z-alert
+        variant="warning"
+        title="Tu reserva sigue esperando"
+        text="La reserva se cancela sola a la hora de haberla hecho. Hasta entonces podés volver a intentar con el mismo medio de pago u otro."
+      />
+
+      @if (retryError()) {
+        <z-alert variant="danger" title="No se pudo reintentar" [text]="retryError()" />
+      }
+
+      @if (bookingId) {
+        <z-btn [loading]="retrying()" (click)="retry()">Reintentar el pago</z-btn>
+        <a class="z-btn z-btn--ghost" [routerLink]="['/bookings', bookingId]">Ver la reserva</a>
+      } @else {
+        <a class="z-btn z-btn--primary" routerLink="/my-bookings">Ir a Mis reservas</a>
+      }
+    </div>
+  }
+</section>
