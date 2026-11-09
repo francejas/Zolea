@@ -84,6 +84,17 @@ que MercadoPago reintente, y reintentar no arregla un aviso de un pago rechazado
 es de un pago: solo genera ruido. La contrapartida conocida es que si la pasarela está caída
 justo en ese momento, ese aviso se pierde — y ahí queda el camino B.
 
+**Qué pasa con un pago que llega tarde.** El link de pago vence a la hora de creada la reserva,
+pero la limpieza automática recién cancela la reserva a partir de los 75 minutos (corre cada 5,
+así que entre los 75 y los 80). Ese margen es para el pago que se empezó antes de la hora y
+MercadoPago aprueba un poco después: la reserva todavía está pendiente y se confirma normalmente.
+Si el pago se aprueba cuando la reserva ya está cancelada —por ejemplo, una tarjeta que quedó en
+revisión y se aprueba horas después—, el pago **se registra igual**, con su reserva, y la reserva
+sigue cancelada. Queda un aviso en el log del backend («Reintegro manual», con el número de pago y
+la reserva) para devolverlo a mano desde MercadoPago, y al aviso automático se le responde 200
+para que no lo reintente. Si el que vuelve es el navegador, se lo manda a «pago pendiente», sin
+error.
+
 **Por qué el registro va antes de la confirmación.** Es lo que hace que dos avisos
 **simultáneos** no generen dos juegos de códigos QR. Está explicado en
 [decisiones.md](decisiones.md#8-el-pago-se-registra-antes-de-confirmar-la-reserva).
@@ -204,8 +215,8 @@ configurar nada en el panel de MercadoPago.
 
 - El checkout no ofrece pagar en efectivo (Rapipago, Pago Fácil), y el link vence a la hora de
   creada la reserva: pasado ese plazo, MercadoPago ya no deja pagarlo.
-- Sin pagar, pasada la hora la limpieza cancela la reserva (corre cada cinco minutos), y pedir un
-  link nuevo responde `400` «La reserva venció.».
+- Sin pagar, pasada la hora pedir un link nuevo responde `400` «La reserva venció.», y la
+  limpieza cancela la reserva entre los 75 y los 80 minutos de creada.
 - Hasta que esté la pantalla de vuelta del pago (11.2), la vuelta cae en una página provisoria
   («Pago confirmado»), pero la reserva se confirma igual: se ve en su detalle.
 
