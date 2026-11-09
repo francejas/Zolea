@@ -2,7 +2,9 @@ package com.zolea.backend.dtos.resort;
 
 import com.zolea.backend.dtos.amenity.AmenityResponse;
 import com.zolea.backend.dtos.rentalunit.RentalUnitResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -23,6 +25,10 @@ public record ResortResponse(
         String description,
         boolean active,
         List<AmenityResponse> amenities,
-        List<RentalUnitResponse> rentalUnits
+        List<RentalUnitResponse> rentalUnits,
+        @Schema(description = "El promedio de las reseñas, con un decimal. Null si todavía no tiene", example = "4.5")
+        BigDecimal averageRating,
+        @Schema(description = "Cuántas reseñas tiene", example = "12")
+        long reviewCount
 ) {
 }
