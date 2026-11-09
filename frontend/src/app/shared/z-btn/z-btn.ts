@@ -19,7 +19,8 @@ import { booleanAttribute, Component, input, computed } from '@angular/core';
   `,
 })
 export class ZBtn {
-  variant = input<'primary' | 'secondary' | 'ghost' | 'danger'>('primary');
+  /** `on-color` va sobre un fondo de color, como el verde o el rojo del resultado del ingreso. */
+  variant = input<'primary' | 'secondary' | 'ghost' | 'danger' | 'on-color'>('primary');
   size = input<'small' | 'normal' | 'large'>('normal');
   // Por defecto no envía formularios: un submit hay que pedirlo.
   type = input<'button' | 'submit' | 'reset'>('button');
