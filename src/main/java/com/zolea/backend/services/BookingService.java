@@ -332,15 +332,16 @@ public class BookingService {
     // ==========================================
 
     /**
-     * Cancela las reservas que quedaron pendientes más del plazo de pago ({@link Booking#PAYMENT_WINDOW},
-     * una hora), como canceladas por el sistema. Corre cada cinco minutos, así una reserva sin pagar
-     * no queda ocupando la unidad mucho más que esa hora.
+     * Cancela, como del sistema, las reservas que siguen pendientes pasado el plazo de pago
+     * ({@link Booking#PAYMENT_WINDOW}, una hora) más el margen ({@link Booking#CLEANUP_GRACE},
+     * 15 minutos). Corre cada cinco minutos, así que una reserva sin pagar se cancela entre los 75 y
+     * los 80 minutos de creada.
      */
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
     public void cancelExpiredBookings() {
-        // 1. Las pendientes creadas antes de este momento ya pasaron el plazo de pago.
-        LocalDateTime deadline = now().minus(Booking.PAYMENT_WINDOW);
+        // 1. Las pendientes creadas antes de este momento ya pasaron el plazo de pago y el margen.
+        LocalDateTime deadline = now().minus(Booking.PAYMENT_WINDOW).minus(Booking.CLEANUP_GRACE);
 
         // 2. Buscamos las reservas vencidas
         List<Booking> expiredBookings = bookingRepository.findExpiredPendingBookings(deadline);
