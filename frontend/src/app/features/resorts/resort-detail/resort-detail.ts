@@ -14,7 +14,7 @@ import { ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
-import { amenityIcon } from './amenities/amenity-icons';
+import { amenityIcon } from '../../../shared/utils/amenity-icons';
 
 type Status = 'loading' | 'ready' | 'not-found' | 'error';
 
