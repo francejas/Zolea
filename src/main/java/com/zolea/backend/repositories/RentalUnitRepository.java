@@ -36,4 +36,7 @@ public interface RentalUnitRepository extends JpaRepository<RentalUnit, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM RentalUnit u WHERE u.idRentalUnit = :id")
     Optional<RentalUnit> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("SELECT COUNT(u) FROM RentalUnit u WHERE u.resort.id = :resortId AND u.status != 'BLOCKED'")
+    long countActiveUnitsByResort(@Param("resortId") Long resortId);
 }

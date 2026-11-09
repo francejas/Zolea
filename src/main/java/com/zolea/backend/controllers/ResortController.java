@@ -3,6 +3,9 @@ package com.zolea.backend.controllers;
 import com.zolea.backend.dtos.resort.ResortActionResponse;
 import com.zolea.backend.dtos.resort.ResortRequest;
 import com.zolea.backend.dtos.resort.ResortResponse;
+import com.zolea.backend.dtos.resort.ResortStatsResponse;
+import com.zolea.backend.exceptions.booking.BookingForbiddenException;
+import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.ResortService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,8 +19,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -131,5 +136,26 @@ public class ResortController {
     public ResponseEntity<ResortActionResponse> toActiveResort(@PathVariable Long id) {
         ResortResponse saved = resortService.toActive(id);
         return ResponseEntity.ok(new ResortActionResponse("Balneario activado correctamente.", saved));
+    }
+
+
+    @Operation(summary = "Obtener estadísticas del balneario del administrador")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Estadísticas generadas correctamente"),
+            @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Rol no autorizado o administrador sin balneario")
+    })
+    @GetMapping("/my/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResortStatsResponse getMyStats(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to) {
+
+        if (user.getIdManagedResort() == null) {
+            throw new BookingForbiddenException("El administrador no tiene un balneario asignado.");
+        }
+        return resortService.getResortStats(user.getIdManagedResort(), from, to);
     }
 }

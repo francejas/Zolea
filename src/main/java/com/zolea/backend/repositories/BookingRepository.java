@@ -81,4 +81,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.status = 'PENDING' AND b.createdAt <= :limitDate")
     List<Booking> findExpiredPendingBookings(@Param("limitDate") LocalDateTime limitDate);
 
+    @Query("SELECT b FROM Booking b WHERE b.resort.id = :resortId AND b.status = 'CONFIRMED' AND b.startDate <= :to AND b.endDate >= :from")
+    List<Booking> findConfirmedOverlappingRange(
+            @Param("resortId") Long resortId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 }
