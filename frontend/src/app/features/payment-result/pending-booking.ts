@@ -1,4 +1,4 @@
-import { PENDING_BOOKING_KEY } from '../book/book';
+import { PENDING_BOOKING_KEY } from '../bookings/book/book';
 
 /**
  * El id de la reserva que Reservar (11.1) guardó antes de salir a MercadoPago, o `null` si no está.

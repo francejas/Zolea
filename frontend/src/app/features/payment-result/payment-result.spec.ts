@@ -2,13 +2,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { environment } from '../../../../environments/environment';
-import { Booking } from '../../../core/api/booking.models';
-import { aBooking, aGuest } from '../booking.fixtures';
-import { PENDING_BOOKING_KEY } from '../book/book';
 import { MAX_RETRIES, PaymentSuccess, POLL_MS } from './payment-success/payment-success';
 import { PaymentPending } from './payment-pending/payment-pending';
 import { PaymentFailure } from './payment-failure/payment-failure';
+import { environment } from '../../../environments/environment';
+import { Booking } from '../../core/api/booking.models';
+import { PENDING_BOOKING_KEY } from '../bookings/book/book';
+import { aBooking, aGuest } from '../bookings/booking.fixtures';
 
 const BOOKINGS = `${environment.apiUrl}/api/bookings`;
 const MP_URL = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=nueva';

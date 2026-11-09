@@ -2,12 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LucideCircleAlert } from '@lucide/angular';
-import { ZAlert } from '../../../../shared/z-alert/z-alert';
-import { ZBtn } from '../../../../shared/z-btn/z-btn';
-import { BookingsApi } from '../../../../core/api/bookings.api';
+import { ZAlert } from '../../../shared/z-alert/z-alert';
+import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { readPendingBooking } from '../pending-booking';
-import { Booking } from '../../../../core/api/booking.models';
-import { toUserMessage } from '../../../../core/errors/error-message';
+import { Booking } from '../../../core/api/booking.models';
+import { BookingsApi } from '../../../core/api/bookings.api';
+import { toUserMessage } from '../../../core/errors/error-message';
 
 /**
  * Pago rechazado (`/payment/failure`, llega sin id): qué pasó, sin culpar a la persona, y cómo

@@ -19,16 +19,16 @@ import {
   LucideTent,
   LucideUmbrella,
 } from '@lucide/angular';
-import { BookingsApi } from '../../../../core/api/bookings.api';
-import { Booking } from '../../../../core/api/booking.models';
-import { bookingNumber, dayCount, dayRange, money, unitLabel } from '../../booking-format';
 import { clearPendingBooking } from '../pending-booking';
-import { toUserMessage } from '../../../../core/errors/error-message';
-import { GuestQr } from '../../guest-qr/guest-qr';
-import { ZAlert } from '../../../../shared/z-alert/z-alert';
-import { ZEmpty } from '../../../../shared/z-empty/z-empty';
-import { ZProblem } from '../../../../shared/z-problem/z-problem';
-import { ZSkeleton } from '../../../../shared/z-skeleton/z-skeleton';
+import { BookingsApi } from '../../../core/api/bookings.api';
+import { GuestQr } from '../../bookings/guest-qr/guest-qr';
+import { ZEmpty } from '../../../shared/z-empty/z-empty';
+import { ZAlert } from '../../../shared/z-alert/z-alert';
+import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { Booking } from '../../../core/api/booking.models';
+import { bookingNumber, dayCount, dayRange, money, unitLabel } from '../../bookings/booking-format';
+import { toUserMessage } from '../../../core/errors/error-message';
 
 type LoadState =
   'loading' | 'confirmed' | 'confirming' | 'missing' | 'forbidden' | 'not-found' | 'error';
