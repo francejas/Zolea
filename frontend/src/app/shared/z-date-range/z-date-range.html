@@ -1,0 +1,85 @@
+<div class="z-range">
+  <div class="z-range__fields">
+    <button
+      #fromButton
+      class="z-range__field"
+      type="button"
+      [attr.aria-expanded]="open() === 'from'"
+      [attr.aria-controls]="id + '-calendario'"
+      (click)="toggle('from')"
+    >
+      <span>Entrada</span><strong>{{ fromLabel() }}</strong>
+    </button>
+    <button
+      #toButton
+      class="z-range__field"
+      type="button"
+      [attr.aria-expanded]="open() === 'to'"
+      [attr.aria-controls]="id + '-calendario'"
+      (click)="toggle('to')"
+    >
+      <span>Salida</span><strong>{{ toLabel() }}</strong>
+    </button>
+  </div>
+
+  @if (open()) {
+    <div
+      class="z-cal"
+      role="group"
+      [id]="id + '-calendario'"
+      [attr.aria-label]="open() === 'from' ? 'Elegí la entrada' : 'Elegí la salida'"
+    >
+      <div class="z-cal__head">
+        <button
+          class="z-icon-btn"
+          type="button"
+          aria-label="Mes anterior"
+          [disabled]="!canGoBack()"
+          (click)="shiftMonth(-1)"
+        >
+          <svg lucideChevronLeft class="z-icon" aria-hidden="true"></svg>
+        </button>
+        <span class="z-cal__month" aria-live="polite">{{ monthLabel() }}</span>
+        <button class="z-icon-btn" type="button" aria-label="Mes siguiente" (click)="shiftMonth(1)">
+          <svg lucideChevronRight class="z-icon" aria-hidden="true"></svg>
+        </button>
+      </div>
+
+      <div class="z-cal__grid">
+        @for (weekday of weekdays; track weekday) {
+          <span class="z-cal__dow" aria-hidden="true">{{ weekday }}</span>
+        }
+        @for (blank of leadingBlanks(); track $index) {
+          <span></span>
+        }
+        @for (day of days(); track day.iso) {
+          <button
+            class="z-cal__day"
+            type="button"
+            [class.is-past]="day.past"
+            [class.is-today]="day.today"
+            [class.is-in-range]="day.inRange"
+            [class.is-start]="day.start"
+            [class.is-end]="day.end"
+            [class.is-single]="day.start && day.end"
+            [attr.aria-pressed]="day.start || day.end ? 'true' : null"
+            [attr.aria-label]="day.label"
+            [disabled]="day.past"
+            (click)="pick(day)"
+          >
+            <span>{{ day.day }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (summary() && nights() > 0) {
+    <div class="z-range__summary" role="status">
+      <div>
+        <strong>{{ summaryTitle() }}</strong>
+        <p>{{ summaryText() }}</p>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,65 @@
+/* Las piezas del catálogo de balnearios de Zolea-docs/diseno/componentes.css que comparten la
+   Portada y la Ficha: la foto de portada, el lugar y los servicios. */
+
+/* Foto de portada: sin foto queda el degradado de cielo, mar y arena. */
+.z-photo {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: linear-gradient(
+    var(--color-sky) 0 60%,
+    var(--color-sea) 60% 70%,
+    var(--color-sand) 70% 100%
+  );
+}
+
+.z-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Lugar del balneario */
+.z-place {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.z-place .z-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Servicios del balneario */
+.z-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.z-amenity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px 0 9px;
+  border: var(--border-strong);
+  border-radius: var(--radius-pill);
+  font: 500 var(--text-small) / 1 var(--font-body);
+  white-space: nowrap;
+}
+
+.z-amenity .z-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.z-amenity--more {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}

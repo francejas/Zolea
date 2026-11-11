@@ -1,0 +1,60 @@
+<article class="z-ticket" [attr.aria-label]="'Entrada de ' + guest().fullName">
+  <div class="z-guard" role="presentation"></div>
+
+  <div class="z-ticket__head">
+    <span class="z-ticket__resort">
+      <img src="emblema.svg" alt="" width="28" height="28" />
+      {{ booking().resortName }}
+    </span>
+    <span class="z-eyebrow">Entrada</span>
+  </div>
+
+  <div class="z-ticket__qr">
+    <qrcode
+      [qrdata]="guest().qrToken"
+      [width]="216"
+      [margin]="2"
+      elementType="svg"
+      errorCorrectionLevel="M"
+      [colorDark]="ink"
+      [colorLight]="foam"
+      [ariaLabel]="'Código QR de la entrada de ' + guest().fullName"
+    />
+  </div>
+
+  <div class="z-ticket__who">
+    <p class="z-ticket__name">{{ guest().fullName }}</p>
+    @if (dni(); as dni) {
+      <p class="z-ticket__dni">DNI {{ dni }}</p>
+    }
+  </div>
+
+  <div class="z-ticket__cut" role="presentation"></div>
+
+  <dl class="z-ticket__facts">
+    <div>
+      <dt>Unidad</dt>
+      <dd>{{ unit() }}</dd>
+    </div>
+    <div>
+      <dt>Días</dt>
+      <dd>{{ days() }}</dd>
+    </div>
+    <div>
+      <dt>Reserva</dt>
+      <dd class="z-code">{{ number() }}</dd>
+    </div>
+    <div>
+      <dt>Ingreso</dt>
+      <dd>{{ guest().isEntryValidated ? 'Ya entró' : 'Sin usar' }}</dd>
+    </div>
+  </dl>
+
+  <div class="z-ticket__foot">
+    <ng-content />
+    <z-btn variant="secondary" (click)="download()">
+      <svg lucideDownload class="z-icon z-icon--s" aria-hidden="true"></svg>
+      Descargar
+    </z-btn>
+  </div>
+</article>

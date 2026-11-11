@@ -1,0 +1,167 @@
+<section class="booking">
+  <a class="booking__back" routerLink="/my-bookings">
+    <svg lucideChevronLeft class="z-icon z-icon--s" aria-hidden="true"></svg>
+    Mis reservas
+  </a>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="booking__layout" aria-busy="true" aria-label="Cargando la reserva">
+        <div class="booking__info">
+          <z-skeleton width="30%" height="12px" />
+          <z-skeleton width="80%" height="34px" />
+          <z-skeleton width="55%" height="14px" />
+          <z-skeleton height="auto" style="aspect-ratio: 16 / 10" />
+          <z-skeleton width="60%" height="16px" />
+          <z-skeleton width="45%" height="16px" />
+        </div>
+      </div>
+    }
+
+    @case ('forbidden') {
+      <z-alert
+        variant="forbidden"
+        title="Esta reserva no es tuya"
+        text="Solo la ve quien la hizo. Si es tuya, fijate con qué cuenta entraste."
+        actionLabel="Ir a Mis reservas"
+        (action)="goToMyBookings()"
+      />
+    }
+
+    @case ('not-found') {
+      <z-empty
+        title="No encontramos esta reserva"
+        text="Puede que el enlace esté incompleto. Tus reservas están todas en Mis reservas."
+        actionLabel="Ir a Mis reservas"
+        (action)="goToMyBookings()"
+      />
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer la reserva" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (booking(); as booking) {
+        <div class="booking__layout">
+          <div class="booking__info">
+            <header class="booking__head">
+              <p class="z-eyebrow">
+                Reserva <span class="z-code">{{ number() }}</span>
+              </p>
+              <h1 class="booking__title">{{ booking.resortName }}</h1>
+              <p class="z-place">
+                <svg lucideMapPin class="z-icon" aria-hidden="true"></svg
+                >{{ booking.resortLocation }}
+              </p>
+              <span class="z-status z-status--{{ status()!.modifier }}">{{ status()!.label }}</span>
+            </header>
+
+            <div class="z-photo booking__photo">
+              @if (booking.resortCoverPhotoUrl) {
+                <img [src]="booking.resortCoverPhotoUrl" alt="" />
+              }
+            </div>
+
+            <ul class="z-facts">
+              <li>
+                @if (booking.rentalUnitType === 'TENT') {
+                  <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+                } @else {
+                  <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+                }
+                {{ unit() }}
+              </li>
+              <li>
+                <svg lucideCalendarDays class="z-icon" aria-hidden="true"></svg>
+                {{ days() }}
+              </li>
+            </ul>
+
+            <div class="z-total">
+              <span>Total</span>
+              <strong class="z-money">{{ total() }}</strong>
+            </div>
+          </div>
+
+          <!-- Al costado, lo que se hace ahora: pagar, entrar o nada, según el estado. -->
+          <div class="booking__side">
+            @if (actionError()) {
+              <z-alert variant="danger" title="No se pudo hacer" [text]="actionError()" />
+            }
+
+            @if (booking.status === 'PENDING') {
+              <z-alert
+                variant="warning"
+                title="Falta pagar"
+                text="Si no se paga en una hora, la reserva se cancela sola y la unidad queda libre."
+              />
+              <div class="booking__actions">
+                <z-btn [loading]="paying()" (click)="pay()">Pagar ahora</z-btn>
+                <z-btn variant="secondary" [disabled]="paying()" (click)="askCancel()">
+                  Cancelar reserva
+                </z-btn>
+              </div>
+
+              <dialog #cancelDialog class="z-modal" aria-labelledby="cancel-title">
+                <h2 id="cancel-title" class="z-modal__title">¿Cancelás la reserva?</h2>
+                <p class="z-modal__body">
+                  La {{ unit() }} queda libre para esos días. No se puede deshacer.
+                </p>
+                <div class="z-modal__actions">
+                  <z-btn variant="secondary" block [disabled]="canceling()" (click)="closeCancel()">
+                    Volver
+                  </z-btn>
+                  <z-btn variant="danger" block [loading]="canceling()" (click)="confirmCancel()">
+                    Cancelar reserva
+                  </z-btn>
+                </div>
+              </dialog>
+            }
+
+            @if (booking.status === 'CANCELED') {
+              <p class="booking__note" role="status">
+                Esta reserva está cancelada. La unidad quedó libre para esos días.
+              </p>
+            }
+
+            @if (booking.status === 'CONFIRMED' && currentGuest(); as guest) {
+              <section class="booking__tickets" aria-labelledby="tickets-title">
+                <h2 id="tickets-title" class="booking__subtitle">Entradas</h2>
+                <p class="booking__hint">Una por persona. Se muestra en la puerta del balneario.</p>
+
+                <app-guest-qr [guest]="guest" [booking]="booking">
+                  @if (booking.guests.length > 1) {
+                    <div class="z-pager">
+                      <button
+                        class="z-icon-btn"
+                        type="button"
+                        aria-label="Entrada anterior"
+                        [disabled]="ticketIndex() === 0"
+                        (click)="showTicket(-1)"
+                      >
+                        <svg lucideChevronLeft class="z-icon" aria-hidden="true"></svg>
+                      </button>
+                      <span aria-live="polite"
+                        >{{ ticketIndex() + 1 }} de {{ booking.guests.length }}</span
+                      >
+                      <button
+                        class="z-icon-btn"
+                        type="button"
+                        aria-label="Entrada siguiente"
+                        [disabled]="ticketIndex() === booking.guests.length - 1"
+                        (click)="showTicket(1)"
+                      >
+                        <svg lucideChevronRight class="z-icon" aria-hidden="true"></svg>
+                      </button>
+                    </div>
+                  }
+                </app-guest-qr>
+              </section>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+</section>

@@ -10,6 +10,7 @@ import com.zolea.backend.models.Guest;
 import com.zolea.backend.models.Status;
 import com.zolea.backend.repositories.GuestRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,16 +47,25 @@ public class GuestService {
      * registró su ingreso»): del otro lado hay un operador con la persona parada enfrente, que
      * necesita saber qué pasó para poder resolverlo.
      *
+     * <p>Antes que todo eso, que la reserva sea del balneario de quien valida: un administrador no
+     * marca ingresos de otro balneario, y tampoco se entera de en qué estado está esa reserva.
+     *
      * @param token el {@code qrToken} que el escáner leyó del código.
+     * @param resortId el balneario del administrador que valida.
      * @return los datos del huésped que acaba de ingresar.
      * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si el código no existe.
+     * @throws org.springframework.security.access.AccessDeniedException si la reserva es de otro balneario.
      * @throws com.zolea.backend.exceptions.guest.BookingNotPaidException si la reserva no está confirmada.
      * @throws com.zolea.backend.exceptions.guest.GuestAlreadyEnteredException si el código ya se usó.
      */
     @Transactional
-    public GuestValidationResponse validateGuestEntry(String token) {
+    public GuestValidationResponse validateGuestEntry(String token, Long resortId) {
         Guest guest = guestRepository.findByQrToken(token)
                 .orElseThrow(() -> new GuestNotFoundException("El código ingresado no existe o es incorrecto."));
+
+        if (!resortId.equals(guest.getBooking().getRentalUnit().getResort().getIdResort())) {
+            throw new AccessDeniedException("Ese código es de una reserva de otro balneario.");
+        }
 
         if (guest.getBooking().getStatus() != Status.CONFIRMED) {
             throw new BookingNotPaidException("La reserva asociada a este código aún figura como " + guest.getBooking().getStatus() + ". Debe abonarse antes de ingresar.");
@@ -86,15 +96,19 @@ public class GuestService {
      * caso: si la más próxima todavía no empezó, informa desde cuándo; si todas terminaron, que ya
      * venció. Es información que el operador necesita para atender a la persona.
      *
+     * <p>Busca solo entre las reservas del balneario de quien valida: las de otros balnearios no
+     * existen para él, ni siquiera para decirle que todavía no empezaron.
+     *
      * @param dni el documento que el operador cargó.
+     * @param resortId el balneario del administrador que valida.
      * @return los datos del huésped que acaba de ingresar.
-     * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si no hay ninguna reserva confirmada con ese DNI.
+     * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si no hay ninguna reserva confirmada con ese DNI en el balneario.
      * @throws com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException si ninguna está vigente hoy.
      * @throws com.zolea.backend.exceptions.guest.GuestAlreadyEnteredException si ya registró su ingreso.
      */
     @Transactional
-    public GuestValidationResponse validateGuestEntryByDni(String dni) {
-        List<Guest> guests = guestRepository.findConfirmedByDni(dni);
+    public GuestValidationResponse validateGuestEntryByDni(String dni, Long resortId) {
+        List<Guest> guests = guestRepository.findConfirmedByDniInResort(dni, resortId);
 
         if (guests.isEmpty()) {
             throw new GuestNotFoundException("No se encontró una reserva confirmada con el DNI ingresado.");

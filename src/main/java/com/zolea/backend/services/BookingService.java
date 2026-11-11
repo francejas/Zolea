@@ -3,6 +3,7 @@ package com.zolea.backend.services;
 // Import corregido a la carpeta correcta
 import com.zolea.backend.dtos.booking.BookingRequest;
 import com.zolea.backend.dtos.booking.BookingResponse;
+import com.zolea.backend.dtos.booking.CancellationResponse;
 import com.zolea.backend.dtos.guest.GuestSummaryResponse;
 import com.zolea.backend.exceptions.booking.BookingForbiddenException;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
@@ -14,6 +15,7 @@ import com.zolea.backend.repositories.BookingRepository;
 import com.zolea.backend.repositories.ClientRepository;
 import com.zolea.backend.repositories.GuestRepository;
 import com.zolea.backend.repositories.RentalUnitRepository;
+import com.zolea.backend.repositories.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,7 +26,9 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 /**
@@ -43,11 +47,17 @@ public class BookingService {
     private final ClientRepository clientRepository;
     private final RentalUnitRepository rentalUnitRepository;
     private final GuestRepository guestRepository;
+    private final ReviewRepository reviewRepository;
     private final Clock clock;
 
     /** Ahora en la zona del balneario. Ver {@link com.zolea.backend.config.TimeConfig}. */
     private LocalDateTime now() {
         return LocalDateTime.now(clock);
+    }
+
+    /** Hoy en la zona del balneario. */
+    private LocalDate today() {
+        return LocalDate.now(clock);
     }
 
     /**
@@ -169,22 +179,29 @@ public class BookingService {
     // 2. Obtener todas las reservas del sistema (Admin)
     /** Todas las reservas del sistema. Solo la usa un ADMIN sin balneario asignado. */
     public List<BookingResponse> getAllBookings() {
-        return bookingRepository.findAll().stream()
-                .map(this::mapToBookingResponse)
-                .toList();
+        return mapAll(bookingRepository.findAll());
     }
 
     /** Las reservas del balneario que administra un ADMIN. */
     public List<BookingResponse> getBookingsByResortId(Long idResort) {
-        return bookingRepository.findByResortId(idResort).stream()
-                .map(this::mapToBookingResponse)
-                .toList();
+        return mapAll(bookingRepository.findByResortId(idResort));
     }
 
     // 3. Obtener reservas por ID de Cliente (Cliente)
     public List<BookingResponse> getBookingsByClientId(Long clientId) {
-        return bookingRepository.findByClientId(clientId).stream()
-                .map(this::mapToBookingResponse)
+        return mapAll(bookingRepository.findByClientId(clientId));
+    }
+
+    /**
+     * Un listado de reservas, con cuáles ya se calificaron averiguado en una sola consulta para todo
+     * el listado y no una por reserva.
+     */
+    private List<BookingResponse> mapAll(List<Booking> bookings) {
+        Set<Long> reviewed = bookings.isEmpty() ? Set.of()
+                : new HashSet<>(reviewRepository.findReviewedBookingIds(
+                        bookings.stream().map(Booking::getId).toList()));
+        return bookings.stream()
+                .map(booking -> mapToBookingResponse(booking, reviewed.contains(booking.getId())))
                 .toList();
     }
 
@@ -203,12 +220,17 @@ public class BookingService {
     }
 
     private BookingResponse mapToBookingResponse(Booking booking) {
+        return mapToBookingResponse(booking, reviewRepository.existsByBooking_Id(booking.getId()));
+    }
+
+    private BookingResponse mapToBookingResponse(Booking booking, boolean reviewed) {
         List<GuestSummaryResponse> guestResponses = booking.getGuests() != null ?
                 booking.getGuests().stream()
                 .map(g -> new GuestSummaryResponse(g.getIdGuest(), g.getFullName(), g.getDni(), g.getIsEntryValidated(), g.getQrToken()))
                 .toList() : new ArrayList<>();
 
-        var resort = booking.getRentalUnit().getResort();
+        var unit = booking.getRentalUnit();
+        var resort = unit.getResort();
 
         return new BookingResponse(
                 booking.getId(),
@@ -218,38 +240,76 @@ public class BookingService {
                 booking.getStatus(),
                 booking.getCreatedAt(),
                 booking.getClient() != null ? booking.getClient().getIdClient() : null,
-                booking.getRentalUnit().getIdRentalUnit(),
+                unit.getIdRentalUnit(),
+                unit.getIdentifier(),
+                unit.getType(),
                 guestResponses,
                 booking.getWalkInName(),
                 booking.getWalkInDni(),
                 resort != null ? resort.getIdResort() : null,
                 resort != null ? resort.getName() : null,
                 resort != null ? resort.getLocation() : null,
-                resort != null ? resort.getCoverPhotoUrl() : null
+                resort != null ? resort.getCoverPhotoUrl() : null,
+                booking.getCanceledAt(),
+                booking.getCanceledBy(),
+                booking.getRefundAmount(),
+                reviewed
         );
     }
 
+    /**
+     * Cancela una reserva del balneario del administrador: el balneario reintegra el 100 %. Hasta la
+     * 14.3 un administrador cancelaba cualquier reserva del sistema (RNF03).
+     */
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
-                        "Reserva no encontrada con el ID: " + bookingId));
-        booking.cancel();
+    public BookingResponse cancelBookingAsAdmin(Long bookingId, Long managedResortId) {
+        Booking booking = findInResort(bookingId, managedResortId);
+        booking.cancel(now(), CanceledBy.ADMIN);
         bookingRepository.save(booking);
         return mapToBookingResponse(booking);
     }
 
+    /** Cancela una reserva del cliente, con la política de reintegro de {@link Booking#refundFor}. */
     @Transactional
     public BookingResponse cancelBookingAsClient(Long bookingId, String clientEmail) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
-                        "Reserva no encontrada con el ID: " + bookingId));
+        Booking booking = findOfClient(bookingId, clientEmail);
+        booking.cancel(now(), CanceledBy.CLIENT);
+        bookingRepository.save(booking);
+        return mapToBookingResponse(booking);
+    }
+
+    /** Lo que pasaría si el administrador cancela hoy, sin cancelar. */
+    @Transactional(readOnly = true)
+    public CancellationResponse getCancellationTermsAsAdmin(Long bookingId, Long managedResortId) {
+        return CancellationResponse.of(findInResort(bookingId, managedResortId).refundFor(today(), true));
+    }
+
+    /** Lo que pasaría si el cliente cancela hoy, sin cancelar. */
+    @Transactional(readOnly = true)
+    public CancellationResponse getCancellationTermsAsClient(Long bookingId, String clientEmail) {
+        return CancellationResponse.of(findOfClient(bookingId, clientEmail).refundFor(today(), false));
+    }
+
+    private Booking findInResort(Long bookingId, Long managedResortId) {
+        Booking booking = findBooking(bookingId);
+        if (!managedResortId.equals(booking.getRentalUnit().getResort().getIdResort())) {
+            throw new BookingForbiddenException("Esa reserva es de otro balneario.");
+        }
+        return booking;
+    }
+
+    private Booking findOfClient(Long bookingId, String clientEmail) {
+        Booking booking = findBooking(bookingId);
         if (booking.getClient() == null || !booking.getClient().getEmail().equals(clientEmail)) {
             throw new BookingForbiddenException("No tenés permiso para cancelar esta reserva");
         }
-        booking.cancel();
-        bookingRepository.save(booking);
-        return mapToBookingResponse(booking);
+        return booking;
+    }
+
+    private Booking findBooking(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException(
+                        "Reserva no encontrada con el ID: " + bookingId));
     }
 
     /**
@@ -288,22 +348,25 @@ public class BookingService {
     // ==========================================
 
     /**
-     * Este método se ejecuta automáticamente cada 1 hora exacto.
-     * Busca las reservas con más de 24hs pendientes y las cancela.
+     * Cancela, como del sistema, las reservas que siguen pendientes pasado el plazo de pago
+     * ({@link Booking#PAYMENT_WINDOW}, una hora) más el margen ({@link Booking#CLEANUP_GRACE},
+     * 15 minutos). Corre cada cinco minutos, así que una reserva sin pagar se cancela entre los 75 y
+     * los 80 minutos de creada.
      */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     @Transactional
     public void cancelExpiredBookings() {
-        // 1. Calculamos qué hora era hace exactamente 24 horas
-        LocalDateTime twentyFourHoursAgo = now().minusHours(24);
+        // 1. Las pendientes creadas antes de este momento ya pasaron el plazo de pago y el margen.
+        LocalDateTime deadline = now().minus(Booking.PAYMENT_WINDOW).minus(Booking.CLEANUP_GRACE);
 
-        // 2. Buscamos las reservas vencidas usando el método nuevo del repositorio
-        List<Booking> expiredBookings = bookingRepository.findExpiredPendingBookings(twentyFourHoursAgo);
+        // 2. Buscamos las reservas vencidas
+        List<Booking> expiredBookings = bookingRepository.findExpiredPendingBookings(deadline);
 
         // 3. Si encontramos alguna, le cambiamos el estado a CANCELED y la guardamos
         if (!expiredBookings.isEmpty()) {
             for (Booking booking : expiredBookings) {
-                booking.cancel(); // la misma transición que usa la cancelación manual
+                // La misma transición que la cancelación manual; queda registrada como del sistema.
+                booking.cancel(now(), CanceledBy.SYSTEM);
             }
 
             // saveAll es mucho más rápido que hacer un save() por cada reserva en un bucle

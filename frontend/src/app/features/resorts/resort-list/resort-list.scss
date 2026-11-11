@@ -1,0 +1,183 @@
+/* La Portada, pensada desde el celular (390 px): lo de la computadora va en @media (min-width: 768px). */
+
+.page-container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) var(--space-8);
+}
+
+.hero {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-sky);
+
+  h1 {
+    margin: 0 0 var(--space-3);
+    font: 400 var(--text-display-l) / var(--leading-title) var(--font-display);
+  }
+}
+
+.hero__lead {
+  max-width: 540px;
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-body);
+  color: var(--color-ink-soft);
+}
+
+.hero-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  color: var(--color-ink-soft);
+  font-size: var(--text-body);
+}
+
+.hero-steps li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  counter-increment: step;
+}
+
+.hero-steps li::before {
+  content: counter(step);
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-cream);
+  font: 500 var(--text-caption) / 1 var(--font-mono);
+}
+
+.search-section {
+  max-width: 520px;
+  margin-bottom: var(--space-6);
+}
+
+.resorts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+/* --- Tarjeta de balneario (componentes.css:608-631) --- */
+.z-resort-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+  transition: border-color var(--duration) var(--ease);
+}
+
+.z-resort-card:hover {
+  border-color: var(--color-line-strong);
+}
+
+.z-resort-card:hover .z-resort-card__cta {
+  background: var(--color-ink-hover);
+}
+
+.z-resort-card__body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.z-resort-card__name {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.z-resort-card__name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* El enlace cubre toda la tarjeta: un clic en cualquier parte abre el balneario. */
+.z-resort-card__name a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.z-resort-card__name a:focus-visible {
+  outline: none;
+}
+
+.z-resort-card:has(a:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.z-resort-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+
+  .z-price-from {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+
+    strong {
+      color: var(--color-ink);
+      font-size: 16px;
+    }
+  }
+}
+
+.z-price-from__amount {
+  white-space: nowrap;
+}
+
+.z-resort-card__cta {
+  margin-left: auto;
+}
+
+/* --- Esqueleto --- */
+.skeleton-photo {
+  aspect-ratio: 16 / 10;
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: 6px;
+}
+
+/* --- Computadora --- */
+@media (min-width: 768px) {
+  .page-container {
+    padding-top: var(--space-5);
+  }
+
+  .hero {
+    padding: var(--space-6);
+
+    h1 {
+      font-size: var(--text-display-xl);
+      line-height: var(--leading-display);
+    }
+  }
+
+  .hero__lead {
+    font-size: var(--text-lead);
+  }
+
+  .hero-steps {
+    flex-direction: row;
+    gap: var(--space-4);
+    font-size: var(--text-lead);
+  }
+}

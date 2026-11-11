@@ -2,6 +2,13 @@
    Zolea-docs/diseno/tokens.css: si cambia allá, se vuelve a copiar acá. */
 @use 'styles/tokens';
 @use 'styles/buttons';
+@use 'styles/utilities';
+@use 'styles/inputs';
+@use 'styles/catalog';
+@use 'styles/status';
+@use 'styles/tables';
+@use 'styles/modal';
+@use 'styles/tabs';
 
 /* La base de Zolea-docs/diseno/componentes.css. Lo de cada pieza va en su componente, salvo los
    botones, que también los usan los enlaces (styles/buttons.scss). */

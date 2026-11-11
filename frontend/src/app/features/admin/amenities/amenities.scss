@@ -1,0 +1,139 @@
+/* Catálogo de servicios. La tabla y la confirmación son globales (styles/tables.scss y
+   styles/modal.scss); acá, la cabecera de la pantalla y el formulario de alta, igual que en
+   Unidades. Se diseña desde la computadora: debajo de 768 px cada fila pasa a ser una tarjeta. */
+
+:host {
+  display: block;
+}
+
+.amenities {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 880px;
+}
+
+.amenities__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.amenities__title {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.amenities__h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.amenities__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.amenities__summary {
+  margin: 0 0 calc(-1 * var(--space-2));
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+/* Formulario de alta: una tarjeta de superficie clara (bloque Tarjeta, «Espuma»). */
+.amenities__create {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.amenities__create-title {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.amenities__create-actions {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.amenities__name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.amenities__usage {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  column-gap: var(--space-2);
+}
+
+.amenities__mine {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+/* El campo del nombre dentro de la fila. */
+.amenities__rename {
+  width: 320px;
+  max-width: 100%;
+  text-align: left;
+}
+
+/* El esqueleto tiene la forma de la tabla: una cabecera y cinco filas. */
+.amenities__skeleton {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.amenities__skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: var(--border);
+}
+
+/* En la tarjeta del celular, el campo ocupa lo que deja la etiqueta «Servicio», sin ensanchar la
+   página. */
+@media (max-width: 767px) {
+  .amenities__rename {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 479px) {
+  .amenities__create-actions z-btn {
+    flex: 1 1 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .amenities__create {
+    padding: var(--space-6);
+  }
+
+  .amenities__create z-field {
+    max-width: 480px;
+  }
+
+  .amenities__usage {
+    justify-content: flex-start;
+  }
+}

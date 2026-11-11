@@ -1,7 +1,8 @@
 import { Routes } from '@angular/router';
-import { PlaceholderPage } from '../../core/placeholder-page';
+import { ResortList } from './resort-list/resort-list';
+import { ResortDetail } from './resort-detail/resort-detail';
 
 export const resortRoutes: Routes = [
-  { path: '', component: PlaceholderPage, data: { title: 'Portada' } },
-  { path: 'resorts/:id', component: PlaceholderPage, data: { title: 'Ficha de balneario' } },
+  { path: '', component: ResortList },
+  { path: 'resorts/:id', component: ResortDetail },
 ];

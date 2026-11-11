@@ -15,11 +15,29 @@
 -- levante por convención sin que nadie lo haya decidido.
 --
 -- Es MySQL puro (SET FOREIGN_KEY_CHECKS, ALTER TABLE AUTO_INCREMENT,
--- UPDATE ... JOIN, LPAD, CURDATE): no corre en otro motor.
+-- UPDATE ... JOIN, LPAD, UTC_TIMESTAMP, variables @): no corre en otro motor.
 -- =============================================================================
+
+-- =============================================================================
+-- FECHAS Y HORAS
+--
+-- Las fechas salen del día de Buenos Aires, no del de la base: @today es ese
+-- día y se usa en todo el archivo en lugar de CURDATE(). El contenedor de MySQL
+-- corre en UTC, y CURDATE() después de las 21 h daba el día siguiente. Argentina
+-- no cambia la hora en verano, así que restar 3 horas alcanza. La variable vale
+-- en todo el archivo porque Spring corre el script entero en una sola conexión.
+--
+-- Las horas (created_at, canceled_at) van en UTC, que es como las guarda la
+-- aplicación: la conexión lleva serverTimezone=UTC y la aplicación fija su zona
+-- en la del balneario al arrancar (BackendApplication), así que la base queda en
+-- UTC en cualquier máquina y en Compose. Por eso salen de UTC_TIMESTAMP() y no
+-- de NOW(), que depende de la zona de la base. Ver docs/decisiones.md, 17.
+-- =============================================================================
+SET @today = DATE(UTC_TIMESTAMP() - INTERVAL 3 HOUR);
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DELETE FROM review;
 DELETE FROM guest;
 DELETE FROM booking;
 DELETE FROM resort_amenities;
@@ -28,6 +46,7 @@ DELETE FROM amenity;
 DELETE FROM resort;
 DELETE FROM client;
 
+ALTER TABLE review      AUTO_INCREMENT = 1;
 ALTER TABLE guest       AUTO_INCREMENT = 1;
 ALTER TABLE booking     AUTO_INCREMENT = 1;
 ALTER TABLE rental_unit AUTO_INCREMENT = 1;
@@ -527,36 +546,43 @@ WHERE g.full_name = CONCAT(c.first_name, ' ', c.last_name) AND c.dni IS NOT NULL
 -- =============================================================================
 -- FECHAS RELATIVAS — mantiene reservas "actuales" vigentes el día de la demo.
 -- El gate de validación de ingreso exige inicio <= hoy <= fin (ver GuestService),
--- así que las reservas demo se anclan a CURDATE() para no vencerse con el tiempo.
+-- así que las reservas demo se anclan a @today para no vencerse con el tiempo.
 -- =============================================================================
 -- Reservas confirmadas vigentes hoy (una por balneario): permiten validar QR/DNI.
-UPDATE booking SET start_date = CURDATE() - INTERVAL 1 DAY,
-                   end_date   = CURDATE() + INTERVAL 4 DAY
+UPDATE booking SET start_date = @today - INTERVAL 1 DAY,
+                   end_date   = @today + INTERVAL 4 DAY
 WHERE id IN (12, 24, 32, 39, 45);
 
 -- Walk-ins presenciales vigentes hoy.
-UPDATE booking SET start_date = CURDATE(),
-                   end_date   = CURDATE() + INTERVAL 1 DAY
+UPDATE booking SET start_date = @today,
+                   end_date   = @today + INTERVAL 1 DAY
 WHERE id IN (13, 25);
 
 -- Reservas PENDING: dos problemas, los dos por tener fechas absolutas.
 --
 -- 1) created_at fijo en 2025/2026. BookingService.cancelExpiredBookings corre
---    cada hora y cancela toda PENDING creada hace más de 24 h, así que a la
---    primera ejecución del cron la demo se quedaba sin ninguna PENDING: se caía
---    el flujo de "reintentar pago" y la columna PENDING del panel de admin.
+--    cada cinco minutos y cancela toda PENDING creada hace 75 minutos o más
+--    (Booking.PAYMENT_WINDOW más Booking.CLEANUP_GRACE; hasta el 07/11 eran
+--    24 h), así que a la primera ejecución del cron la demo se quedaba sin
+--    ninguna PENDING: se caía el flujo de "reintentar pago" y la columna PENDING
+--    del panel de admin.
 -- 2) start_date en jul/dic 2026. Las de julio ya son pasado, así que dejaron de
 --    ser "reservas futuras".
 --
--- Se anclan las dos cosas a la fecha de arranque. La duración original de cada
--- reserva se preserva: end_date se calcula con el DATEDIFF viejo ANTES de que
--- start_date se pise (MySQL evalúa el SET de izquierda a derecha).
-UPDATE booking SET created_at = NOW() - INTERVAL 2 HOUR WHERE status = 'PENDING';
+-- Se anclan las dos cosas al arranque. Las pendientes se crean hace diez
+-- minutos: se ven pendientes al arrancar, su link vence a la hora de creadas y
+-- la limpieza las cancela entre los 75 y los 80 minutos. La hora va en UTC, como
+-- todas (ver FECHAS Y HORAS, al principio).
+-- La duración original de cada reserva se preserva: end_date se calcula con el
+-- DATEDIFF viejo ANTES de que start_date se pise (MySQL evalúa el SET de
+-- izquierda a derecha).
+UPDATE booking SET created_at = UTC_TIMESTAMP() - INTERVAL 10 MINUTE
+WHERE status = 'PENDING';
 
 UPDATE booking
-SET end_date   = CURDATE() + INTERVAL (30 + (id MOD 20)) DAY
+SET end_date   = @today + INTERVAL (30 + (id MOD 20)) DAY
                            + INTERVAL DATEDIFF(end_date, start_date) DAY,
-    start_date = CURDATE() + INTERVAL (30 + (id MOD 20)) DAY
+    start_date = @today + INTERVAL (30 + (id MOD 20)) DAY
 WHERE status = 'PENDING';
 
 -- Huéspedes de las reservas vigentes: el ingreso tiene que estar SIN validar
@@ -597,3 +623,131 @@ SET b.total_price = (DATEDIFF(b.end_date, b.start_date) + 1) * u.daily_price;
 UPDATE client c
 JOIN resort r ON c.email = r.admin_email
 SET c.id_managed_resort = r.id_resort;
+
+-- =============================================================================
+-- 9. CANCELACIONES CON REINTEGRO (TFI, 14.3)
+--
+-- Tres reservas del balneario 1 canceladas por el cliente en los últimos días,
+-- para que el panel tenga avisos de cancelación y Mis reservas muestre un
+-- reintegro. Van al final, con el total ya calculado contra el precio de la
+-- unidad, y con el reintegro de la política (Booking.refundFor):
+--   - 48: canceló con más de dos días de anticipación → 100 %.
+--   - 49: canceló el día anterior al inicio → 50 %.
+--   - 50: canceló con más de dos días de anticipación → 100 %.
+-- Las fechas son relativas al arranque, como el resto de la demo. La 49 empieza
+-- hoy y se canceló hace un día: es el día anterior a cualquier hora.
+-- =============================================================================
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
+                     canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
+SELECT 48, @today + INTERVAL 12 DAY, @today + INTERVAL 15 DAY, 4 * u.daily_price, 'CANCELED',
+       UTC_TIMESTAMP() - INTERVAL 8 DAY, UTC_TIMESTAMP() - INTERVAL 2 DAY, 'CLIENT', 4 * u.daily_price, 7, u.id_rental_unit
+FROM rental_unit u WHERE u.id_rental_unit = 5;
+
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
+                     canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
+SELECT 49, @today, @today + INTERVAL 2 DAY, 3 * u.daily_price, 'CANCELED',
+       UTC_TIMESTAMP() - INTERVAL 5 DAY, UTC_TIMESTAMP() - INTERVAL 1 DAY, 'CLIENT', ROUND(3 * u.daily_price * 0.5, 2), 8,
+       u.id_rental_unit
+FROM rental_unit u WHERE u.id_rental_unit = 6;
+
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at,
+                     canceled_at, canceled_by, refund_amount, id_client, id_rental_unit)
+SELECT 50, @today + INTERVAL 20 DAY, @today + INTERVAL 24 DAY, 5 * u.daily_price, 'CANCELED',
+       UTC_TIMESTAMP() - INTERVAL 10 DAY, UTC_TIMESTAMP() - INTERVAL 4 DAY, 'CLIENT', 5 * u.daily_price, 9, u.id_rental_unit
+FROM rental_unit u WHERE u.id_rental_unit = 7;
+
+-- =============================================================================
+-- 10. RESEÑAS (TFI, 14.1)
+--
+-- Una por reserva, solo en reservas confirmadas cuya estadía ya terminó (las de
+-- la temporada 2025/2026). Las 48 a 50 son las cancelaciones de la 14.3 y no
+-- llevan reseña. Promedios: Mar del Plata 4,2; Pinamar 4,7; Villa Gesell 3,5;
+-- Miramar 4,5; Necochea 5,0.
+--
+-- santi.rodriguez@gmail.com (cliente 7) calificó la 1 y la 19, y le quedan la
+-- 10 y la 44 sin calificar: con su cuenta se puede mostrar «Calificar».
+-- La fecha de cada reseña es relativa al arranque, como el resto de la demo. Las
+-- horas están escritas en hora de Buenos Aires, que es como se van a ver, y el
+-- UPDATE de abajo las pasa a UTC, que es como las guarda la base.
+-- =============================================================================
+INSERT INTO review (id_review, id_booking, rating, comment, created_at) VALUES
+-- Resort 1: Zolea Club de Playa (MdP)
+(1,  1,  5, 'Primera fila de verdad: el mar a diez metros y la sombrilla lista al llegar.', @today - INTERVAL 70 DAY + INTERVAL 19 HOUR),
+(2,  2,  4, 'Muy lindo el lugar. El estacionamiento se llena temprano.',                  @today - INTERVAL 64 DAY + INTERVAL 11 HOUR),
+(3,  4,  5, 'La carpa premium vale cada peso. Atención impecable.',                       @today - INTERVAL 45 DAY + INTERVAL 20 HOUR),
+(4,  6,  3, NULL,                                                                          @today - INTERVAL 30 DAY + INTERVAL 18 HOUR),
+(5,  9,  4, 'Buena carpa y buen bar. Los baños podrían estar más limpios a la tarde.',    @today - INTERVAL 12 DAY + INTERVAL 21 HOUR),
+-- Resort 2: Ocean View Resort (Pinamar)
+(6,  17, 5, 'Tranquilo, sin ruido y con un servicio de playa excelente.',                 @today - INTERVAL 75 DAY + INTERVAL 17 HOUR),
+(7,  19, 4, 'La sombrilla está bien ubicada y el personal es muy amable. Volvería.',      @today - INTERVAL 50 DAY + INTERVAL 19 HOUR),
+(8,  22, 5, 'Lo mejor de Pinamar. Te resuelven todo.',                                    @today - INTERVAL 20 DAY + INTERVAL 16 HOUR),
+-- Resort 3: Arena Dorada (Villa Gesell)
+(9,  28, 4, 'Mucha onda y buena música. Ideal para ir con amigos.',                       @today - INTERVAL 72 DAY + INTERVAL 22 HOUR),
+(10, 31, 3, 'Lindo lugar, pero la carpa tenía la lona rota.',                             @today - INTERVAL 35 DAY + INTERVAL 13 HOUR),
+-- Resort 4: Costa Sur (Miramar)
+(11, 35, 5, 'Perfecto para ir con chicos: tranquilo y con guardavidas atentos.',          @today - INTERVAL 68 DAY + INTERVAL 18 HOUR),
+(12, 37, 4, NULL,                                                                          @today - INTERVAL 40 DAY + INTERVAL 10 HOUR),
+-- Resort 5: Mar del Sur (Necochea)
+(13, 42, 5, 'Playa ancha y casi vacía. Ideal para desconectar.',                          @today - INTERVAL 66 DAY + INTERVAL 20 HOUR);
+
+-- De hora de Buenos Aires a UTC (ver FECHAS Y HORAS, al principio).
+UPDATE review SET created_at = created_at + INTERVAL 3 HOUR;
+
+-- =============================================================================
+-- 11. ESTADÍSTICAS DEL PANEL (TFI, 14.7)
+--
+-- Veinte reservas confirmadas más de Zolea Club de Playa (balneario 1), así los
+-- gráficos del panel de admin.mdp@zolea.com no salen vacíos: once del último
+-- mes y medio, cuatro que incluyen hoy (62 a 65) y cinco de las próximas
+-- semanas. Las fechas son relativas a @today y no pisan otra reserva de la misma
+-- unidad; ninguna usa la A-08, que está bloqueada. El total es el de siempre:
+-- los días con los dos extremos por el precio diario de la unidad.
+-- =============================================================================
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, id_client, id_rental_unit)
+SELECT d.id, @today + INTERVAL d.desde DAY, @today + INTERVAL (d.desde + d.dias - 1) DAY,
+       d.dias * u.daily_price, 'CONFIRMED',
+       @today + INTERVAL (d.desde - 12) DAY + INTERVAL 14 HOUR, d.cliente, u.id_rental_unit
+FROM (
+              SELECT 51 AS id, 1 AS unidad, -38 AS desde, 4 AS dias, 8 AS cliente
+    UNION ALL SELECT 52,  2, -36, 3,  9
+    UNION ALL SELECT 53,  3, -33, 5, 10
+    UNION ALL SELECT 54, 17, -30, 4, 11
+    UNION ALL SELECT 55, 18, -28, 3, 12
+    UNION ALL SELECT 56,  1, -25, 2, 13
+    UNION ALL SELECT 57, 11, -22, 4, 14
+    UNION ALL SELECT 58, 19, -18, 5, 15
+    UNION ALL SELECT 59,  2, -15, 3, 16
+    UNION ALL SELECT 60, 12, -12, 4, 17
+    UNION ALL SELECT 61,  4,  -8, 3, 18
+    -- Las cuatro que incluyen hoy.
+    UNION ALL SELECT 62,  1,  -2, 5, 19
+    UNION ALL SELECT 63,  3,  -1, 3, 20
+    UNION ALL SELECT 64, 17,   0, 4, 21
+    UNION ALL SELECT 65, 22,  -3, 6, 22
+    -- Las que vienen.
+    UNION ALL SELECT 66,  2,   4, 3, 24
+    UNION ALL SELECT 67, 18,   8, 5, 25
+    UNION ALL SELECT 68, 11,  15, 4,  8
+    UNION ALL SELECT 69, 19,  22, 3,  9
+    UNION ALL SELECT 70, 24,  30, 5, 10
+) d
+JOIN rental_unit u ON u.id_rental_unit = d.unidad;
+
+-- El titular de cada una, con su DNI. Las que ya terminaron entraron; las que
+-- vienen, todavía no.
+INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
+SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
+       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-PNL'), b.end_date < @today, b.id
+FROM booking b JOIN client c ON c.id_client = b.id_client
+WHERE b.id BETWEEN 51 AND 70;
+
+-- Las que incluyen hoy: en la 62, la 63 y la 65 el titular ya entró; en la 64,
+-- que empieza hoy, todavía no. Con los acompañantes, hoy hay gente adentro y
+-- gente por llegar.
+UPDATE guest SET is_entry_validated = true WHERE id_booking IN (62, 63, 65);
+
+INSERT INTO guest (full_name, qr_token, is_entry_validated, id_booking) VALUES
+('Lucía Gutiérrez', 'tok-00062-A2-PNL', true,  62),
+('Joaquín Flores',  'tok-00063-A2-PNL', false, 63),
+('Ana Flores',      'tok-00063-A3-PNL', false, 63),
+('Paula Ruiz',      'tok-00064-A2-PNL', false, 64);

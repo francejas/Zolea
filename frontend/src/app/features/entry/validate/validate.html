@@ -1,0 +1,178 @@
+<header class="entry__head">
+  <h1 class="entry__h1">Validar ingreso</h1>
+  <p class="entry__lead">Escaneá el QR de la entrada, o buscala por el código o el DNI.</p>
+</header>
+
+@if (outcome(); as result) {
+  <!-- El resultado ocupa la pantalla y se lee a un metro. El veredicto lleva ícono y palabra: no
+       depende solo del color. -->
+  <div #result class="entry__result">
+    @if (result.kind === 'in') {
+      <div class="z-scan-result z-scan-result--ok" role="status">
+        <span class="z-scan-result__icon">
+          <svg lucideCheck class="z-icon" aria-hidden="true"></svg>
+        </span>
+        <p class="z-scan-result__verdict">Puede pasar</p>
+        <p class="z-scan-result__name">{{ result.name }}</p>
+        <p class="z-scan-result__detail">{{ result.unit }}</p>
+        <z-btn variant="on-color" size="large" block (click)="again()">
+          <svg lucideScanLine class="z-icon" aria-hidden="true"></svg>
+          {{ againLabel() }}
+        </z-btn>
+      </div>
+    } @else if (result.kind === 'out') {
+      <div class="z-scan-result z-scan-result--fail" role="alert">
+        <span class="z-scan-result__icon">
+          <svg lucideX class="z-icon" aria-hidden="true"></svg>
+        </span>
+        <p class="z-scan-result__verdict">No puede pasar</p>
+        <p class="z-scan-result__name">{{ result.reason }}</p>
+        @if (result.hint) {
+          <p class="z-scan-result__detail">{{ result.hint }}</p>
+        }
+        <z-btn variant="on-color" size="large" block (click)="again()">
+          <svg lucideScanLine class="z-icon" aria-hidden="true"></svg>
+          {{ againLabel() }}
+        </z-btn>
+      </div>
+    } @else {
+      <!-- No hubo respuesta: ni verde ni rojo, porque todavía no se sabe. -->
+      <div class="entry__unknown">
+        <z-problem title="No sabemos si puede pasar" [text]="result.message" (retry)="retry()" />
+        <z-btn variant="secondary" size="large" block (click)="again()">Volver</z-btn>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="z-tabs z-tabs--block entry__tabs" role="tablist" aria-label="Forma de validar">
+    <button
+      #tab
+      class="z-tab"
+      type="button"
+      role="tab"
+      id="entry-tab-camera"
+      aria-controls="entry-panel"
+      [attr.aria-selected]="mode() === 'camera'"
+      [tabindex]="mode() === 'camera' ? 0 : -1"
+      (click)="selectMode('camera')"
+      (keydown)="onTabKeydown($event)"
+    >
+      <svg lucideCamera class="z-icon z-icon--s" aria-hidden="true"></svg>Cámara
+    </button>
+    <button
+      #tab
+      class="z-tab"
+      type="button"
+      role="tab"
+      id="entry-tab-code"
+      aria-controls="entry-panel"
+      [attr.aria-selected]="mode() === 'code'"
+      [tabindex]="mode() === 'code' ? 0 : -1"
+      (click)="selectMode('code')"
+      (keydown)="onTabKeydown($event)"
+    >
+      <svg lucideHash class="z-icon z-icon--s" aria-hidden="true"></svg>Código
+    </button>
+    <button
+      #tab
+      class="z-tab"
+      type="button"
+      role="tab"
+      id="entry-tab-dni"
+      aria-controls="entry-panel"
+      [attr.aria-selected]="mode() === 'dni'"
+      [tabindex]="mode() === 'dni' ? 0 : -1"
+      (click)="selectMode('dni')"
+      (keydown)="onTabKeydown($event)"
+    >
+      <svg lucideIdCard class="z-icon z-icon--s" aria-hidden="true"></svg>DNI
+    </button>
+  </div>
+
+  <div
+    class="entry__panel"
+    role="tabpanel"
+    id="entry-panel"
+    [attr.aria-labelledby]="'entry-tab-' + mode()"
+  >
+    @switch (mode()) {
+      @case ('camera') {
+        <div class="z-scanner" [attr.aria-busy]="!cameraOn() || checking()">
+          <!-- html5-qrcode pone acá el video de la cámara de atrás. -->
+          <div class="entry__camera">
+            <div id="entry-reader" class="entry__reader"></div>
+          </div>
+
+          @if (cameraProblem()) {
+            <div class="entry__camera-problem" role="alert">
+              <svg lucideCameraOff class="z-icon" aria-hidden="true"></svg>
+              <p class="entry__camera-text">{{ cameraMessage() }}</p>
+              @if (canRetryCamera()) {
+                <z-btn variant="on-color" (click)="startCamera()">Reintentar</z-btn>
+              }
+            </div>
+          } @else {
+            <div class="z-scanner__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <p class="z-scanner__hint" aria-live="polite">{{ hint() }}</p>
+          }
+        </div>
+        <p class="entry__fallback">¿No lee? Probá con el código o el DNI.</p>
+      }
+
+      @case ('code') {
+        <form class="entry__form" novalidate (submit)="onCodeSubmit($event)">
+          <z-field
+            [field]="codeForm.qrToken"
+            inputId="entry-code"
+            label="Código de la entrada"
+            help="El que lleva el QR. Sirve también con un lector de QR conectado a la computadora."
+          >
+            <input
+              #codeInput
+              id="entry-code"
+              class="z-input entry__input entry__input--code"
+              type="text"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              enterkeyhint="go"
+              [formField]="codeForm.qrToken"
+              [attr.aria-invalid]="hasError(codeForm.qrToken) ? 'true' : null"
+            />
+          </z-field>
+          <z-btn type="submit" size="large" block [loading]="checking()">
+            {{ checking() ? 'Validando…' : 'Validar ingreso' }}
+          </z-btn>
+        </form>
+      }
+
+      @case ('dni') {
+        <form class="entry__form" novalidate (submit)="onDniSubmit($event)">
+          <z-field
+            [field]="dniForm.dni"
+            inputId="entry-dni"
+            label="DNI"
+            help="Sin puntos. Busca entre las reservas de hoy de tu balneario."
+          >
+            <input
+              #dniInput
+              id="entry-dni"
+              class="z-input entry__input"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              spellcheck="false"
+              enterkeyhint="go"
+              (input)="onlyDigits($event)"
+              [formField]="dniForm.dni"
+              [attr.aria-invalid]="hasError(dniForm.dni) ? 'true' : null"
+            />
+          </z-field>
+          <z-btn type="submit" size="large" block [loading]="checking()">
+            {{ checking() ? 'Validando…' : 'Validar ingreso' }}
+          </z-btn>
+        </form>
+      }
+    }
+  </div>
+}

@@ -33,7 +33,9 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -130,6 +132,17 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Parámetro inválido");
         return respuesta(HttpStatus.BAD_REQUEST, detalle);
+    }
+
+    /**
+     * Un parámetro de la URL que no se puede convertir a su tipo, como {@code from=ayer} donde va una
+     * fecha. Sin esto caía en el manejo general y respondía 500, cuando el error es del pedido.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleTipoInvalido(MethodArgumentTypeMismatchException ex) {
+        String formato = LocalDate.class.equals(ex.getRequiredType()) ? " Va con el formato AAAA-MM-DD." : "";
+        return respuesta(HttpStatus.BAD_REQUEST,
+                "El parámetro " + ex.getName() + " no es válido: " + ex.getValue() + "." + formato);
     }
 
     /**

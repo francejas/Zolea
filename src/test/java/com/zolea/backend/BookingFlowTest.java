@@ -135,12 +135,12 @@ class BookingFlowTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("el job cancela las reservas pendientes de más de 24 horas")
+    @DisplayName("el job cancela las reservas pendientes de hace 75 minutos o más")
     void cleanupJob_cancelsExpiredPending() {
         Client client = aClient();
         RentalUnit unit = aUnit(10_000.0);
         Booking vencida = aBooking(client, unit, today().plusDays(30), today().plusDays(33),
-                Status.PENDING, now().minusHours(25));
+                Status.PENDING, now().minusMinutes(80));
 
         bookingService.cancelExpiredBookings();
 
@@ -152,11 +152,12 @@ class BookingFlowTest extends IntegrationTest {
     @DisplayName("el job NO toca las reservas pendientes recientes")
     void cleanupJob_keepsRecentPending() {
         // Es la contraparte del bug del seed: con created_at fijo en el pasado, la primera
-        // ejecución del cron dejaba la demo sin ninguna reserva PENDING.
+        // ejecución del cron dejaba la demo sin ninguna reserva PENDING. Desde el 07/11 el plazo
+        // es de una hora: reciente es de hace minutos, como las pendientes de la demo.
         Client client = aClient();
         RentalUnit unit = aUnit(10_000.0);
         Booking reciente = aBooking(client, unit, today().plusDays(30), today().plusDays(33),
-                Status.PENDING, now().minusHours(2));
+                Status.PENDING, now().minusMinutes(10));
 
         bookingService.cancelExpiredBookings();
 

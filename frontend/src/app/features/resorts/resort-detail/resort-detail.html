@@ -1,0 +1,179 @@
+<div class="detail">
+  <a class="detail__back" routerLink="/">
+    <svg lucideChevronLeft class="z-icon z-icon--s" aria-hidden="true"></svg>Balnearios
+  </a>
+
+  @if (status() === 'loading') {
+    <div aria-busy="true">
+      <div class="detail__head">
+        <z-skeleton width="60%" height="40px" />
+        <z-skeleton width="35%" height="16px" />
+      </div>
+      <div class="detail__photo-skeleton"><z-skeleton height="100%" /></div>
+      <div class="detail__layout">
+        <div class="detail__main">
+          <z-skeleton width="40%" height="28px" />
+          <z-skeleton height="16px" />
+          <z-skeleton width="80%" height="16px" />
+          <div class="detail__tags">
+            @for (card of skeletonCards; track card) {
+              <z-skeleton width="96px" height="30px" />
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else if (status() === 'error') {
+    <z-problem
+      title="No pudimos traer este balneario"
+      text="Revisá tu conexión y probá de nuevo."
+      (retry)="reload()"
+    />
+  } @else if (status() === 'not-found') {
+    <z-empty
+      title="No encontramos este balneario"
+      actionLabel="Volver a la portada"
+      (action)="goHome()"
+    />
+  } @else if (resort(); as resort) {
+    <header class="detail__head">
+      <h1>{{ resort.name }}</h1>
+      <p class="z-place">
+        <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
+      </p>
+    </header>
+
+    <div class="z-photo detail__photo">
+      @if (resort.coverPhotoUrl) {
+        <img [src]="resort.coverPhotoUrl" alt="" width="1400" height="533" />
+      }
+    </div>
+
+    <div class="detail__layout">
+      <div class="detail__main">
+        @if (!resort.active) {
+          <z-alert variant="warning" text="Este balneario no está recibiendo reservas." />
+        }
+
+        @if (resort.description) {
+          <section class="detail__section">
+            <h2>Sobre el balneario</h2>
+            <p>{{ resort.description }}</p>
+          </section>
+        }
+
+        @if (resort.amenities.length > 0) {
+          <section class="detail__section">
+            <h2>Servicios</h2>
+            <div class="z-amenities detail__amenities">
+              @for (amenity of resort.amenities; track amenity.idAmenity) {
+                <span class="z-amenity">
+                  <svg
+                    [lucideIcon]="amenityIcon(amenity.name)"
+                    class="z-icon"
+                    aria-hidden="true"
+                  ></svg
+                  >{{ amenity.name }}
+                </span>
+              }
+            </div>
+          </section>
+        }
+
+        @if (resort.active) {
+          <!-- Solo en el celular: en la computadora las fechas van en la tarjeta del costado. -->
+          <section class="detail__section detail__dates">
+            <h2>Tus fechas</h2>
+            <z-date-range [(from)]="from" [(to)]="to" />
+          </section>
+
+          <section class="detail__section">
+            <h2>Elegí tu lugar</h2>
+            <p class="detail__hint">
+              Tocá una sombrilla o una carpa libre. Las de adelante están más cerca del mar.
+            </p>
+            <z-resort-plan [units]="resort.rentalUnits" [(selectedId)]="selectedId" />
+          </section>
+        }
+      </div>
+
+      @if (resort.active) {
+        <aside class="detail__aside">
+          <div class="z-book-card">
+            <h2 class="z-book-card__title">Reservá tu lugar</h2>
+            <z-date-range [(from)]="from" [(to)]="to" [summary]="false" />
+
+            @if (selectedUnit(); as unit) {
+              <div class="z-book-card__pick">
+                <span
+                  class="z-unit z-unit--mini"
+                  [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
+                  [class.z-unit--tent]="unit.type === 'TENT'"
+                  aria-hidden="true"
+                  ><span class="z-unit__shape"></span
+                ></span>
+                <div>
+                  <strong>{{ typeName[unit.type] }} {{ unit.identifier }}</strong>
+                  <span>{{ rowOf(unit) }}{{ price(unit.dailyPrice) }} por día</span>
+                </div>
+              </div>
+            } @else {
+              <div class="z-book-card__pick z-book-card__pick--empty">
+                Tocá un lugar libre en el plano.
+              </div>
+            }
+
+            <dl class="z-book-card__lines">
+              <div>
+                <dt>Precio por día</dt>
+                <dd>{{ selectedUnit() ? priceWithCents(selectedUnit()!.dailyPrice) : '—' }}</dd>
+              </div>
+              <div>
+                <dt>Días</dt>
+                <dd>{{ days() > 0 ? days() + ' · se cobran los dos extremos' : '—' }}</dd>
+              </div>
+            </dl>
+
+            <div class="z-book-card__total">
+              <span>Total</span>
+              <strong>{{ total() }}</strong>
+            </div>
+
+            <button
+              class="z-btn z-btn--primary z-btn--large z-btn--block"
+              type="button"
+              [disabled]="!canBook()"
+              (click)="book()"
+            >
+              {{ bookLabel() }}
+            </button>
+
+            @if (!session.isLoggedIn()) {
+              <p class="z-book-card__note">
+                Te vamos a pedir que ingreses, y seguís con la reserva.
+              </p>
+            }
+          </div>
+        </aside>
+      }
+    </div>
+
+    @if (resort.active) {
+      <!-- Solo en el celular: el lugar elegido y el total, siempre a la vista. -->
+      <div class="z-bookbar">
+        <div>
+          <strong>{{ barTitle() }}</strong>
+          <span>{{ barSubtitle() }}</span>
+        </div>
+        <button
+          class="z-btn z-btn--primary z-btn--compact"
+          type="button"
+          [disabled]="!canBook()"
+          (click)="book()"
+        >
+          Reservar
+        </button>
+      </div>
+    }
+  }
+</div>

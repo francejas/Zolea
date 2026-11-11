@@ -59,6 +59,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                             @Param("startDate") LocalDate startDate,
                             @Param("endDate") LocalDate endDate);
 
+    /**
+     * Las unidades de un balneario que están ocupadas en un rango de fechas, cada una una sola vez.
+     *
+     * <p>Ocupada con la misma regla que {@link #isUnitAvailable}: una reserva que no está
+     * cancelada —pendiente o confirmada— y se pisa con las fechas, contando los dos extremos. Es lo
+     * que el plano necesita para no ofrecer una unidad que después falla al reservar.
+     */
+    @Query("SELECT DISTINCT b.rentalUnit.idRentalUnit FROM Booking b " +
+            "WHERE b.rentalUnit.resort.idResort = :idResort " +
+            "AND b.status != 'CANCELED' " +
+            "AND (b.startDate <= :endDate AND b.endDate >= :startDate) " +
+            "ORDER BY b.rentalUnit.idRentalUnit")
+    List<Long> findOccupiedUnitIds(@Param("idResort") Long idResort,
+                                   @Param("startDate") LocalDate startDate,
+                                   @Param("endDate") LocalDate endDate);
+
     @EntityGraph(attributePaths = {"guests", "client", "rentalUnit", "rentalUnit.resort"})
     @Query("SELECT b FROM Booking b WHERE b.client.idClient = :clientId")
     List<Booking> findByClientId(@Param("clientId") Long clientId);
@@ -74,9 +90,28 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByResortId(@Param("idResort") Long idResort);
 
     /**
-     * Busca reservas que sigan PENDING y hayan sido creadas antes de la fecha límite (Hace 24 hs)
+     * Busca reservas que sigan PENDING y hayan sido creadas antes de la fecha límite: hace 75
+     * minutos, el plazo de pago más el margen ({@code Booking.PAYMENT_WINDOW} y
+     * {@code Booking.CLEANUP_GRACE}).
      */
     @Query("SELECT b FROM Booking b WHERE b.status = 'PENDING' AND b.createdAt <= :limitDate")
     List<Booking> findExpiredPendingBookings(@Param("limitDate") LocalDateTime limitDate);
 
+    /** Las reservas del balneario que siguen pendientes de pago. */
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.rentalUnit.resort.idResort = :resortId AND b.status = 'PENDING'")
+    long countPendingByResort(@Param("resortId") Long resortId);
+
+    /**
+     * Las reservas confirmadas de un balneario que tocan el rango, con sus huéspedes y su unidad
+     * en la misma consulta: es lo que leen las estadísticas, en vez de todas las reservas del
+     * sistema. La reserva llega al balneario a través de la unidad.
+     */
+    @EntityGraph(attributePaths = {"guests", "rentalUnit"})
+    @Query("SELECT b FROM Booking b WHERE b.rentalUnit.resort.idResort = :resortId "
+            + "AND b.status = 'CONFIRMED' AND b.startDate <= :to AND b.endDate >= :from")
+    List<Booking> findConfirmedOverlappingRange(
+            @Param("resortId") Long resortId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 }

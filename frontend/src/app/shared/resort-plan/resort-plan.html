@@ -1,0 +1,183 @@
+@if (loading()) {
+  <div class="z-plan" aria-busy="true">
+    <div class="z-plan__sea"><span>Mar</span></div>
+    <p class="z-visually-hidden" role="status">Cargando los lugares del balneario</p>
+    <div class="z-plan__zone">
+      @for (row of skeletonRows; track row) {
+        <div class="z-plan__row">
+          <div class="z-plan__row-label">
+            <z-skeleton width="72px" height="16px" />
+          </div>
+          <div class="z-plan__cells">
+            @for (cell of skeletonCells; track cell) {
+              <z-skeleton class="z-plan__skeleton-cell" width="44px" height="58px" />
+            }
+          </div>
+        </div>
+      }
+    </div>
+    <div class="z-plan__entry"><span>Entrada del balneario</span></div>
+  </div>
+} @else if (zones().length === 0) {
+  <div class="z-plan">
+    <div class="z-plan__sea"><span>Mar</span></div>
+    <p class="z-plan__empty">Este balneario todavía no cargó sus lugares.</p>
+    <div class="z-plan__entry"><span>Entrada del balneario</span></div>
+  </div>
+} @else {
+  <div class="z-tabs z-resort-plan__tabs" role="tablist" aria-label="Cómo ver los lugares">
+    <button
+      #planTab
+      class="z-tab"
+      type="button"
+      role="tab"
+      [id]="id + '-tab-plano'"
+      [attr.aria-selected]="view() === 'plan'"
+      [attr.aria-controls]="id + '-plano'"
+      [tabindex]="view() === 'plan' ? 0 : -1"
+      (click)="view.set('plan')"
+      (keydown)="onTabKeydown($event)"
+    >
+      <svg lucideUmbrella class="z-icon z-icon--s" aria-hidden="true"></svg>Plano
+    </button>
+    <button
+      #listTab
+      class="z-tab"
+      type="button"
+      role="tab"
+      [id]="id + '-tab-lista'"
+      [attr.aria-selected]="view() === 'list'"
+      [attr.aria-controls]="id + '-lista'"
+      [tabindex]="view() === 'list' ? 0 : -1"
+      (click)="view.set('list')"
+      (keydown)="onTabKeydown($event)"
+    >
+      <svg lucideMenu class="z-icon z-icon--s" aria-hidden="true"></svg>Lista
+    </button>
+  </div>
+
+  <div
+    role="tabpanel"
+    [id]="id + '-plano'"
+    [attr.aria-labelledby]="id + '-tab-plano'"
+    [hidden]="view() !== 'plan'"
+  >
+    <div class="z-plan">
+      <div class="z-plan__sea"><span>Mar</span></div>
+
+      @for (zone of zones(); track zone.type; let first = $first) {
+        @if (!first) {
+          <div class="z-plan__walk"><span>Paseo</span></div>
+        }
+        <div class="z-plan__zone">
+          <p class="z-plan__zone-label">
+            @if (zone.type === 'UMBRELLA') {
+              <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+            } @else {
+              <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+            }
+            {{ zone.title }}
+          </p>
+
+          @for (row of zone.rows; track row.prefix) {
+            <div
+              class="z-plan__row"
+              role="group"
+              [attr.aria-label]="row.name + ', ' + row.priceLabel"
+            >
+              <div class="z-plan__row-label">
+                <strong>{{ row.name }}</strong>
+                <span>{{ row.priceLabel }}</span>
+              </div>
+              <div class="z-plan__cells">
+                @for (unit of row.units; track unit.idRentalUnit) {
+                  <button
+                    type="button"
+                    class="z-unit"
+                    [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
+                    [class.z-unit--tent]="unit.type === 'TENT'"
+                    [attr.aria-pressed]="unit.isBlocked ? null : selectedId() === unit.idRentalUnit"
+                    [attr.aria-disabled]="unit.isBlocked ? 'true' : null"
+                    [attr.aria-label]="unitLabel(unit)"
+                    (click)="toggle(unit)"
+                  >
+                    <span class="z-unit__shape"></span>
+                    <span class="z-unit__id">{{ unit.identifier }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="z-plan__entry"><span>Entrada del balneario</span></div>
+    </div>
+
+    <ul class="z-plan-legend" aria-label="Referencias">
+      <li>
+        <span class="z-unit z-unit--mini z-unit--umbrella" aria-hidden="true"
+          ><span class="z-unit__shape"></span
+        ></span>
+        <span class="z-unit z-unit--mini z-unit--tent" aria-hidden="true"
+          ><span class="z-unit__shape"></span
+        ></span>
+        Libre
+      </li>
+      <li>
+        <span class="z-unit z-unit--mini z-unit--umbrella" aria-pressed="true" aria-hidden="true"
+          ><span class="z-unit__shape"></span
+        ></span>
+        Elegida
+      </li>
+      <li>
+        <span class="z-unit z-unit--mini z-unit--umbrella" aria-disabled="true" aria-hidden="true"
+          ><span class="z-unit__shape"></span
+        ></span>
+        <span class="z-unit z-unit--mini z-unit--tent" aria-disabled="true" aria-hidden="true"
+          ><span class="z-unit__shape"></span
+        ></span>
+        No disponible
+      </li>
+    </ul>
+  </div>
+
+  <div
+    role="tabpanel"
+    [id]="id + '-lista'"
+    [attr.aria-labelledby]="id + '-tab-lista'"
+    [hidden]="view() !== 'list'"
+  >
+    <div class="z-unit-list">
+      @for (zone of zones(); track zone.type) {
+        @for (row of zone.rows; track row.prefix) {
+          <fieldset class="z-unit-list__group">
+            <legend>
+              {{ zone.title }} · {{ row.name }} <span>· {{ row.priceLabel }}</span>
+            </legend>
+            @for (unit of row.units; track unit.idRentalUnit) {
+              <label class="z-unit-option">
+                <input
+                  type="radio"
+                  [name]="id + '-unidad'"
+                  [value]="unit.idRentalUnit"
+                  [disabled]="unit.isBlocked"
+                  [checked]="selectedId() === unit.idRentalUnit"
+                  (change)="choose(unit)"
+                />
+                <span class="z-code">{{ unit.identifier }}</span>
+                {{ typeName[unit.type] }}
+                @if (!row.samePrice) {
+                  <span class="z-unit-option__price">{{ price(unit) }}</span>
+                }
+                <span class="z-unit-option__state">{{
+                  unit.isBlocked ? 'No disponible' : 'Libre'
+                }}</span>
+              </label>
+            }
+          </fieldset>
+        }
+      }
+    </div>
+  </div>
+}

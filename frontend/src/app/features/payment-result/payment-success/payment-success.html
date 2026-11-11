@@ -1,0 +1,145 @@
+<section class="result">
+  @switch (state()) {
+    @case ('loading') {
+      <div class="result__loading" aria-busy="true" aria-label="Cargando la reserva">
+        <z-skeleton width="40%" height="36px" />
+        <z-skeleton width="70%" height="16px" />
+        <z-skeleton height="160px" />
+      </div>
+    }
+
+    @case ('confirming') {
+      <div class="result__wait" role="status">
+        <span class="z-spinner result__spinner" aria-hidden="true"></span>
+        <h1 class="result__title">Estamos confirmando tu pago</h1>
+        <p class="result__text">
+          MercadoPago ya nos avisó que volviste. Puede tardar unos segundos: no cierres esta
+          pantalla ni pagues de nuevo.
+        </p>
+        @if (booking(); as booking) {
+          <a class="z-btn z-btn--secondary" [routerLink]="['/bookings', booking.id]">
+            Ver la reserva
+          </a>
+        }
+      </div>
+    }
+
+    @case ('missing') {
+      <z-empty
+        title="No encontramos la reserva"
+        text="Al volver del pago nos falta el número de la reserva. Tus reservas están todas en Mis reservas."
+        actionLabel="Ir a Mis reservas"
+        (action)="goToMyBookings()"
+      />
+    }
+
+    @case ('forbidden') {
+      <z-alert
+        variant="forbidden"
+        title="Esta reserva no es tuya"
+        text="Solo la ve quien la hizo. Si es tuya, fijate con qué cuenta entraste."
+        actionLabel="Ir a Mis reservas"
+        (action)="goToMyBookings()"
+      />
+    }
+
+    @case ('not-found') {
+      <z-empty
+        title="No encontramos esta reserva"
+        text="Puede que el enlace esté incompleto. Tus reservas están todas en Mis reservas."
+        actionLabel="Ir a Mis reservas"
+        (action)="goToMyBookings()"
+      />
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer la reserva" [text]="loadError()" (retry)="reload()" />
+    }
+
+    @case ('confirmed') {
+      @if (booking(); as booking) {
+        <header class="result__head">
+          <svg lucideCircleCheck class="result__icon result__icon--ok" aria-hidden="true"></svg>
+          <p class="z-eyebrow">
+            Reserva <span class="z-code">{{ number() }}</span>
+          </p>
+          <h1 class="result__title">¡Pago confirmado!</h1>
+          <p class="result__text">
+            Tu lugar en {{ booking.resortName }} está reservado. Mostrá la entrada en la puerta.
+          </p>
+        </header>
+
+        <div class="result__layout">
+          <div class="result__info">
+            <p class="z-place">
+              <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>
+              {{ booking.resortName }} · {{ booking.resortLocation }}
+            </p>
+
+            <ul class="z-facts">
+              <li>
+                @if (booking.rentalUnitType === 'TENT') {
+                  <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+                } @else {
+                  <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+                }
+                {{ unit() }}
+              </li>
+              <li>
+                <svg lucideCalendarDays class="z-icon" aria-hidden="true"></svg>
+                {{ days() }}
+              </li>
+            </ul>
+
+            <div class="z-total">
+              <span>Total pagado</span>
+              <strong class="z-money">{{ total() }}</strong>
+            </div>
+
+            <div class="result__actions">
+              <a class="z-btn z-btn--secondary" [routerLink]="['/bookings', booking.id]">
+                Ver la reserva
+              </a>
+              <a class="z-btn z-btn--ghost" routerLink="/my-bookings">Mis reservas</a>
+            </div>
+          </div>
+
+          @if (currentGuest(); as guest) {
+            <section class="result__tickets" aria-labelledby="tickets-title">
+              <h2 id="tickets-title" class="result__subtitle">Entradas</h2>
+              <p class="result__hint">Una por persona. También las encontrás en la reserva.</p>
+
+              <app-guest-qr [guest]="guest" [booking]="booking">
+                @if (booking.guests.length > 1) {
+                  <div class="z-pager">
+                    <button
+                      class="z-icon-btn"
+                      type="button"
+                      aria-label="Entrada anterior"
+                      [disabled]="ticketIndex() === 0"
+                      (click)="showTicket(-1)"
+                    >
+                      <svg lucideChevronLeft class="z-icon" aria-hidden="true"></svg>
+                    </button>
+                    <span aria-live="polite"
+                      >{{ ticketIndex() + 1 }} de {{ booking.guests.length }}</span
+                    >
+                    <button
+                      class="z-icon-btn"
+                      type="button"
+                      aria-label="Entrada siguiente"
+                      [disabled]="ticketIndex() === booking.guests.length - 1"
+                      (click)="showTicket(1)"
+                    >
+                      <svg lucideChevronRight class="z-icon" aria-hidden="true"></svg>
+                    </button>
+                  </div>
+                }
+              </app-guest-qr>
+            </section>
+          }
+        </div>
+      }
+    }
+  }
+</section>

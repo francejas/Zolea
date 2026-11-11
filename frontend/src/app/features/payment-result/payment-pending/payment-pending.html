@@ -1,0 +1,18 @@
+<section class="result">
+  <div class="result__wait">
+    <svg lucideClock class="result__icon" aria-hidden="true"></svg>
+    <h1 class="result__title">Tu pago está en proceso</h1>
+    <p class="result__text">
+      MercadoPago todavía lo está procesando. Cuando se acredite, tu reserva se confirma y la
+      entrada con el QR aparece en la reserva.
+    </p>
+    <p class="result__text result__text--strong">No hace falta que pagues de nuevo.</p>
+
+    @if (bookingId) {
+      <a class="z-btn z-btn--primary" [routerLink]="['/bookings', bookingId]">Ver la reserva</a>
+      <a class="z-btn z-btn--ghost" routerLink="/my-bookings">Mis reservas</a>
+    } @else {
+      <a class="z-btn z-btn--primary" routerLink="/my-bookings">Ir a Mis reservas</a>
+    }
+  </div>
+</section>
