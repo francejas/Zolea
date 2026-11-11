@@ -1,0 +1,55 @@
+/* El bloque Pestañas de Zolea-docs/diseno/componentes.css, con los mismos nombres de clase. Es
+   global, como los botones, porque lo usan el plano del balneario (Plano / Lista) y Validar ingreso
+   (Cámara / Código / DNI). */
+
+.z-tabs {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sand-soft);
+}
+
+/* Las pestañas se reparten todo el ancho. */
+.z-tabs--block {
+  display: flex;
+  width: auto;
+}
+
+.z-tabs--block .z-tab {
+  flex: 1;
+}
+
+.z-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control-compact);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font: 600 15px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.z-tab:hover {
+  color: var(--color-ink);
+}
+
+.z-tab[aria-selected='true'] {
+  background: var(--color-surface);
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+}
+
+@media (max-width: 479px) {
+  .z-tab {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+}

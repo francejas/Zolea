@@ -15,6 +15,7 @@ import com.zolea.backend.repositories.BookingRepository;
 import com.zolea.backend.repositories.ClientRepository;
 import com.zolea.backend.repositories.GuestRepository;
 import com.zolea.backend.repositories.RentalUnitRepository;
+import com.zolea.backend.repositories.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,7 +26,9 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 /**
@@ -44,6 +47,7 @@ public class BookingService {
     private final ClientRepository clientRepository;
     private final RentalUnitRepository rentalUnitRepository;
     private final GuestRepository guestRepository;
+    private final ReviewRepository reviewRepository;
     private final Clock clock;
 
     /** Ahora en la zona del balneario. Ver {@link com.zolea.backend.config.TimeConfig}. */
@@ -175,22 +179,29 @@ public class BookingService {
     // 2. Obtener todas las reservas del sistema (Admin)
     /** Todas las reservas del sistema. Solo la usa un ADMIN sin balneario asignado. */
     public List<BookingResponse> getAllBookings() {
-        return bookingRepository.findAll().stream()
-                .map(this::mapToBookingResponse)
-                .toList();
+        return mapAll(bookingRepository.findAll());
     }
 
     /** Las reservas del balneario que administra un ADMIN. */
     public List<BookingResponse> getBookingsByResortId(Long idResort) {
-        return bookingRepository.findByResortId(idResort).stream()
-                .map(this::mapToBookingResponse)
-                .toList();
+        return mapAll(bookingRepository.findByResortId(idResort));
     }
 
     // 3. Obtener reservas por ID de Cliente (Cliente)
     public List<BookingResponse> getBookingsByClientId(Long clientId) {
-        return bookingRepository.findByClientId(clientId).stream()
-                .map(this::mapToBookingResponse)
+        return mapAll(bookingRepository.findByClientId(clientId));
+    }
+
+    /**
+     * Un listado de reservas, con cuáles ya se calificaron averiguado en una sola consulta para todo
+     * el listado y no una por reserva.
+     */
+    private List<BookingResponse> mapAll(List<Booking> bookings) {
+        Set<Long> reviewed = bookings.isEmpty() ? Set.of()
+                : new HashSet<>(reviewRepository.findReviewedBookingIds(
+                        bookings.stream().map(Booking::getId).toList()));
+        return bookings.stream()
+                .map(booking -> mapToBookingResponse(booking, reviewed.contains(booking.getId())))
                 .toList();
     }
 
@@ -209,6 +220,10 @@ public class BookingService {
     }
 
     private BookingResponse mapToBookingResponse(Booking booking) {
+        return mapToBookingResponse(booking, reviewRepository.existsByBooking_Id(booking.getId()));
+    }
+
+    private BookingResponse mapToBookingResponse(Booking booking, boolean reviewed) {
         List<GuestSummaryResponse> guestResponses = booking.getGuests() != null ?
                 booking.getGuests().stream()
                 .map(g -> new GuestSummaryResponse(g.getIdGuest(), g.getFullName(), g.getDni(), g.getIsEntryValidated(), g.getQrToken()))
@@ -237,7 +252,8 @@ public class BookingService {
                 resort != null ? resort.getCoverPhotoUrl() : null,
                 booking.getCanceledAt(),
                 booking.getCanceledBy(),
-                booking.getRefundAmount()
+                booking.getRefundAmount(),
+                reviewed
         );
     }
 

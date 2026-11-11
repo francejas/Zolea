@@ -81,7 +81,10 @@ public class SecurityConfig {
                         // /api/resorts/my: sin token llegaba al @PreAuthorize y respondía 403, y el
                         // panel con la sesión vencida no mandaba al login. Va antes, y pide sesión.
                         .requestMatchers(HttpMethod.GET, "/api/resorts/my").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/resorts", "/api/resorts/*").permitAll()
+                        // /api/resorts/* abarca un solo tramo: las reseñas, que también son
+                        // públicas, necesitan su propia regla.
+                        .requestMatchers(HttpMethod.GET, "/api/resorts", "/api/resorts/*",
+                                "/api/resorts/*/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/amenities", "/api/amenities/*").permitAll()
                         // Validar el ingreso ya no es público: lo hace el administrador, sobre las
                         // reservas de su balneario (GuestController). Lo cubre /api/guests/** de abajo.

@@ -34,6 +34,8 @@ public record BookingResponse(
         // en null mientras no se cancela; el reintegro, también si no estaba pagada.
         LocalDateTime canceledAt,
         CanceledBy canceledBy,
-        BigDecimal refundAmount
+        BigDecimal refundAmount,
+        // Si el cliente ya la calificó: Mis reservas muestra «Calificar» solo si no.
+        boolean reviewed
 ) {
 }

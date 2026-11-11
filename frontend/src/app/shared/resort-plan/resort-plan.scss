@@ -1,56 +1,15 @@
-/* El plano del balneario de Zolea-docs/diseno/componentes.css (z-unit, z-plan, z-plan-legend,
-   z-unit-list y las pestañas z-tabs), con los mismos nombres de clase. El componente no está
-   encapsulado: la leyenda y la lista usan las mismas clases que el plano. */
+/* El plano del balneario de Zolea-docs/diseno/componentes.css (z-unit, z-plan, z-plan-legend y
+   z-unit-list), con los mismos nombres de clase. Las pestañas Plano / Lista son las globales de
+   styles/tabs.scss. El componente no está encapsulado: la leyenda y la lista usan las mismas clases
+   que el plano. */
 
 .z-resort-plan {
   display: block;
 }
 
 /* --- Pestañas Plano / Lista --- */
-.z-tabs {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  gap: 2px;
-  padding: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--color-sand-soft);
-}
-
 .z-resort-plan__tabs {
   margin-bottom: var(--space-4);
-}
-
-.z-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  height: var(--control-compact);
-  padding: 0 18px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-ink-soft);
-  font: 600 15px/1 var(--font-body);
-  cursor: pointer;
-}
-
-.z-tab:hover {
-  color: var(--color-ink);
-}
-
-.z-tab[aria-selected='true'] {
-  background: var(--color-surface);
-  border-color: var(--color-line-strong);
-  color: var(--color-ink);
-}
-
-@media (max-width: 479px) {
-  .z-tab {
-    padding: 0 12px;
-    font-size: 14px;
-  }
 }
 
 /* --- Unidad: la sombrilla y la carpa vistas desde arriba ---

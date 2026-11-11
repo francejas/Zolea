@@ -414,3 +414,34 @@ ubica. `core/` y `shared/` separan lo que tiene una sola instancia de lo que se 
 **Lo que se paga.** Algunas piezas quedan en el límite y hay que decidir dónde van; la regla es que
 si la usa más de una feature, va a `shared/`. Mover algo de una feature a `shared/` cuando aparece
 el segundo uso es un cambio chico, pero hay que hacerlo en el momento y no copiarlo.
+
+---
+
+## 17. La base guarda las horas en UTC, y la aplicación fija su zona en la del balneario
+
+**Problema.** La aplicación arma sus horas con el `Clock` de `TimeConfig`, en hora argentina. La
+conexión a MySQL lleva `serverTimezone=UTC`, así que al guardar las pasa a UTC **desde la zona de la
+JVM**. Esa zona dependía de la máquina:
+
+- en una computadora argentina, la base quedaba en UTC;
+- en el contenedor de Compose, que corre la JVM en UTC, no había corrimiento y la base quedaba en
+  hora argentina.
+
+Ninguna hora escrita a mano servía para los dos casos. En la demo pasó así: con una forma, las
+pendientes se cancelaban en la primera limpieza; con la otra, nacían casi tres horas en el futuro.
+
+**Decisión.** `BackendApplication.main` fija la zona de la JVM en `TimeConfig.RESORT_ZONE` antes de
+arrancar. Con eso la base guarda las horas en UTC en cualquier máquina y en Compose.
+`data-demo.sql` carga sus horas con `UTC_TIMESTAMP()`, que no depende de la zona de MySQL. Las
+fechas las saca del día de Buenos Aires: `DATE(UTC_TIMESTAMP() - INTERVAL 3 HOUR)` y no `CURDATE()`,
+que después de las 21 h da el día siguiente.
+
+**Por qué.** Es una línea y deja un solo criterio: la base en UTC y la aplicación en la zona del
+balneario. La alternativa era sacar la conversión de la conexión (`preserveInstants=false`) y guardar
+la hora argentina. También anda, pero hay que tocar las tres direcciones de la base, y la base queda
+en una zona que no dice en ningún lado.
+
+**Lo que se paga.** Quien mira la base a mano ve las horas tres horas adelantadas, y quien escribe
+SQL tiene que cargarlas en UTC. Las pruebas no pasan por `main`, así que corren con la zona de la
+máquina. No cambia nada, porque guardan y leen con la misma conversión, pero las horas de la base de
+pruebas no prueban esta decisión: la prueban la demo y una limpieza.

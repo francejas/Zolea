@@ -197,6 +197,39 @@ Si no se puede, `canCancel` es `false` y `reason` dice por qué. Después,
 `refundAmount` (`null` si no estaba pagada). El administrador solo cancela reservas de su
 balneario: las de otro responden `403`.
 
+### Calificar la estadía
+
+Una reseña por reserva, de 1 a 5 y con un comentario opcional de hasta 500 caracteres. Se califica
+una reserva **confirmada cuya estadía ya terminó**: el último día todavía es parte de la estadía,
+así que se puede desde el día siguiente. Cada reserva trae `reviewed`, que dice si ya se calificó:
+Mis reservas muestra «Calificar» en las terminadas que lo tienen en `false`.
+
+```
+POST /api/bookings/{id}/review     { "rating": 5, "comment": "..." }
+→ 201 { "author": "Santiago R.", "rating": 5, "comment": "...", "createdAt": "2026-01-12T18:30:00" }
+```
+
+Solo la califica su dueño: la de otro cliente responde `403`, también para el administrador del
+balneario. Los rechazos:
+
+| Caso | Respuesta |
+|---|---|
+| Todavía no terminó, o no está confirmada | `400` «Vas a poder calificar cuando termine tu estadía.» |
+| Ya la calificó | `400` «Ya calificaste esta reserva.» |
+| `rating` fuera de 1 a 5, o comentario de más de 500 | `400` con `campos.rating` o `campos.comment` |
+
+Las reseñas de un balneario son **públicas**, sin token, de la más nueva a la más vieja:
+
+```
+GET /api/resorts/{id}/reviews
+→ [ { "author": "Santiago R.", "rating": 5, "comment": "...", "createdAt": "..." }, ... ]
+```
+
+Del autor sale solo el nombre y la inicial del apellido, y `comment` es `null` si no dejó
+comentario. Cada balneario (`GET /api/resorts` y `GET /api/resorts/{id}`) trae además
+`averageRating`, el promedio con un decimal (`null` si todavía no tiene reseñas), y
+`reviewCount`.
+
 ### Detalles que ahorran errores
 
 - **Las fechas incluyen los dos extremos.** Del 15 al 17 son **tres** días, y eso es lo que se

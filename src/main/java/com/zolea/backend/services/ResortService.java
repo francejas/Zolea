@@ -13,7 +13,9 @@ import com.zolea.backend.models.Resort;
 import com.zolea.backend.repositories.AmenityRepository;
 import com.zolea.backend.repositories.BookingRepository;
 import com.zolea.backend.repositories.RentalUnitRepository;
+import com.zolea.backend.repositories.ResortRating;
 import com.zolea.backend.repositories.ResortRepository;
+import com.zolea.backend.repositories.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p><b>Transacciones:</b> la clase entera es de solo lectura y cada método que escribe lo declara.
@@ -43,6 +47,7 @@ public class ResortService {
 
     private final ResortRepository resortRepository;
     private final AmenityRepository amenityRepository;
+    private final ReviewRepository reviewRepository;
     private final RentalUnitRepository rentalUnitRepository;
     private final BookingRepository bookingRepository;
     private final Clock clock;
@@ -55,9 +60,23 @@ public class ResortService {
      * hacía nada visible.
      */
     public List<ResortResponse> getAll() {
-        return resortRepository.findByIsActiveTrue().stream()
-                .map(this::mapToResponse)
+        List<Resort> resorts = resortRepository.findByIsActiveTrue();
+        Map<Long, ResortRating> ratings = ratingsOf(resorts.stream().map(Resort::getIdResort).toList());
+        return resorts.stream()
+                .map(r -> mapToResponse(r, ratings.get(r.getIdResort())))
                 .toList();
+    }
+
+    /**
+     * El promedio y la cantidad de reseñas de esos balnearios, en una sola consulta para todo el
+     * listado. Un balneario sin reseñas no queda en el mapa.
+     */
+    private Map<Long, ResortRating> ratingsOf(List<Long> resortIds) {
+        if (resortIds.isEmpty()) {
+            return Map.of();
+        }
+        return reviewRepository.findRatingsByResort(resortIds).stream()
+                .collect(Collectors.toMap(ResortRating::resortId, Function.identity()));
     }
 
     public ResortResponse getResortById(Long id) {
@@ -81,6 +100,7 @@ public class ResortService {
         resort.setDescription(request.description());
         resort.setActive(true);
 
+        // Buscar y asignar amenities si enviaron la lista de IDs (notar que usamos request.amenityIds())
         if (request.amenityIds() != null && !request.amenityIds().isEmpty()) {
             List<Amenity> amenities = amenityRepository.findAllById(request.amenityIds());
             resort.setAmenities(amenities);
@@ -136,6 +156,8 @@ public class ResortService {
         Resort resort = resortRepository.findByAdminEmail(adminEmail)
                 .orElseThrow(() -> new ResortNotFoundException("No resort found for this admin"));
 
+        // El adminEmail NO se toca acá a propósito: este endpoint es "editar mi balneario", y
+        // cambiarse el email de administrador por esta vía sería cambiar de dueño.
         String emailOriginal = resort.getAdminEmail();
         applyChanges(resort, request);
         resort.setAdminEmail(emailOriginal);
@@ -246,15 +268,19 @@ public class ResortService {
         return new ResortStatsResponse(from, to, todayStats, occupancyByDay, incomeByMonth, topUnits);
     }
 
-    // MAPPER interno
     private ResortResponse mapToResponse(Resort r) {
+        return mapToResponse(r, ratingsOf(List.of(r.getIdResort())).get(r.getIdResort()));
+    }
+
+    // MAPPER interno: Se encarga de transformar las listas anidadas de Resort a DTOs de Amenity y RentalUnit
+    private ResortResponse mapToResponse(Resort r, ResortRating rating) {
         List<AmenityResponse> amenities = (r.getAmenities() != null) ? r.getAmenities().stream()
-                .map(a -> new AmenityResponse(a.getIdAmenity(), a.getName()))
-                .toList() : List.of();
+                                                                       .map(a -> new AmenityResponse(a.getIdAmenity(), a.getName()))
+                                                                       .toList() : List.of();
 
         List<RentalUnitResponse> units = (r.getRentalUnits() != null) ? r.getRentalUnits().stream()
-                .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort()))
-                .toList() : List.of();
+                                                                        .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort()))
+                                                                        .toList() : List.of();
 
         return new ResortResponse(
                 r.getIdResort(),
@@ -264,7 +290,11 @@ public class ResortService {
                 r.getDescription(),
                 r.isActive(),
                 amenities,
-                units
+                units,
+                // Sin reseñas, el promedio es null y no 0: un cero se leería como «lo calificaron mal».
+                rating == null ? null
+                        : BigDecimal.valueOf(rating.average()).setScale(1, RoundingMode.HALF_UP),
+                rating == null ? 0 : rating.count()
         );
     }
 }
