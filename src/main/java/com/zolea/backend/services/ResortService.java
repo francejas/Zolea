@@ -46,6 +46,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ResortService {
 
+    /** El rango más largo que aceptan las estadísticas, con los dos extremos incluidos. */
+    private static final int MAX_STATS_DAYS = 366;
+
     private final ResortRepository resortRepository;
     private final AmenityRepository amenityRepository;
     private final ReviewRepository reviewRepository;
@@ -184,18 +187,21 @@ public class ResortService {
     public ResortStatsResponse getResortStats(Long resortId, LocalDate from, LocalDate to) {
         LocalDate today = LocalDate.now(clock);
 
+        // Sin fechas: del primer día del mes pasado al último del mes que viene.
         if (from == null && to == null) {
             from = today.minusMonths(1).withDayOfMonth(1);
             to = today.plusMonths(1).withDayOfMonth(today.plusMonths(1).lengthOfMonth());
         } else if (from == null || to == null) {
-            throw new InvalidBookingRangeException("Debe proveer ambas fechas 'from' y 'to', o ninguna.");
+            throw new InvalidBookingRangeException("Van las dos fechas, from y to, o ninguna.");
         }
 
         if (from.isAfter(to)) {
-            throw new InvalidBookingRangeException("La fecha 'from' no puede ser posterior a 'to'.");
+            throw new InvalidBookingRangeException("La fecha from no puede ser posterior a to.");
         }
-        if (ChronoUnit.DAYS.between(from, to) > 366) {
-            throw new InvalidBookingRangeException("El rango no puede ser mayor a 366 días.");
+        // Los días se cuentan con los dos extremos, como en las reservas: del 01/01 al 01/01 del
+        // año siguiente son 366.
+        if (ChronoUnit.DAYS.between(from, to) + 1 > MAX_STATS_DAYS) {
+            throw new InvalidBookingRangeException("El rango puede tener hasta " + MAX_STATS_DAYS + " días.");
         }
 
         long totalUnits = rentalUnitRepository.countActiveUnitsByResort(resortId);
