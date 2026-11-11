@@ -692,3 +692,62 @@ INSERT INTO review (id_review, id_booking, rating, comment, created_at) VALUES
 
 -- De hora de Buenos Aires a UTC (ver FECHAS Y HORAS, al principio).
 UPDATE review SET created_at = created_at + INTERVAL 3 HOUR;
+
+-- =============================================================================
+-- 11. ESTADÍSTICAS DEL PANEL (TFI, 14.7)
+--
+-- Veinte reservas confirmadas más de Zolea Club de Playa (balneario 1), así los
+-- gráficos del panel de admin.mdp@zolea.com no salen vacíos: once del último
+-- mes y medio, cuatro que incluyen hoy (62 a 65) y cinco de las próximas
+-- semanas. Las fechas son relativas a @today y no pisan otra reserva de la misma
+-- unidad; ninguna usa la A-08, que está bloqueada. El total es el de siempre:
+-- los días con los dos extremos por el precio diario de la unidad.
+-- =============================================================================
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, id_client, id_rental_unit)
+SELECT d.id, @today + INTERVAL d.desde DAY, @today + INTERVAL (d.desde + d.dias - 1) DAY,
+       d.dias * u.daily_price, 'CONFIRMED',
+       @today + INTERVAL (d.desde - 12) DAY + INTERVAL 14 HOUR, d.cliente, u.id_rental_unit
+FROM (
+              SELECT 51 AS id, 1 AS unidad, -38 AS desde, 4 AS dias, 8 AS cliente
+    UNION ALL SELECT 52,  2, -36, 3,  9
+    UNION ALL SELECT 53,  3, -33, 5, 10
+    UNION ALL SELECT 54, 17, -30, 4, 11
+    UNION ALL SELECT 55, 18, -28, 3, 12
+    UNION ALL SELECT 56,  1, -25, 2, 13
+    UNION ALL SELECT 57, 11, -22, 4, 14
+    UNION ALL SELECT 58, 19, -18, 5, 15
+    UNION ALL SELECT 59,  2, -15, 3, 16
+    UNION ALL SELECT 60, 12, -12, 4, 17
+    UNION ALL SELECT 61,  4,  -8, 3, 18
+    -- Las cuatro que incluyen hoy.
+    UNION ALL SELECT 62,  1,  -2, 5, 19
+    UNION ALL SELECT 63,  3,  -1, 3, 20
+    UNION ALL SELECT 64, 17,   0, 4, 21
+    UNION ALL SELECT 65, 22,  -3, 6, 22
+    -- Las que vienen.
+    UNION ALL SELECT 66,  2,   4, 3, 24
+    UNION ALL SELECT 67, 18,   8, 5, 25
+    UNION ALL SELECT 68, 11,  15, 4,  8
+    UNION ALL SELECT 69, 19,  22, 3,  9
+    UNION ALL SELECT 70, 24,  30, 5, 10
+) d
+JOIN rental_unit u ON u.id_rental_unit = d.unidad;
+
+-- El titular de cada una, con su DNI. Las que ya terminaron entraron; las que
+-- vienen, todavía no.
+INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
+SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
+       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-PNL'), b.end_date < @today, b.id
+FROM booking b JOIN client c ON c.id_client = b.id_client
+WHERE b.id BETWEEN 51 AND 70;
+
+-- Las que incluyen hoy: en la 62, la 63 y la 65 el titular ya entró; en la 64,
+-- que empieza hoy, todavía no. Con los acompañantes, hoy hay gente adentro y
+-- gente por llegar.
+UPDATE guest SET is_entry_validated = true WHERE id_booking IN (62, 63, 65);
+
+INSERT INTO guest (full_name, qr_token, is_entry_validated, id_booking) VALUES
+('Lucía Gutiérrez', 'tok-00062-A2-PNL', true,  62),
+('Joaquín Flores',  'tok-00063-A2-PNL', false, 63),
+('Ana Flores',      'tok-00063-A3-PNL', false, 63),
+('Paula Ruiz',      'tok-00064-A2-PNL', false, 64);
