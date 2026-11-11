@@ -59,6 +59,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                             @Param("startDate") LocalDate startDate,
                             @Param("endDate") LocalDate endDate);
 
+    /**
+     * Las unidades de un balneario que están ocupadas en un rango de fechas, cada una una sola vez.
+     *
+     * <p>Ocupada con la misma regla que {@link #isUnitAvailable}: una reserva que no está
+     * cancelada —pendiente o confirmada— y se pisa con las fechas, contando los dos extremos. Es lo
+     * que el plano necesita para no ofrecer una unidad que después falla al reservar.
+     */
+    @Query("SELECT DISTINCT b.rentalUnit.idRentalUnit FROM Booking b " +
+            "WHERE b.rentalUnit.resort.idResort = :idResort " +
+            "AND b.status != 'CANCELED' " +
+            "AND (b.startDate <= :endDate AND b.endDate >= :startDate) " +
+            "ORDER BY b.rentalUnit.idRentalUnit")
+    List<Long> findOccupiedUnitIds(@Param("idResort") Long idResort,
+                                   @Param("startDate") LocalDate startDate,
+                                   @Param("endDate") LocalDate endDate);
+
     @EntityGraph(attributePaths = {"guests", "client", "rentalUnit", "rentalUnit.resort"})
     @Query("SELECT b FROM Booking b WHERE b.client.idClient = :clientId")
     List<Booking> findByClientId(@Param("clientId") Long clientId);
