@@ -183,6 +183,15 @@ public class ResortService {
         return mapToResponse(resortRepository.save(resort));
     }
 
+    /**
+     * Los números del Panel con gráficos de un balneario: el resumen de hoy, la ocupación por día,
+     * los ingresos por mes y las unidades más reservadas del rango. Solo cuentan las reservas
+     * confirmadas, salvo las pendientes del resumen de hoy, y se leen solo las del balneario que
+     * tocan el rango.
+     *
+     * @throws InvalidBookingRangeException si viene una sola fecha, si {@code from} es posterior a
+     *                                      {@code to} o si el rango pasa de 366 días.
+     */
     @Transactional(readOnly = true)
     public ResortStatsResponse getResortStats(Long resortId, LocalDate from, LocalDate to) {
         LocalDate today = LocalDate.now(clock);
@@ -210,7 +219,7 @@ public class ResortService {
         // 1. Hoy
         TodayStats todayStats = todayStats(resortId, today, totalUnits);
 
-        // 2. Occupancy By Day
+        // 2. Ocupación: unidades distintas con una reserva confirmada cada día del rango
         List<OccupancyDayStats> occupancyByDay = new ArrayList<>();
         for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
             final LocalDate current = d;
@@ -222,7 +231,7 @@ public class ResortService {
             occupancyByDay.add(new OccupancyDayStats(current, occupied, totalUnits));
         }
 
-        // 3. Income By Month
+        // 3. Ingresos: cada reserva suma entera en el mes en que empieza
         List<IncomeMonthStats> incomeByMonth = new ArrayList<>();
         YearMonth startMonth = YearMonth.from(from);
         YearMonth endMonth = YearMonth.from(to);
@@ -235,7 +244,7 @@ public class ResortService {
             incomeByMonth.add(new IncomeMonthStats(currentMonth.toString(), income.setScale(2, RoundingMode.HALF_UP)));
         }
 
-        // 4. Top Units
+        // 4. Unidades más reservadas: solo cuentan los días dentro del rango
         Map<RentalUnit, Long> unitDays = new HashMap<>();
         for (Booking b : bookings) {
             LocalDate overlapStart = b.getStartDate().isBefore(from) ? from : b.getStartDate();

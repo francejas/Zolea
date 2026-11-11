@@ -4,10 +4,10 @@ import com.zolea.backend.dtos.resort.ResortActionResponse;
 import com.zolea.backend.dtos.resort.ResortRequest;
 import com.zolea.backend.dtos.resort.ResortResponse;
 import com.zolea.backend.dtos.resort.ResortStatsResponse;
-import com.zolea.backend.exceptions.booking.BookingForbiddenException;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.ResortService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -139,23 +139,27 @@ public class ResortController {
     }
 
 
-    @Operation(summary = "Obtener estadísticas del balneario del administrador")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Estadísticas generadas correctamente"),
-            @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
-            @ApiResponse(responseCode = "401", description = "No autenticado"),
-            @ApiResponse(responseCode = "403", description = "Rol no autorizado o administrador sin balneario")
-    })
-    @GetMapping("/my/stats")
+    // El balneario sale de la sesión, nunca de un parámetro: cada admin ve solo los números del suyo.
     @PreAuthorize("hasRole('ADMIN')")
-    public ResortStatsResponse getMyStats(
-            @AuthenticationPrincipal UserPrincipal user,
+    @GetMapping("/my/stats")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Estadísticas de mi balneario (Admin)",
+            description = "Los números del Panel con gráficos: el resumen de hoy, la ocupación por día, los ingresos "
+                    + "por mes y las cinco unidades más reservadas. Sin fechas, del primer día del mes pasado al "
+                    + "último del mes que viene; van las dos fechas o ninguna, hasta 366 días. Solo cuentan las "
+                    + "reservas confirmadas, salvo las pendientes del resumen de hoy.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Las estadísticas del balneario del administrador"),
+            @ApiResponse(responseCode = "400", description = "Una sola de las dos fechas, from después de to, un rango de más de 366 días o una fecha mal escrita", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el administrador no tiene un balneario asignado", content = @Content)
+    })
+    public ResponseEntity<ResortStatsResponse> getMyStats(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "Primer día del rango, AAAA-MM-DD", example = "2026-10-01")
             @RequestParam(required = false) LocalDate from,
+            @Parameter(description = "Último día del rango, incluido, AAAA-MM-DD", example = "2026-12-31")
             @RequestParam(required = false) LocalDate to) {
-
-        if (user.getIdManagedResort() == null) {
-            throw new BookingForbiddenException("El administrador no tiene un balneario asignado.");
-        }
-        return resortService.getResortStats(user.getIdManagedResort(), from, to);
+        return ResponseEntity.ok(resortService.getResortStats(principal.requireManagedResort(), from, to));
     }
 }
