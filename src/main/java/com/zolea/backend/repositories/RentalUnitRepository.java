@@ -91,4 +91,8 @@ public interface RentalUnitRepository extends JpaRepository<RentalUnit, Long> {
                                                         @Param("amenityCount") long amenityCount,
                                                         @Param("from") LocalDate from,
                                                         @Param("to") LocalDate to);
+
+    /** Cuántas unidades del balneario se pueden usar hoy: las que no están bloqueadas. */
+    @Query("SELECT COUNT(u) FROM RentalUnit u WHERE u.resort.idResort = :resortId AND u.isBlocked = false")
+    long countActiveUnitsByResort(@Param("resortId") Long resortId);
 }

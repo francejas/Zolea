@@ -309,7 +309,54 @@ cual («la reserva todavía no comenzó, el ingreso se habilita el 20/01/2026»)
 
 ---
 
-## 7. Probar la API antes de escribir Angular
+## 7. Estadísticas del panel
+
+Los números del Panel con gráficos. Los pide el **administrador**, y siempre son de **su**
+balneario: sale de la sesión, no de un parámetro.
+
+```
+GET /api/resorts/my/stats?from=2026-10-01&to=2026-12-31
+→ {
+    "from": "2026-10-01", "to": "2026-12-31",
+    "today": { "activeBookings": 3, "expectedGuests": 8, "checkedIn": 2,
+               "pendingBookings": 2, "freeUnits": 17 },
+    "occupancyByDay": [ { "date": "2026-10-01", "occupiedUnits": 5, "totalUnits": 22 }, ... ],
+    "incomeByMonth":  [ { "month": "2026-10", "income": 254000.00 }, ... ],
+    "topUnits":       [ { "idRentalUnit": 10, "identifier": "B-02", "type": "UMBRELLA", "days": 14 }, ... ]
+  }
+```
+
+**El rango.** Sin fechas va del primer día del mes pasado al último del mes que viene, y vuelve en
+`from` y `to`. Van las dos fechas o ninguna, con el formato `AAAA-MM-DD`, y hasta 366 días contando
+los dos extremos. Una sola fecha, `from` después de `to`, un rango más largo o una fecha mal escrita
+responden `400`. Sin token, `401`; una cuenta de cliente o un administrador sin balneario, `403`.
+
+**Qué es cada número.** Solo cuentan las reservas **confirmadas**, salvo `pendingBookings`; las
+canceladas no suman en ninguno.
+
+- `today` no depende del rango:
+  - `activeBookings`, las reservas que incluyen hoy;
+  - `expectedGuests`, todas las personas de esas reservas, titular incluido;
+  - `checkedIn`, cuántas de esas personas ya tienen la entrada validada;
+  - `pendingBookings`, las reservas del balneario que siguen pendientes de pago;
+  - `freeUnits`, las unidades no bloqueadas sin una reserva que incluya hoy.
+
+  Con `today` y el mes en curso de `incomeByMonth` se arma el resumen del panel.
+- `occupancyByDay`: un elemento por día del rango, también los días en 0. `occupiedUnits` son las
+  unidades distintas reservadas ese día; `totalUnits`, las que hoy no están bloqueadas.
+- `incomeByMonth`: un elemento por mes que toca el rango, en orden y también los meses en 0. Cada
+  reserva suma entera en el mes en que **empieza**: una del 30/10 al 02/11 va toda a octubre. La plata
+  viene con dos decimales, como siempre.
+- `topUnits`: las 5 unidades con más días reservados dentro del rango, de más a menos y, si empatan,
+  por identificador. Si una reserva se sale del rango, cuentan solo los días de adentro, y las
+  unidades sin reservas no van.
+
+En la demo, `admin.mdp@zolea.com` tiene reservas el mes pasado, hoy y las semanas que vienen, así
+los tres bloques traen números.
+
+---
+
+## 8. Probar la API antes de escribir Angular
 
 La API publica su definición en `http://localhost:8080/v3/api-docs`, y Swagger la dibuja en
 `http://localhost:8080/swagger-ui/index.html`.

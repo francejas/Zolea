@@ -2,13 +2,14 @@ package com.zolea.backend.services;
 
 import com.zolea.backend.dtos.amenity.AmenityResponse;
 import com.zolea.backend.dtos.rentalunit.RentalUnitResponse;
-import com.zolea.backend.dtos.resort.ResortRequest;
-import com.zolea.backend.dtos.resort.ResortResponse;
-import com.zolea.backend.dtos.resort.ResortSearch;
+import com.zolea.backend.dtos.resort.*;
 import com.zolea.backend.exceptions.booking.InvalidBookingRangeException;
 import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
 import com.zolea.backend.models.Amenity;
+import com.zolea.backend.models.Booking;
+import com.zolea.backend.models.Guest;
+import com.zolea.backend.models.RentalUnit;
 import com.zolea.backend.models.Resort;
 import com.zolea.backend.repositories.AmenityRepository;
 import com.zolea.backend.repositories.BookingRepository;
@@ -25,6 +26,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,6 +47,9 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ResortService {
+
+    /** El rango más largo que aceptan las estadísticas, con los dos extremos incluidos. */
+    private static final int MAX_STATS_DAYS = 366;
 
     private final ResortRepository resortRepository;
     private final AmenityRepository amenityRepository;
@@ -279,6 +287,114 @@ public class ResortService {
         Resort resort = resortRepository.findById(id).orElseThrow(() -> new ResortNotFoundException("Resort not found"));
         resort.setActive(true);
         return mapToResponse(resortRepository.save(resort));
+    }
+
+    /**
+     * Los números del Panel con gráficos de un balneario: el resumen de hoy, la ocupación por día,
+     * los ingresos por mes y las unidades más reservadas del rango. Solo cuentan las reservas
+     * confirmadas, salvo las pendientes del resumen de hoy, y se leen solo las del balneario que
+     * tocan el rango.
+     *
+     * @throws InvalidBookingRangeException si viene una sola fecha, si {@code from} es posterior a
+     *                                      {@code to} o si el rango pasa de 366 días.
+     */
+    @Transactional(readOnly = true)
+    public ResortStatsResponse getResortStats(Long resortId, LocalDate from, LocalDate to) {
+        LocalDate today = LocalDate.now(clock);
+
+        // Sin fechas: del primer día del mes pasado al último del mes que viene.
+        if (from == null && to == null) {
+            from = today.minusMonths(1).withDayOfMonth(1);
+            to = today.plusMonths(1).withDayOfMonth(today.plusMonths(1).lengthOfMonth());
+        } else if (from == null || to == null) {
+            throw new InvalidBookingRangeException("Van las dos fechas, from y to, o ninguna.");
+        }
+
+        if (from.isAfter(to)) {
+            throw new InvalidBookingRangeException("La fecha from no puede ser posterior a to.");
+        }
+        // Los días se cuentan con los dos extremos, como en las reservas: del 01/01 al 01/01 del
+        // año siguiente son 366.
+        if (ChronoUnit.DAYS.between(from, to) + 1 > MAX_STATS_DAYS) {
+            throw new InvalidBookingRangeException("El rango puede tener hasta " + MAX_STATS_DAYS + " días.");
+        }
+
+        long totalUnits = rentalUnitRepository.countActiveUnitsByResort(resortId);
+        List<Booking> bookings = bookingRepository.findConfirmedOverlappingRange(resortId, from, to);
+
+        // 1. Hoy
+        TodayStats todayStats = todayStats(resortId, today, totalUnits);
+
+        // 2. Ocupación: unidades distintas con una reserva confirmada cada día del rango
+        List<OccupancyDayStats> occupancyByDay = new ArrayList<>();
+        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+            final LocalDate current = d;
+            long occupied = bookings.stream()
+                    .filter(b -> !b.getStartDate().isAfter(current) && !b.getEndDate().isBefore(current))
+                    .map(b -> b.getRentalUnit().getIdRentalUnit())
+                    .distinct()
+                    .count();
+            occupancyByDay.add(new OccupancyDayStats(current, occupied, totalUnits));
+        }
+
+        // 3. Ingresos: cada reserva suma entera en el mes en que empieza
+        List<IncomeMonthStats> incomeByMonth = new ArrayList<>();
+        YearMonth startMonth = YearMonth.from(from);
+        YearMonth endMonth = YearMonth.from(to);
+        for (YearMonth m = startMonth; !m.isAfter(endMonth); m = m.plusMonths(1)) {
+            final YearMonth currentMonth = m;
+            BigDecimal income = bookings.stream()
+                    .filter(b -> YearMonth.from(b.getStartDate()).equals(currentMonth))
+                    .map(Booking::getTotalPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            incomeByMonth.add(new IncomeMonthStats(currentMonth.toString(), income.setScale(2, RoundingMode.HALF_UP)));
+        }
+
+        // 4. Unidades más reservadas: solo cuentan los días dentro del rango
+        Map<RentalUnit, Long> unitDays = new HashMap<>();
+        for (Booking b : bookings) {
+            LocalDate overlapStart = b.getStartDate().isBefore(from) ? from : b.getStartDate();
+            LocalDate overlapEnd = b.getEndDate().isAfter(to) ? to : b.getEndDate();
+            long days = ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
+
+            unitDays.merge(b.getRentalUnit(), days, Long::sum);
+        }
+
+        List<TopUnitStats> topUnits = unitDays.entrySet().stream()
+                .filter(e -> e.getValue() > 0)
+                .sorted((e1, e2) -> {
+                    int daysCompare = Long.compare(e2.getValue(), e1.getValue());
+                    return daysCompare != 0 ? daysCompare : e1.getKey().getIdentifier().compareTo(e2.getKey().getIdentifier());
+                })
+                .limit(5)
+                .map(e -> new TopUnitStats(e.getKey().getIdRentalUnit(), e.getKey().getIdentifier(), e.getKey().getType(), e.getValue()))
+                .toList();
+
+        return new ResortStatsResponse(from, to, todayStats, occupancyByDay, incomeByMonth, topUnits);
+    }
+
+    /**
+     * El resumen de hoy, que no depende del rango pedido: se leen aparte las reservas confirmadas
+     * que incluyen hoy. Las personas son todas las de esas reservas, titular incluido, y las
+     * unidades libres son las que se pueden usar y no tienen una de esas reservas.
+     */
+    private TodayStats todayStats(Long resortId, LocalDate today, long usableUnits) {
+        List<Booking> active = bookingRepository.findConfirmedOverlappingRange(resortId, today, today);
+        List<Guest> guests = active.stream()
+                .filter(Booking::hasGuests)
+                .flatMap(b -> b.getGuests().stream())
+                .toList();
+        long checkedIn = guests.stream()
+                .filter(g -> Boolean.TRUE.equals(g.getIsEntryValidated()))
+                .count();
+        long occupiedUsable = active.stream()
+                .map(Booking::getRentalUnit)
+                .filter(u -> !Boolean.TRUE.equals(u.getIsBlocked()))
+                .map(RentalUnit::getIdRentalUnit)
+                .distinct()
+                .count();
+        return new TodayStats(active.size(), guests.size(), checkedIn,
+                bookingRepository.countPendingByResort(resortId), usableUnits - occupiedUsable);
     }
 
     private ResortResponse mapToResponse(Resort r) {

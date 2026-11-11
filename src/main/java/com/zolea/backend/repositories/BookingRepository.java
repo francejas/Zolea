@@ -97,4 +97,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.status = 'PENDING' AND b.createdAt <= :limitDate")
     List<Booking> findExpiredPendingBookings(@Param("limitDate") LocalDateTime limitDate);
 
+    /** Las reservas del balneario que siguen pendientes de pago. */
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.rentalUnit.resort.idResort = :resortId AND b.status = 'PENDING'")
+    long countPendingByResort(@Param("resortId") Long resortId);
+
+    /**
+     * Las reservas confirmadas de un balneario que tocan el rango, con sus huéspedes y su unidad
+     * en la misma consulta: es lo que leen las estadísticas, en vez de todas las reservas del
+     * sistema. La reserva llega al balneario a través de la unidad.
+     */
+    @EntityGraph(attributePaths = {"guests", "rentalUnit"})
+    @Query("SELECT b FROM Booking b WHERE b.rentalUnit.resort.idResort = :resortId "
+            + "AND b.status = 'CONFIRMED' AND b.startDate <= :to AND b.endDate >= :from")
+    List<Booking> findConfirmedOverlappingRange(
+            @Param("resortId") Long resortId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 }
