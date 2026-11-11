@@ -37,6 +37,7 @@ public interface RentalUnitRepository extends JpaRepository<RentalUnit, Long> {
     @Query("SELECT u FROM RentalUnit u WHERE u.idRentalUnit = :id")
     Optional<RentalUnit> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("SELECT COUNT(u) FROM RentalUnit u WHERE u.resort.id = :resortId AND u.status != 'BLOCKED'")
+    /** Cuántas unidades del balneario se pueden usar hoy: las que no están bloqueadas. */
+    @Query("SELECT COUNT(u) FROM RentalUnit u WHERE u.resort.idResort = :resortId AND u.isBlocked = false")
     long countActiveUnitsByResort(@Param("resortId") Long resortId);
 }
