@@ -8,6 +8,7 @@ import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
 import com.zolea.backend.models.Amenity;
 import com.zolea.backend.models.Booking;
+import com.zolea.backend.models.Guest;
 import com.zolea.backend.models.RentalUnit;
 import com.zolea.backend.models.Resort;
 import com.zolea.backend.repositories.AmenityRepository;
@@ -200,25 +201,8 @@ public class ResortService {
         long totalUnits = rentalUnitRepository.countActiveUnitsByResort(resortId);
         List<Booking> bookings = bookingRepository.findConfirmedOverlappingRange(resortId, from, to);
 
-        // 1. Today Stats
-        long activeBookings = 0;
-        long expectedGuests = 0;
-        long checkedIn = 0;
-
-        for (Booking b : bookings) {
-            if (!b.getStartDate().isAfter(today) && !b.getEndDate().isBefore(today)) {
-                activeBookings++;
-
-                if (b.getGuests() != null) {
-                    expectedGuests += b.getGuests().size();
-
-                    checkedIn += b.getGuests().stream()
-                            .filter(g -> Boolean.TRUE.equals(g.getIsEntryValidated()))
-                            .count();
-                }
-            }
-        }
-        TodayStats todayStats = new TodayStats(activeBookings, expectedGuests, checkedIn);
+        // 1. Hoy
+        TodayStats todayStats = todayStats(resortId, today, totalUnits);
 
         // 2. Occupancy By Day
         List<OccupancyDayStats> occupancyByDay = new ArrayList<>();
@@ -266,6 +250,30 @@ public class ResortService {
                 .toList();
 
         return new ResortStatsResponse(from, to, todayStats, occupancyByDay, incomeByMonth, topUnits);
+    }
+
+    /**
+     * El resumen de hoy, que no depende del rango pedido: se leen aparte las reservas confirmadas
+     * que incluyen hoy. Las personas son todas las de esas reservas, titular incluido, y las
+     * unidades libres son las que se pueden usar y no tienen una de esas reservas.
+     */
+    private TodayStats todayStats(Long resortId, LocalDate today, long usableUnits) {
+        List<Booking> active = bookingRepository.findConfirmedOverlappingRange(resortId, today, today);
+        List<Guest> guests = active.stream()
+                .filter(Booking::hasGuests)
+                .flatMap(b -> b.getGuests().stream())
+                .toList();
+        long checkedIn = guests.stream()
+                .filter(g -> Boolean.TRUE.equals(g.getIsEntryValidated()))
+                .count();
+        long occupiedUsable = active.stream()
+                .map(Booking::getRentalUnit)
+                .filter(u -> !Boolean.TRUE.equals(u.getIsBlocked()))
+                .map(RentalUnit::getIdRentalUnit)
+                .distinct()
+                .count();
+        return new TodayStats(active.size(), guests.size(), checkedIn,
+                bookingRepository.countPendingByResort(resortId), usableUnits - occupiedUsable);
     }
 
     private ResortResponse mapToResponse(Resort r) {
