@@ -16,6 +16,10 @@ import java.util.List;
  * <p>{@code active} sí se expone: los endpoints para activar y desactivar un balneario existían,
  * pero el estado no se podía leer desde ningún lado, así que el panel del administrador no tenía
  * cómo mostrar en qué estado había quedado.
+ *
+ * <p>{@code availableUnits} solo tiene valor en una búsqueda con fechas: es lo que la portada
+ * muestra como «3 lugares libres». Sin fechas no hay contra qué contar, y es {@code null} y no un
+ * número, igual que el promedio sin reseñas.
  */
 public record ResortResponse(
         Long idResort,
@@ -29,6 +33,9 @@ public record ResortResponse(
         @Schema(description = "El promedio de las reseñas, con un decimal. Null si todavía no tiene", example = "4.5")
         BigDecimal averageRating,
         @Schema(description = "Cuántas reseñas tiene", example = "12")
-        long reviewCount
+        long reviewCount,
+        @Schema(description = "Cuántas unidades cumplen la búsqueda y están libres en las fechas buscadas. "
+                + "Null cuando no se buscó con fechas", example = "3")
+        Long availableUnits
 ) {
 }

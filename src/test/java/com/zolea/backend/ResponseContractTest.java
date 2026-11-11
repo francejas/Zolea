@@ -93,19 +93,19 @@ class ResponseContractTest extends IntegrationTest {
     }
 
     /**
-     * Los seis que no documentan errores, porque no los tienen.
+     * Los cinco que no documentan errores, porque no los tienen.
      *
-     * <p>Los dos listados públicos no reciben ni parámetros ni token: devuelven la lista, vacía si
-     * no hay nada. Los tres retornos de MercadoPago siempre redirigen —cuando el pago no se puede
+     * <p>El listado público de servicios no recibe ni parámetros ni token: devuelve la lista, vacía
+     * si no hay nada. Los tres retornos de MercadoPago siempre redirigen —cuando el pago no se puede
      * comprobar, el cliente va a «pendiente», que no es un error— y el aviso automático siempre
      * responde 200 a propósito: un código de error solo lograría que MercadoPago reintente.
      *
      * <p>La lista está acá escrita a mano y no como una regla general porque es lo que la hace
      * útil: si mañana uno de estos empieza a poder fallar, hay que sacarlo de la lista, y eso
-     * obliga a pensarlo.
+     * obliga a pensarlo. Le pasó a {@code GET /api/resorts}: con los filtros de búsqueda, unas
+     * fechas inválidas responden 400.
      */
     private static final List<String> SIN_ERRORES_POSIBLES = List.of(
-            "GET /api/resorts",
             "GET /api/amenities",
             "GET /api/bookings/success",
             "GET /api/bookings/pending",
@@ -186,6 +186,45 @@ class ResponseContractTest extends IntegrationTest {
     }
 
     @Test
+    @DisplayName("los filtros de la búsqueda y las fechas de las unidades ocupadas traen un ejemplo")
+    void searchParameters_carryAnExample() throws Exception {
+        // Igual que con los cuerpos: sin ejemplo, el que prueba desde Swagger tiene que adivinar
+        // el formato de la fecha o los valores de type.
+        Map<String, List<String>> parametros = Map.of(
+                "/api/resorts", List.of("q", "from", "to", "type", "maxPrice", "amenityIds"),
+                "/api/resorts/{id}/occupied-units", List.of("from", "to"));
+
+        List<String> sinEjemplo = new ArrayList<>();
+        JsonNode paths = apiDocs().path("paths");
+        for (var entrada : parametros.entrySet()) {
+            JsonNode declarados = paths.path(entrada.getKey()).path("get").path("parameters");
+            for (String nombre : entrada.getValue()) {
+                boolean tieneEjemplo = false;
+                for (JsonNode parametro : declarados) {
+                    if (nombre.equals(parametro.path("name").asText())
+                            && (parametro.has("example") || parametro.path("schema").has("example"))) {
+                        tieneEjemplo = true;
+                    }
+                }
+                if (!tieneEjemplo) {
+                    sinEjemplo.add(entrada.getKey() + " " + nombre);
+                }
+            }
+        }
+
+        assertThat(sinEjemplo)
+                .withFailMessage("estos parámetros no traen ningún ejemplo: %s", sinEjemplo)
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("el balneario declara cuántas unidades libres tiene en las fechas buscadas")
+    void resort_declaresAvailableUnits() throws Exception {
+        assertThat(declaredFieldsOf("/api/resorts/{id}", "get", "200"))
+                .contains("availableUnits");
+    }
+
+    @Test
     @DisplayName("los endpoints públicos no aparecen como si necesitaran token")
     void publicEndpoints_doNotAskForAToken() throws Exception {
         // Los cuatro de MercadoPago son el caso que importa: los llama la pasarela, que no tiene
@@ -197,7 +236,8 @@ class ResponseContractTest extends IntegrationTest {
                 "/api/bookings/failure", "get",
                 "/api/bookings/notifications", "post",
                 "/api/auth/login", "post",
-                "/api/resorts/{id}/reviews", "get");
+                "/api/resorts/{id}/reviews", "get",
+                "/api/resorts/{id}/occupied-units", "get");
 
         List<String> conCandado = new ArrayList<>();
         for (var entrada : publicos.entrySet()) {

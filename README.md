@@ -196,8 +196,9 @@ http://localhost:8080/swagger-ui/index.html
 | `GET` | `/api/clients` | ADMIN | Los clientes de su balneario, con su historial ahí |
 | `GET` | `/api/clients/{id}` | DUEÑO o ADMIN | Perfil del cliente |
 | `PUT` | `/api/clients/{id}` | DUEÑO o ADMIN | Actualizar perfil |
-| `GET` | `/api/resorts` | — | Listar balnearios |
+| `GET` | `/api/resorts` | — | Listar balnearios; con filtros, los que tienen lugar (`q`, `from`, `to`, `type`, `maxPrice`, `amenityIds`) |
 | `GET` | `/api/resorts/{id}` | — | Detalle + unidades del balneario |
+| `GET` | `/api/resorts/{id}/occupied-units` | — | Unidades ocupadas entre `from` y `to` |
 | `GET` | `/api/resorts/my` | ADMIN | Mi balneario |
 | `PUT` | `/api/resorts/my` | ADMIN | Actualizar datos del balneario |
 | `POST` | `/api/resorts` | ADMIN | Crear balneario |

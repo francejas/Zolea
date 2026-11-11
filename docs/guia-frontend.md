@@ -145,6 +145,47 @@ a los controles del formulario.
 
 ## 5. Reservar y pagar
 
+### Buscar dónde hay lugar
+
+La portada usa el listado de siempre, `GET /api/resorts`, con **filtros opcionales**. Sin ninguno
+responde igual que antes: todos los balnearios activos, con lugar o sin él.
+
+```
+GET /api/resorts?q=mar&from=2027-01-15&to=2027-01-17&type=TENT&maxPrice=20000&amenityIds=1,2
+→ [ { "idResort": 1, "name": "...", ..., "averageRating": 4.5, "reviewCount": 12, "availableUnits": 3 }, ... ]
+```
+
+| Filtro | Qué deja |
+|---|---|
+| `q` | Los que tienen ese texto en el nombre o en la ubicación, sin distinguir mayúsculas |
+| `from` y `to` | Las dos o ninguna, `AAAA-MM-DD`, desde hoy: una unidad libre en esas fechas |
+| `type` | Una unidad `TENT` o `UMBRELLA` |
+| `maxPrice` | Una unidad con precio diario hasta ese valor, incluido |
+| `amenityIds` | Los que tienen **todos** esos servicios: `amenityIds=1,2` o `amenityIds=1&amenityIds=2` |
+
+Con cualquier filtro aparecen solo los balnearios que tienen **al menos una unidad** no bloqueada
+que cumpla el tipo y el precio y, si vinieron fechas, esté libre en esas fechas. Cuando se buscó
+con fechas, `availableUnits` dice cuántas unidades cumplen; sin fechas es `null`, igual que en
+`GET /api/resorts/{id}`.
+
+En la ficha, el plano marca además las unidades **ocupadas** en las fechas elegidas:
+
+```
+GET /api/resorts/{id}/occupied-units?from=2027-01-15&to=2027-01-17
+→ [ 12, 15 ]
+```
+
+Son los `idRentalUnit` que tienen una reserva pendiente o confirmada que se pisa con esas fechas,
+contando los dos extremos. Es la misma regla que aplica el backend al reservar, así que una unidad
+que el plano muestra libre se puede reservar. Las bloqueadas no vienen acá: ya están en la ficha,
+con `isBlocked`. Los dos endpoints son públicos, sin token.
+
+Los rechazos responden `400` con el motivo en `error`: una sola de las dos fechas (en
+`occupied-units` van siempre las dos), `from` después de `to`, `from` antes de hoy, un `type` que
+no existe o una fecha que no viene como `AAAA-MM-DD`. Un balneario que no existe, `404`.
+
+### Reservar
+
 ```
 POST /api/bookings        { startDate, endDate, clientId, rentalUnitId, guests: [...] }
 → 201 { "booking": { ... }, "paymentUrl": "https://mercadopago..." }
