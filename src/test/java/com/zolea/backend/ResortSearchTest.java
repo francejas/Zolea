@@ -26,11 +26,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -138,6 +138,8 @@ class ResortSearchTest extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].idResort",
                         containsInAnyOrder(ids(withRoom, full, allBlocked, withoutUnits))))
+                // hasSize primero: sin él, everyItem pasaría también si el campo no viniera.
+                .andExpect(jsonPath("$[*].availableUnits", hasSize(4)))
                 .andExpect(jsonPath("$[*].availableUnits", everyItem(nullValue())));
     }
 
@@ -273,7 +275,7 @@ class ResortSearchTest extends IntegrationTest {
         search("maxPrice=10000&" + DATES)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].idResort", containsInAnyOrder(ids(cheap, exact))))
-                .andExpect(jsonPath("$[*].availableUnits", everyItem(is(1))));
+                .andExpect(jsonPath("$[*].availableUnits", contains(1, 1)));
     }
 
     @Test
@@ -320,6 +322,7 @@ class ResortSearchTest extends IntegrationTest {
         search("q=pLaYa")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].idResort", containsInAnyOrder(ids(byName, byLocation))))
+                .andExpect(jsonPath("$[*].availableUnits", hasSize(2)))
                 .andExpect(jsonPath("$[*].availableUnits", everyItem(nullValue())));
     }
 
