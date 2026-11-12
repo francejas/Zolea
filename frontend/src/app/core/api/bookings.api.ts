@@ -2,7 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Booking, BookingCheckout, BookingRequest, PaymentUrlResponse } from './booking.models';
+import {
+  Booking,
+  BookingCheckout,
+  BookingRequest,
+  CancellationResponse,
+  PaymentUrlResponse,
+} from './booking.models';
 
 /** Las reservas. Lo usan el Detalle, Reservar y las reservas del balneario: cada uno suma lo suyo. */
 @Injectable({
@@ -29,5 +35,14 @@ export class BookingsApi {
   /** Devuelve la reserva cancelada; la unidad queda libre para esas fechas. */
   cancel(id: number): Observable<Booking> {
     return this.http.patch<Booking>(`${this.apiUrl}/${id}/cancel`, null);
+  }
+
+  /** El servidor limita el listado al balneario del administrador autenticado. */
+  list(): Observable<Booking[]> {
+    return this.http.get<Booking[]>(this.apiUrl);
+  }
+
+  cancellation(id: number): Observable<CancellationResponse> {
+    return this.http.get<CancellationResponse>(`${this.apiUrl}/${id}/cancellation`);
   }
 }

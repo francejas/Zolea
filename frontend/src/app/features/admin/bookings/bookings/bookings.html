@@ -1,0 +1,238 @@
+<section class="bookings">
+  <header>
+    <h1>Reservas del balneario</h1>
+    <p class="bookings__lead">Consultá las estadías y gestioná las reservas de tu balneario.</p>
+  </header>
+
+  @if (notice(); as message) {
+    <z-alert variant="success" [text]="message" />
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="bookings__skeleton" aria-busy="true" aria-label="Cargando reservas">
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <z-skeleton width="100%" height="44px" />
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer las reservas" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (bookings().length === 0) {
+        <z-empty
+          title="Todavía no hay reservas"
+          text="Las reservas de tu balneario van a aparecer acá."
+        />
+      } @else {
+        <div class="bookings__filters" role="group" aria-label="Filtrar reservas">
+          <label for="booking-status">
+            Estado
+            <select
+              #statusInput
+              id="booking-status"
+              class="z-input"
+              [value]="status()"
+              (change)="setStatus(statusInput.value)"
+            >
+              <option value="">Todos los estados</option>
+              <option value="PENDING">Pendientes de pago</option>
+              <option value="CONFIRMED">Confirmadas</option>
+              <option value="CANCELED">Canceladas</option>
+            </select>
+          </label>
+
+          <label for="booking-from">
+            Desde
+            <input
+              #fromInput
+              id="booking-from"
+              class="z-input"
+              type="date"
+              [value]="from()"
+              (input)="from.set(fromInput.value)"
+              [attr.aria-invalid]="invalidRange() || null"
+              aria-describedby="booking-date-help"
+            />
+          </label>
+
+          <label for="booking-to">
+            Hasta
+            <input
+              #toInput
+              id="booking-to"
+              class="z-input"
+              type="date"
+              [value]="to()"
+              (input)="to.set(toInput.value)"
+              [attr.aria-invalid]="invalidRange() || null"
+              aria-describedby="booking-date-help"
+            />
+          </label>
+
+          <z-btn variant="ghost" [disabled]="!hasFilters()" (click)="resetFilters()">
+            Limpiar filtros
+          </z-btn>
+        </div>
+
+        <p id="booking-date-help" class="bookings__help">
+          @if (invalidRange()) {
+            La fecha desde debe ser anterior o igual a la fecha hasta.
+          } @else {
+            Se muestran las estadías que coinciden con el período, incluidos ambos días.
+          }
+        </p>
+
+        @if (!invalidRange()) {
+          <p class="bookings__summary" role="status">
+            {{ filtered().length }} de {{ bookings().length }} reservas
+          </p>
+
+          @if (filtered().length === 0) {
+            <z-empty
+              title="No hay reservas con estos filtros"
+              text="Probá con otro estado o período."
+              actionLabel="Limpiar filtros"
+              (action)="resetFilters()"
+            />
+          } @else {
+            <div class="z-table-wrap">
+              <table class="z-table" aria-label="Reservas del balneario">
+                <thead>
+                  <tr>
+                    <th scope="col">Titular</th>
+                    <th scope="col">Unidad</th>
+                    <th scope="col">Fechas</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" class="is-num">Total</th>
+                    <th scope="col" class="is-actions">Acciones</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (booking of filtered(); track booking.id) {
+                    <tr>
+                      <td data-label="Titular">
+                        <a [routerLink]="['/admin/bookings', booking.id]">
+                          {{ holder(booking) }}
+                          <span class="bookings__code">
+                            {{ number(booking.id) }}
+                          </span>
+                        </a>
+                      </td>
+
+                      <td data-label="Unidad">
+                        <span class="bookings__code">
+                          {{ unitLabel(booking.rentalUnitType, booking.rentalUnitIdentifier) }}
+                        </span>
+                      </td>
+
+                      <td data-label="Fechas">
+                        <span>
+                          <time [attr.datetime]="booking.startDate">
+                            {{ booking.startDate.split('-').reverse().join('/') }}
+                          </time>
+                          →
+                          <time [attr.datetime]="booking.endDate">
+                            {{ booking.endDate.split('-').reverse().join('/') }}
+                          </time>
+                        </span>
+                      </td>
+
+                      <td data-label="Estado">
+                        <span [class]="'z-status z-status--' + statuses[booking.status].modifier">
+                          {{ statuses[booking.status].label }}
+                        </span>
+                      </td>
+
+                      <td data-label="Total" class="is-num">
+                        {{ money(booking.totalPrice) }}
+                      </td>
+
+                      <td class="is-actions">
+                        <div class="z-table__actions">
+                          <a
+                            class="z-btn z-btn--ghost z-btn--small"
+                            [routerLink]="['/admin/bookings', booking.id]"
+                            [attr.aria-label]="'Ver reserva ' + number(booking.id)"
+                          >
+                            Ver detalle
+                          </a>
+
+                          @if (booking.status !== 'CANCELED') {
+                            <z-btn variant="danger" size="small" (click)="askCancel(booking)">
+                              Cancelar
+                            </z-btn>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      }
+    }
+  }
+</section>
+
+<dialog
+  #cancelDialog
+  class="z-modal"
+  aria-labelledby="cancel-title"
+  aria-describedby="cancel-description"
+  (cancel)="onDialogCancel($event)"
+>
+  <h2 id="cancel-title" class="z-modal__title">
+    ¿Cancelar la reserva {{ pending() ? number(pending()!.id) : '' }}?
+  </h2>
+
+  <p id="cancel-description" class="z-modal__body">
+    @if (pending(); as booking) {
+      {{ holder(booking) }} · {{ unitLabel(booking.rentalUnitType, booking.rentalUnitIdentifier) }}.
+      La unidad quedará libre para esas fechas. Esta acción no se puede deshacer.
+    }
+  </p>
+
+  @if (checking()) {
+    <p role="status">Consultando las condiciones de cancelación…</p>
+  }
+
+  @if (terms(); as conditions) {
+    @if (!conditions.canCancel) {
+      <z-alert variant="info" [text]="conditions.reason || 'Esta reserva no se puede cancelar.'" />
+    } @else if (conditions.refundAmount !== null) {
+      <p>
+        Reintegro simulado: {{ money(conditions.refundAmount) }} ({{ conditions.refundPercent }} %).
+        No se realiza una devolución por MercadoPago.
+      </p>
+    } @else {
+      <p>La reserva no está pagada: se cancela sin reintegro.</p>
+    }
+  }
+
+  @if (actionError(); as message) {
+    <z-alert variant="danger" [text]="message" />
+  }
+
+  <div class="z-modal__actions">
+    <z-btn variant="secondary" block [disabled]="checking() || canceling()" (click)="closeCancel()">
+      Volver
+    </z-btn>
+
+    <z-btn
+      variant="danger"
+      block
+      [disabled]="checking() || !terms()?.canCancel"
+      [loading]="canceling()"
+      (click)="confirmCancel()"
+    >
+      {{ canceling() ? 'Cancelando…' : 'Cancelar reserva' }}
+    </z-btn>
+  </div>
+</dialog>
