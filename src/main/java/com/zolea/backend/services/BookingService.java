@@ -4,6 +4,7 @@ package com.zolea.backend.services;
 import com.zolea.backend.dtos.booking.BookingRequest;
 import com.zolea.backend.dtos.booking.BookingResponse;
 import com.zolea.backend.dtos.booking.CancellationResponse;
+import com.zolea.backend.dtos.booking.PaymentSummaryResponse;
 import com.zolea.backend.dtos.guest.GuestSummaryResponse;
 import com.zolea.backend.exceptions.booking.BookingForbiddenException;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
@@ -14,6 +15,7 @@ import com.zolea.backend.models.*;
 import com.zolea.backend.repositories.BookingRepository;
 import com.zolea.backend.repositories.ClientRepository;
 import com.zolea.backend.repositories.GuestRepository;
+import com.zolea.backend.repositories.PaymentRepository;
 import com.zolea.backend.repositories.RentalUnitRepository;
 import com.zolea.backend.repositories.ReviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +30,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 /**
@@ -48,6 +52,7 @@ public class BookingService {
     private final RentalUnitRepository rentalUnitRepository;
     private final GuestRepository guestRepository;
     private final ReviewRepository reviewRepository;
+    private final PaymentRepository paymentRepository;
     private final Clock clock;
 
     /** Ahora en la zona del balneario. Ver {@link com.zolea.backend.config.TimeConfig}. */
@@ -68,12 +73,14 @@ public class BookingService {
      * <ol>
      *   <li><b>Validar el rango.</b> Va primero porque con el fin anterior al inicio la consulta de
      *       disponibilidad no encuentra choques, así que la reserva pasaba y salía con precio
-     *       negativo.</li>
+     *       negativo. Tampoco puede empezar en un día que ya pasó (RF13).</li>
      *   <li><b>Tomar el candado sobre la unidad.</b> Antes de consultar la disponibilidad, para que
      *       «consultar y después escribir» quede entero adentro del candado. Con el orden invertido,
      *       dos peticiones simultáneas leen «libre» las dos.</li>
-     *   <li><b>Revalidar que la unidad no esté bloqueada.</b> El frontend la esconde, pero eso no es
-     *       una regla: entrando por Swagger la unidad se reservaba igual.</li>
+     *   <li><b>Revalidar que el balneario tome reservas y que la unidad esté en servicio:</b> ni el
+     *       balneario desactivado (RF30), ni la unidad dada de baja (RF32) ni la bloqueada. El
+     *       frontend las esconde, pero eso no es una regla: entrando por Swagger se reservaban
+     *       igual.</li>
      *   <li><b>Consultar la disponibilidad y guardar</b>, ya con el candado puesto.</li>
      * </ol>
      *
@@ -88,9 +95,9 @@ public class BookingService {
      *
      * @param request datos de la reserva, ya validados en su forma por Bean Validation.
      * @return la reserva creada, con su identificador y su precio.
-     * @throws com.zolea.backend.exceptions.booking.InvalidBookingRangeException si el fin es anterior al inicio.
+     * @throws com.zolea.backend.exceptions.booking.InvalidBookingRangeException si el fin es anterior al inicio o el inicio ya pasó.
      * @throws com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException si la unidad no existe.
-     * @throws com.zolea.backend.exceptions.booking.UnitNotAvailableException si la unidad está bloqueada u ocupada.
+     * @throws com.zolea.backend.exceptions.booking.UnitNotAvailableException si el balneario está desactivado, o la unidad dada de baja, bloqueada u ocupada.
      * @throws com.zolea.backend.exceptions.client.ClientNotFoundException si se indicó un cliente que no existe.
      */
     @Transactional
@@ -98,10 +105,11 @@ public class BookingService {
 
         // 1. El rango tiene que tener sentido antes que nada: con el fin anterior al inicio, la
         //    consulta de disponibilidad no encuentra choques y la reserva salía con precio negativo.
+        //    Y no se reserva para un día que ya pasó: «hoy» es el de Buenos Aires, por el reloj.
         Booking booking = new Booking();
         booking.setStartDate(request.startDate());
         booking.setEndDate(request.endDate());
-        booking.validateDateRange();
+        booking.validateDateRange(today());
 
         // 2. Tomar el candado sobre la unidad ANTES de mirar la disponibilidad. Las dos cosas
         //    —consultar si está libre y guardar la reserva— tienen que pasar con el candado puesto:
@@ -110,6 +118,18 @@ public class BookingService {
         RentalUnit rentalUnit = rentalUnitRepository.findByIdForUpdate(request.rentalUnitId())
                 .orElseThrow(() -> new RentalUnitNotFoundException(
                         "Unidad no encontrada con el ID: " + request.rentalUnitId()));
+
+        // Un balneario desactivado no toma reservas nuevas, ni de clientes ni de mostrador. Las que ya
+        // tenía siguen su curso: se pagan, se cancelan y se validan en la entrada como siempre.
+        if (rentalUnit.getResort() != null && !rentalUnit.getResort().isActive()) {
+            throw new UnitNotAvailableException("Este balneario no está tomando reservas.");
+        }
+
+        // Una unidad dada de baja ya no existe para reservar, aunque su fila quede.
+        if (rentalUnit.isRetired()) {
+            throw new UnitNotAvailableException(
+                    "La unidad " + rentalUnit.getIdentifier() + " fue dada de baja.");
+        }
 
         // Una unidad bloqueada no se reserva. El frontend ya la esconde, pero eso no es una regla:
         // entrando por Swagger, o desde cualquier otro cliente, la unidad se reservaba igual.
@@ -193,16 +213,33 @@ public class BookingService {
     }
 
     /**
-     * Un listado de reservas, con cuáles ya se calificaron averiguado en una sola consulta para todo
-     * el listado y no una por reserva.
+     * Un listado de reservas, con cuáles ya se calificaron y los pagos de cada una averiguados en una
+     * consulta para todo el listado, y no una por reserva.
      */
     private List<BookingResponse> mapAll(List<Booking> bookings) {
-        Set<Long> reviewed = bookings.isEmpty() ? Set.of()
-                : new HashSet<>(reviewRepository.findReviewedBookingIds(
-                        bookings.stream().map(Booking::getId).toList()));
+        if (bookings.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = bookings.stream().map(Booking::getId).toList();
+        Set<Long> reviewed = new HashSet<>(reviewRepository.findReviewedBookingIds(ids));
+        Map<Long, List<PaymentSummaryResponse>> payments = paymentsOf(ids);
         return bookings.stream()
-                .map(booking -> mapToBookingResponse(booking, reviewed.contains(booking.getId())))
+                .map(booking -> mapToBookingResponse(booking, reviewed.contains(booking.getId()),
+                        payments.getOrDefault(booking.getId(), List.of())))
                 .toList();
+    }
+
+    /**
+     * Los cobros registrados de esas reservas, agrupados por reserva y el más nuevo primero. Una
+     * reserva sin cobros no queda en el mapa.
+     */
+    private Map<Long, List<PaymentSummaryResponse>> paymentsOf(List<Long> bookingIds) {
+        return paymentRepository.findByBookingIdsNewestFirst(bookingIds).stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getBooking().getId(),
+                        Collectors.mapping(p -> new PaymentSummaryResponse(
+                                p.getGatewayPaymentId(), p.getAmount(), p.getStatus(), p.getPaidAt()),
+                                Collectors.toList())));
     }
 
     // Obtener el detalle completo de una reserva específica por su ID
@@ -220,10 +257,12 @@ public class BookingService {
     }
 
     private BookingResponse mapToBookingResponse(Booking booking) {
-        return mapToBookingResponse(booking, reviewRepository.existsByBooking_Id(booking.getId()));
+        return mapToBookingResponse(booking, reviewRepository.existsByBooking_Id(booking.getId()),
+                paymentsOf(List.of(booking.getId())).getOrDefault(booking.getId(), List.of()));
     }
 
-    private BookingResponse mapToBookingResponse(Booking booking, boolean reviewed) {
+    private BookingResponse mapToBookingResponse(Booking booking, boolean reviewed,
+                                                 List<PaymentSummaryResponse> payments) {
         List<GuestSummaryResponse> guestResponses = booking.getGuests() != null ?
                 booking.getGuests().stream()
                 .map(g -> new GuestSummaryResponse(g.getIdGuest(), g.getFullName(), g.getDni(), g.getIsEntryValidated(), g.getQrToken()))
@@ -253,7 +292,8 @@ public class BookingService {
                 booking.getCanceledAt(),
                 booking.getCanceledBy(),
                 booking.getRefundAmount(),
-                reviewed
+                reviewed,
+                payments
         );
     }
 

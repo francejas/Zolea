@@ -189,8 +189,13 @@ public class ResortService {
                 .collect(Collectors.toMap(ResortRating::resortId, Function.identity()));
     }
 
+    /**
+     * La ficha pública de un balneario. Uno desactivado responde como si no existiera (RF30): no se
+     * ofrece. Su administrador lo sigue viendo con {@link #getMyResort}.
+     */
     public ResortResponse getResortById(Long id) {
         Resort resort = resortRepository.findById(id)
+                .filter(Resort::isActive)
                 .orElseThrow(() -> new ResortNotFoundException("Resort with id " + id + " not found"));
 
         return mapToResponse(resort);
@@ -405,14 +410,17 @@ public class ResortService {
         return mapToResponse(r, rating, null);
     }
 
-    // MAPPER interno: Se encarga de transformar las listas anidadas de Resort a DTOs de Amenity y RentalUnit
+    // MAPPER interno: Se encarga de transformar las listas anidadas de Resort a DTOs de Amenity y RentalUnit.
+    // Las unidades dadas de baja no van: la ficha y el plano ya no las ofrecen (RF32). El administrador
+    // las ve en GET /api/rental-units.
     private ResortResponse mapToResponse(Resort r, ResortRating rating, Long availableUnits) {
         List<AmenityResponse> amenities = (r.getAmenities() != null) ? r.getAmenities().stream()
                                                                        .map(a -> new AmenityResponse(a.getIdAmenity(), a.getName()))
                                                                        .toList() : List.of();
 
         List<RentalUnitResponse> units = (r.getRentalUnits() != null) ? r.getRentalUnits().stream()
-                                                                        .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort()))
+                                                                        .filter(u -> !u.isRetired())
+                                                                        .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort(), false))
                                                                         .toList() : List.of();
 
         return new ResortResponse(
