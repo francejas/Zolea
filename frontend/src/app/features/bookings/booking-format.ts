@@ -1,4 +1,4 @@
-import { BookingStatus } from '../../core/api/booking.models';
+import { Booking, BookingStatus } from '../../core/api/booking.models';
 import { money, unitLabel } from '../../shared/utils/format';
 
 /** Cómo se dice cada estado, y su variante de `z-status`: verde, amarilla o sin bandera. */
@@ -43,6 +43,43 @@ export function shortDate(iso: string): string {
 export function dayCount(start: string, end: string): number {
   const days = (parseDate(end).getTime() - parseDate(start).getTime()) / 86_400_000;
   return Math.round(days) + 1;
+}
+
+/** Una pendiente se paga hasta una hora después de hecha, como `Booking.PAYMENT_WINDOW` en el backend. */
+const PAYMENT_WINDOW_MS = 3_600_000;
+
+/** Buenos Aires está tres horas detrás de UTC todo el año. */
+const RESORT_HOURS_BEHIND_UTC = 3;
+
+/**
+ * Hasta cuándo se puede pagar una reserva, en milisegundos. `createdAt` llega sin zona
+ * («2026-01-10T11:00:00.123456») y es la hora del balneario (decisión 17), no la de la computadora:
+ * por eso se arma en UTC y no con `new Date(texto)`.
+ */
+export function paymentDeadline(createdAt: string): number {
+  const [date, time] = createdAt.split('T');
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour, minute, second = 0] = time.split(':').map(Number);
+  const created = Date.UTC(
+    year,
+    month - 1,
+    day,
+    hour + RESORT_HOURS_BEHIND_UTC,
+    minute,
+    Math.floor(second),
+  );
+  return created + PAYMENT_WINDOW_MS;
+}
+
+/**
+ * Pendiente y pasada la hora: ya no se paga, aunque siga pendiente hasta que la limpieza la cancele
+ * (entre los 75 y los 80 minutos). A la hora justa ya venció, igual que en el backend.
+ */
+export function paymentExpired(
+  booking: Pick<Booking, 'status' | 'createdAt'>,
+  now: number,
+): boolean {
+  return booking.status === 'PENDING' && now >= paymentDeadline(booking.createdAt);
 }
 
 /** «#0047». */
