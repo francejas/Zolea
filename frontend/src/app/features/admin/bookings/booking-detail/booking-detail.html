@@ -1,0 +1,331 @@
+<section class="detail">
+  <a class="detail__back" routerLink="/admin/bookings"> ← Reservas del balneario </a>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="detail__stack" aria-busy="true" aria-label="Cargando la reserva">
+        <z-skeleton width="55%" height="40px" />
+        <z-skeleton width="100%" height="180px" />
+        <z-skeleton width="100%" height="120px" />
+      </div>
+    }
+
+    @case ('forbidden') {
+      <z-alert
+        variant="forbidden"
+        title="No tenés permiso para ver esta reserva"
+        text="Solo podés consultar las reservas de tu balneario."
+        actionLabel="Volver a reservas"
+        (action)="back()"
+      />
+    }
+
+    @case ('not-found') {
+      <z-empty
+        title="No encontramos esta reserva"
+        text="Revisá el enlace o volvé al listado."
+        actionLabel="Volver a reservas"
+        (action)="back()"
+      />
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer la reserva" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (booking(); as b) {
+        <header class="detail__head">
+          <div>
+            <p class="z-eyebrow">
+              Reserva
+              <span class="detail__code">{{ number(b.id) }}</span>
+            </p>
+
+            <h1>{{ b.resortName }}</h1>
+            <p class="detail__muted">{{ b.resortLocation }}</p>
+
+            <span [class]="'z-status z-status--' + statuses[b.status].modifier">
+              {{ statuses[b.status].label }}
+            </span>
+          </div>
+
+          <div class="detail__actions">
+            <z-btn variant="secondary" [disabled]="dialogOpen()" (click)="load()">
+              Actualizar
+            </z-btn>
+
+            @if (b.status !== 'CANCELED') {
+              <z-btn variant="danger" [disabled]="dialogOpen()" (click)="askCancel()">
+                Cancelar reserva
+              </z-btn>
+            }
+          </div>
+        </header>
+
+        @if (notice(); as message) {
+          <z-alert variant="success" [text]="message" />
+        }
+
+        <div class="detail__overview">
+          <section class="detail__card" aria-labelledby="stay-title">
+            <h2 id="stay-title">La estadía</h2>
+
+            @if (b.resortCoverPhotoUrl) {
+              <img class="detail__photo" [src]="b.resortCoverPhotoUrl" alt="" />
+            }
+
+            <dl>
+              <div>
+                <dt>Titular</dt>
+                <dd>{{ holder(b) }}</dd>
+              </div>
+
+              <div>
+                <dt>Unidad</dt>
+                <dd class="detail__code">
+                  {{ unitLabel(b.rentalUnitType, b.rentalUnitIdentifier) }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Desde</dt>
+                <dd>
+                  <time [attr.datetime]="b.startDate">
+                    {{ date(b.startDate) }}
+                  </time>
+                </dd>
+              </div>
+
+              <div>
+                <dt>Hasta</dt>
+                <dd>
+                  <time [attr.datetime]="b.endDate">
+                    {{ date(b.endDate) }}
+                  </time>
+                </dd>
+              </div>
+
+              <div>
+                <dt>Duración</dt>
+                <dd>{{ days(b.startDate, b.endDate) }} días (ambos extremos incluidos)</dd>
+              </div>
+
+              <div class="detail__total">
+                <dt>Total</dt>
+                <dd>{{ money(b.totalPrice) }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="detail__card" aria-labelledby="entry-title">
+            <h2 id="entry-title">Ingresos</h2>
+
+            <p class="detail__count">{{ entered() }} de {{ b.guests.length }}</p>
+
+            <p class="detail__muted">
+              Personas que ya entraron. Actualizá para consultar los ingresos registrados desde otra
+              pantalla.
+            </p>
+
+            @if (b.status === 'CANCELED') {
+              <h2>Cancelación</h2>
+              <p>Esta reserva está cancelada.</p>
+
+              @if (b.canceledBy) {
+                <p>Cancelada por {{ canceledBy[b.canceledBy] }}.</p>
+              }
+
+              @if (b.canceledAt) {
+                <p>{{ date(b.canceledAt) }} (hora de Buenos Aires).</p>
+              }
+
+              @if (b.refundAmount !== null) {
+                <p>
+                  Reintegro simulado registrado:
+                  {{ money(b.refundAmount) }}.
+                </p>
+              }
+            }
+          </section>
+        </div>
+
+        <section class="detail__stack" aria-labelledby="guests-title">
+          <h2 id="guests-title">Titular y acompañantes</h2>
+
+          @if (b.guests.length === 0) {
+            <z-empty
+              title="No hay personas registradas"
+              text="La reserva no tiene entradas registradas."
+            />
+          } @else {
+            <div class="z-table-wrap">
+              <table class="z-table" aria-labelledby="guests-title">
+                <thead>
+                  <tr>
+                    <th scope="col">Persona</th>
+                    <th scope="col">Rol</th>
+                    <th scope="col">DNI</th>
+                    <th scope="col">Ingreso</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (guest of b.guests; track guest.idGuest; let first = $first) {
+                    <tr>
+                      <td data-label="Persona">
+                        <span>{{ guest.fullName }}</span>
+                      </td>
+
+                      <td data-label="Rol">
+                        <span>
+                          {{ first ? 'Titular' : 'Acompañante' }}
+                        </span>
+                      </td>
+
+                      <td data-label="DNI">
+                        <span class="detail__code">
+                          {{ guest.dni || 'Sin DNI informado' }}
+                        </span>
+                      </td>
+
+                      <td data-label="Ingreso">
+                        <span
+                          [class]="
+                            'z-status z-status--' +
+                            (guest.isEntryValidated ? 'confirmed' : 'pending')
+                          "
+                        >
+                          {{ guest.isEntryValidated ? 'Ya entró' : 'Todavía no entró' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <section class="detail__stack" aria-labelledby="payments-title">
+          <h2 id="payments-title">Pago</h2>
+
+          @if (refund() > 0) {
+            <z-alert
+              variant="warning"
+              title="Reintegro manual pendiente"
+              [text]="
+                'Hay un pago de ' +
+                money(refund()) +
+                ' para reintegrar a mano. El importe corresponde a los cobros aprobados; la cancelación no devuelve dinero por MercadoPago.'
+              "
+            />
+          }
+
+          @if (b.payments.length === 0) {
+            <p class="detail__card">
+              {{ b.walkInName !== null ? 'Se cobró en el mostrador' : 'Todavía no se pagó' }}
+            </p>
+          } @else {
+            <p class="detail__muted">
+              Cobros registrados, del más nuevo al más antiguo. Fechas en hora de Buenos Aires.
+            </p>
+
+            <div class="z-table-wrap">
+              <table class="z-table" aria-labelledby="payments-title">
+                <thead>
+                  <tr>
+                    <th scope="col">Operación de MercadoPago</th>
+                    <th scope="col" class="is-num">Importe</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Estado</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (payment of b.payments; track payment.gatewayPaymentId) {
+                    <tr>
+                      <td data-label="Operación">
+                        <span class="detail__code">
+                          {{ payment.gatewayPaymentId }}
+                        </span>
+                      </td>
+
+                      <td data-label="Importe" class="is-num">
+                        {{ money(payment.amount) }}
+                      </td>
+
+                      <td data-label="Fecha">
+                        <span>{{ date(payment.paidAt) }}</span>
+                      </td>
+
+                      <td data-label="Estado">
+                        <span [class]="'z-status z-status--' + paymentModifier(payment.status)">
+                          {{ paymentLabel(payment.status) }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      }
+    }
+  }
+</section>
+
+<dialog
+  #cancelDialog
+  class="z-modal"
+  aria-labelledby="cancel-title"
+  aria-describedby="cancel-description"
+  (cancel)="onDialogCancel($event)"
+>
+  <h2 id="cancel-title" class="z-modal__title">
+    ¿Cancelar la reserva
+    {{ booking() ? number(booking()!.id) : '' }}?
+  </h2>
+
+  <p id="cancel-description" class="z-modal__body">
+    La unidad quedará libre para esas fechas. Esta acción no se puede deshacer.
+  </p>
+
+  @if (checking()) {
+    <p role="status">Consultando las condiciones de cancelación…</p>
+  }
+
+  @if (terms(); as conditions) {
+    @if (!conditions.canCancel) {
+      <z-alert variant="info" [text]="conditions.reason || 'Esta reserva no se puede cancelar.'" />
+    } @else if (conditions.refundAmount !== null) {
+      <p>
+        Reintegro simulado: {{ money(conditions.refundAmount) }} ({{ conditions.refundPercent }} %).
+        No se devuelve dinero automáticamente por MercadoPago.
+      </p>
+    } @else {
+      <p>La reserva no está pagada: se cancela sin reintegro.</p>
+    }
+  }
+
+  @if (actionError(); as message) {
+    <z-alert variant="danger" [text]="message" />
+  }
+
+  <div class="z-modal__actions">
+    <z-btn variant="secondary" block [disabled]="canceling()" (click)="closeCancel()">
+      Volver
+    </z-btn>
+
+    <z-btn
+      variant="danger"
+      block
+      [disabled]="checking() || !terms()?.canCancel"
+      [loading]="canceling()"
+      (click)="confirmCancel()"
+    >
+      {{ canceling() ? 'Cancelando…' : 'Confirmar cancelación' }}
+    </z-btn>
+  </div>
+</dialog>

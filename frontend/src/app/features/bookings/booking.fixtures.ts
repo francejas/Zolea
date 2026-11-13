@@ -32,6 +32,11 @@ export function aBooking(overrides: Partial<Booking> = {}): Booking {
     resortName: 'Zolea Club de Playa',
     resortLocation: 'Mar del Plata, Buenos Aires',
     resortCoverPhotoUrl: null,
+    canceledAt: null,
+    canceledBy: null,
+    refundAmount: null,
+    reviewed: false,
+    payments: [],
     ...overrides,
   };
 }
