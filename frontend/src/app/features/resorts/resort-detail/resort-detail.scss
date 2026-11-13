@@ -79,6 +79,11 @@
     margin-bottom: var(--space-4);
     font-size: 15px;
   }
+
+  > .detail__notice {
+    display: block;
+    margin-bottom: var(--space-4);
+  }
 }
 
 .detail__amenities {

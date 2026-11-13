@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { LucideChevronLeft, LucideDynamicIcon, LucideMapPin } from '@lucide/angular';
@@ -8,7 +8,7 @@ import { RentalUnit, Resort, UnitType } from '../../../core/api/resort.models';
 import { ResortsApi } from '../../../core/api/resorts.api';
 import { SessionService } from '../../../core/session/session.service';
 import { ResortPlan } from '../../../shared/resort-plan/resort-plan';
-import { occupiedDays, totalPrice } from '../../../shared/utils/days';
+import { occupiedDays, totalPrice, validRange } from '../../../shared/utils/days';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
@@ -17,6 +17,16 @@ import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 import { amenityIcon } from '../../../shared/utils/amenity-icons';
 
 type Status = 'loading' | 'ready' | 'not-found' | 'error';
+
+/** Lo que hace falta para pedir las ocupadas: un balneario activo y las dos fechas. */
+interface OccupiedQuery {
+  id: number;
+  from: string;
+  to: string;
+}
+
+const sameQuery = (a: OccupiedQuery | null, b: OccupiedQuery | null) =>
+  a === b || (a !== null && b !== null && a.id === b.id && a.from === b.from && a.to === b.to);
 
 const TYPE_NAME: Record<UnitType, string> = { UMBRELLA: 'Sombrilla', TENT: 'Carpa' };
 
@@ -33,6 +43,9 @@ const pesosCents = new Intl.NumberFormat('es-AR', { style: 'currency', currency:
  * La Ficha de un balneario (`/resorts/:id`): cómo es, qué ofrece y dónde se elige el lugar. Es
  * pública. Al elegir fechas y una unidad muestra el total y lleva a Reservar, que recibe lo elegido
  * en la dirección: `/book/:resortId?unit=…&from=…&to=…`.
+ *
+ * Puede llegar con fechas desde la Portada (`/resorts/:id?from=…&to=…`). Con las dos fechas pide
+ * las unidades ocupadas y el plano las marca; si la elegida queda ocupada, se deselecciona y avisa.
  */
 @Component({
   selector: 'app-resort-detail',
@@ -62,11 +75,25 @@ export class ResortDetail {
   readonly status = signal<Status>('loading');
   readonly resort = signal<Resort | null>(null);
 
-  /** Las fechas elegidas, `YYYY-MM-DD`. */
-  readonly from = signal<string | null>(null);
-  readonly to = signal<string | null>(null);
+  /** `?from=` y `?to=`, las fechas con que se llega desde la búsqueda de la Portada. */
+  readonly fromParam = input<string | undefined>(undefined, { alias: 'from' });
+  readonly toParam = input<string | undefined>(undefined, { alias: 'to' });
+  private readonly paramRange = computed(() => validRange(this.fromParam(), this.toParam()));
+
+  /** Las fechas elegidas, `YYYY-MM-DD`. Empiezan con las de la dirección, si sirven. */
+  readonly from = linkedSignal<string | null>(() => this.paramRange()?.from ?? null);
+  readonly to = linkedSignal<string | null>(() => this.paramRange()?.to ?? null);
   /** El `idRentalUnit` de la unidad elegida en el plano. */
   readonly selectedId = signal<number | null>(null);
+
+  /** Las unidades reservadas en las fechas elegidas; sin fechas, ninguna. */
+  readonly occupiedIds = signal<number[]>([]);
+  /** Mientras se piden las ocupadas no se reserva: el lugar elegido podría estar tomado. */
+  readonly checkingDates = signal(false);
+  /** No se pudo saber qué está ocupado: el plano sigue, y el backend lo revisa al reservar. */
+  readonly occupiedError = signal(false);
+  /** El aviso de que la unidad elegida quedó ocupada al cambiar las fechas. */
+  readonly notice = signal('');
 
   protected readonly typeName = TYPE_NAME;
   protected readonly amenityIcon = amenityIcon;
@@ -97,12 +124,17 @@ export class ResortDetail {
 
   /** Se puede reservar con una unidad y unas fechas válidas. */
   readonly canBook = computed(
-    () => this.resort()?.active === true && this.selectedUnit() !== null && this.days() > 0,
+    () =>
+      this.resort()?.active === true &&
+      this.selectedUnit() !== null &&
+      this.days() > 0 &&
+      !this.checkingDates(),
   );
 
   protected readonly bookLabel = computed(() => {
     const unit = this.selectedUnit();
     if (unit === null) return 'Elegí un lugar';
+    if (this.checkingDates()) return 'Revisando tus fechas…';
     return this.days() > 0 ? `Reservar ${unit.identifier}` : 'Elegí tus fechas';
   });
 
@@ -127,6 +159,7 @@ export class ResortDetail {
           this.status.set('loading');
           this.resort.set(null);
           this.selectedId.set(null);
+          this.notice.set('');
         }),
         switchMap(({ id }) =>
           this.resortsApi.get(id).pipe(
@@ -145,6 +178,60 @@ export class ResortDetail {
         this.resort.set(resort);
         this.status.set(status);
       });
+
+    toObservable(this.occupiedQuery)
+      .pipe(
+        tap((query) => {
+          this.occupiedError.set(false);
+          this.checkingDates.set(query !== null);
+          if (query === null) this.occupiedIds.set([]);
+        }),
+        switchMap((query) =>
+          query === null
+            ? of(null)
+            : this.resortsApi.occupiedUnits(query.id, query.from, query.to).pipe(
+                catchError(() => {
+                  this.occupiedError.set(true);
+                  return of<number[]>([]);
+                }),
+              ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((ids) => {
+        if (ids === null) return;
+        this.occupiedIds.set(ids);
+        this.checkingDates.set(false);
+        this.dropIfOccupied(ids);
+      });
+  }
+
+  /** El balneario y las fechas, o null si todavía no hay qué pedir. */
+  private readonly occupiedQuery = computed<OccupiedQuery | null>(
+    () => {
+      const resort = this.resort();
+      const from = this.from();
+      const to = this.to();
+      if (!resort?.active || !from || !to || to < from) return null;
+      return { id: resort.idResort, from, to };
+    },
+    { equal: sameQuery },
+  );
+
+  /** Si la unidad elegida quedó ocupada en las fechas nuevas, se suelta y se avisa por qué. */
+  private dropIfOccupied(ids: number[]): void {
+    const unit = this.selectedUnit();
+    if (unit === null || !ids.includes(unit.idRentalUnit)) return;
+
+    this.selectedId.set(null);
+    this.notice.set(
+      `${TYPE_NAME[unit.type]} ${unit.identifier} está ocupada en esas fechas. Elegí otro lugar.`,
+    );
+  }
+
+  /** Al elegir otra unidad el aviso ya no hace falta. */
+  protected onUnitSelected(): void {
+    this.notice.set('');
   }
 
   reload(): void {
