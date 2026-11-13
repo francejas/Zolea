@@ -220,6 +220,38 @@ class ReviewTest extends IntegrationTest {
     }
 
     @Test
+    @DisplayName("un admin con una reserva terminada a su nombre tampoco califica: 403, y no se guarda nada")
+    void adminWithOwnBooking_forbidden() throws Exception {
+        Resort resort = aResort();
+        Client admin = anAdminOf(resort);
+        Booking booking = stayEnded(1, admin, resort, Status.CONFIRMED);
+
+        review(booking, admin, """
+                {"rating": 5}""")
+                .andExpect(status().isForbidden());
+        assertThat(reviewRepository.existsByBooking_Id(booking.getId())).isFalse();
+    }
+
+    @Test
+    @DisplayName("la reserva de mostrador no lleva clientId: 400, y no se crea nada")
+    void walkInWithClientId_rejected() throws Exception {
+        Resort resort = aResort();
+        Client admin = anAdminOf(resort);
+        var unit = aUnitIn(resort, 10_000.0);
+        syncWithDatabase();
+        long before = bookingRepository.count();
+
+        mockMvc.perform(post("/api/bookings/walkin")
+                        .header("Authorization", bearer(admin))
+                        .contentType("application/json")
+                        .content("""
+                                {"startDate":"%s","endDate":"%s","clientId":%d,"rentalUnitId":%d}
+                                """.formatted(today(), today(), admin.getIdClient(), unit.getIdRentalUnit())))
+                .andExpect(status().isBadRequest());
+        assertThat(bookingRepository.count()).isEqualTo(before);
+    }
+
+    @Test
     @DisplayName("sin token: 401")
     void withoutToken_unauthorized() throws Exception {
         Booking booking = endedYesterday(aClient());

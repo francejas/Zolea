@@ -6,6 +6,7 @@ import com.zolea.backend.dtos.booking.BookingResponse;
 import com.zolea.backend.dtos.booking.CancellationResponse;
 import com.zolea.backend.dtos.booking.PaymentUrlResponse;
 import com.zolea.backend.dtos.booking.WalkInBookingResponse;
+import com.zolea.backend.exceptions.booking.WalkInWithClientException;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.BookingCheckoutService;
 import com.zolea.backend.services.BookingService;
@@ -87,12 +88,19 @@ public class BookingController {
     @Operation(summary = "Crear reserva presencial (Admin)", description = "Crea y confirma automáticamente la reserva sin pasar por MercadoPago.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Reserva confirmada, con un código QR por huésped"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos, o la unidad está bloqueada u ocupada", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos, vino un clientId, o la unidad está bloqueada u ocupada", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o la unidad es de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe una unidad con ese identificador", content = @Content)
     })
     public ResponseEntity<WalkInBookingResponse> createWalkInBooking(@Valid @RequestBody BookingRequest request) {
+        // La de mostrador es para quien no tiene cuenta. Con un clientId, un administrador se armaba
+        // una reserva confirmada a su propio nombre y después la calificaba. El cero se sigue
+        // aceptando: es como mandaba «sin cliente» el formulario viejo.
+        if (request.clientId() != null && request.clientId() > 0) {
+            throw new WalkInWithClientException(
+                    "La reserva de mostrador es para quien no tiene cuenta: va sin clientId, con el nombre y el DNI del titular.");
+        }
         BookingResponse booking = bookingService.createBooking(request);
         bookingService.confirmBookingPayment(booking.id());
         BookingResponse confirmed = bookingService.getBookingById(booking.id());
