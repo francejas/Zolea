@@ -141,14 +141,14 @@ public class ResortController {
                 .body(new ResortActionResponse("Balneario registrado correctamente.", saved));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#id, principal.idManagedResort)")
     @PutMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Actualizar balneario por ID (Admin)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El balneario como quedó. Lo que no venga en el pedido no se toca"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el balneario es de otro administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe un balneario con ese identificador", content = @Content)
     })
     public ResponseEntity<ResortActionResponse> updateResort(@PathVariable Long id, @RequestBody ResortRequest request) {
@@ -156,14 +156,14 @@ public class ResortController {
         return ResponseEntity.ok(new ResortActionResponse("Balneario actualizado correctamente.", saved));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#id, principal.idManagedResort)")
     @PutMapping("/{id}/inactive")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Desactivar balneario (Admin)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El balneario desactivado. Deja de aparecer en el listado público"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el balneario es de otro administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe un balneario con ese identificador", content = @Content)
     })
     public ResponseEntity<ResortActionResponse> toInactiveResort(@PathVariable Long id) {
@@ -171,14 +171,14 @@ public class ResortController {
         return ResponseEntity.ok(new ResortActionResponse("Balneario desactivado correctamente.", saved));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#id, principal.idManagedResort)")
     @PutMapping("/{id}/active")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Activar balneario (Admin)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El balneario activado. Vuelve a aparecer en el listado público"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el balneario es de otro administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe un balneario con ese identificador", content = @Content)
     })
     public ResponseEntity<ResortActionResponse> toActiveResort(@PathVariable Long id) {

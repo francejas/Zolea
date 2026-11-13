@@ -27,18 +27,30 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Traduce las excepciones del dominio al código HTTP que les corresponde.
@@ -142,9 +154,95 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, String>> handleTipoInvalido(MethodArgumentTypeMismatchException ex) {
-        String formato = LocalDate.class.equals(ex.getRequiredType()) ? " Va con el formato AAAA-MM-DD." : "";
+        String formato = LocalDate.class.equals(ex.getRequiredType())
+                ? " Va con el formato AAAA-MM-DD."
+                : valoresPosibles(ex.getRequiredType());
         return respuesta(HttpStatus.BAD_REQUEST,
                 "El parámetro " + ex.getName() + " no es válido: " + ex.getValue() + "." + formato);
+    }
+
+    /**
+     * Un parámetro obligatorio de la URL que no vino, como el {@code newPrice} de cambiar el precio.
+     * Spring lo resuelve antes de entrar al método, así que caía en el genérico y salía como 500.
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, String>> handleParametroFaltante(MissingServletRequestParameterException ex) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Falta el parámetro obligatorio " + ex.getParameterName() + ".");
+    }
+
+    /** El resto de lo que falta o sobra al leer el pedido: una cabecera, una variable de la URL. */
+    @ExceptionHandler(ServletRequestBindingException.class)
+    public ResponseEntity<Map<String, String>> handlePedidoIncompleto(ServletRequestBindingException ex) {
+        return respuesta(HttpStatus.BAD_REQUEST, "El pedido está incompleto: falta un dato obligatorio.");
+    }
+
+    /**
+     * Un cuerpo que no se puede leer (RNF06): que no es JSON, que viene cortado, o que trae un valor
+     * que no entra en el campo —un tipo de unidad que no existe, un texto donde va un número—.
+     *
+     * <p>El mensaje dice qué campo y, si el campo es una lista cerrada, cuáles son los valores
+     * posibles, así quien arma el pedido lo puede corregir sin leer el código.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleCuerpoIlegible(HttpMessageNotReadableException ex) {
+        Throwable causa = ex.getCause();
+        if (causa instanceof InvalidFormatException formato) {
+            return respuesta(HttpStatus.BAD_REQUEST, "El valor " + formato.getValue() + " no es válido para "
+                    + campo(formato) + "." + valoresPosibles(formato.getTargetType()));
+        }
+        if (causa instanceof DatabindException datos && !datos.getPath().isEmpty()) {
+            return respuesta(HttpStatus.BAD_REQUEST, "El campo " + campo(datos) + " no tiene el formato esperado.");
+        }
+        if (causa instanceof JacksonException) {
+            return respuesta(HttpStatus.BAD_REQUEST, "El cuerpo del pedido no es un JSON válido.");
+        }
+        return respuesta(HttpStatus.BAD_REQUEST, "Falta el cuerpo del pedido, o no se puede leer.");
+    }
+
+    /** {@code items[0].dni}: dónde está el valor que no se pudo leer. */
+    private static String campo(DatabindException ex) {
+        List<JacksonException.Reference> camino = ex.getPath();
+        StringBuilder campo = new StringBuilder();
+        for (JacksonException.Reference tramo : camino) {
+            if (tramo.getPropertyName() != null) {
+                if (!campo.isEmpty()) {
+                    campo.append('.');
+                }
+                campo.append(tramo.getPropertyName());
+            } else if (tramo.getIndex() >= 0) {
+                campo.append('[').append(tramo.getIndex()).append(']');
+            }
+        }
+        return campo.isEmpty() ? "el cuerpo" : campo.toString();
+    }
+
+    /** « Puede ser: TENT, UMBRELLA.» si el tipo es una lista cerrada; nada si no. */
+    private static String valoresPosibles(Class<?> tipo) {
+        if (tipo == null || !tipo.isEnum()) {
+            return "";
+        }
+        return " Puede ser: " + Arrays.stream(tipo.getEnumConstants())
+                .map(Object::toString)
+                .collect(Collectors.joining(", ")) + ".";
+    }
+
+    /** Un método que la dirección no admite, como DELETE sobre una reserva: 405, no 500. */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, String>> handleMetodoNoAdmitido(HttpRequestMethodNotSupportedException ex) {
+        return respuesta(HttpStatus.METHOD_NOT_ALLOWED,
+                "Esta dirección no admite el método " + ex.getMethod() + ".");
+    }
+
+    /** Un cuerpo que no viene como JSON: 415, no 500. */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<Map<String, String>> handleTipoDeContenido(HttpMediaTypeNotSupportedException ex) {
+        return respuesta(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "El cuerpo del pedido tiene que ser JSON.");
+    }
+
+    /** Una dirección de la API que no existe: 404, no 500. */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleDireccionInexistente(NoResourceFoundException ex) {
+        return respuesta(HttpStatus.NOT_FOUND, "No existe la dirección pedida.");
     }
 
     /**
