@@ -1,0 +1,74 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.bookings {
+  display: grid;
+  gap: var(--space-5);
+}
+
+h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.bookings__lead {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
+
+.bookings__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.bookings__filters label {
+  display: grid;
+  flex: 1 1 180px;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.bookings__filters input,
+.bookings__filters select {
+  width: 100%;
+  min-width: 0;
+}
+
+.bookings__help,
+.bookings__summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.bookings__code {
+  font-family: var(--font-mono);
+}
+
+.bookings__skeleton {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-m);
+}
+
+.z-table td > span,
+.z-table td > a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .bookings__filters label {
+    flex-basis: 100%;
+  }
+
+  .bookings__filters z-btn {
+    width: 100%;
+  }
+}
