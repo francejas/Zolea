@@ -1,0 +1,259 @@
+/* El Panel. Se diseña desde la computadora; los anchos se miden contra la pantalla y no contra la
+   ventana, porque la barra lateral del admin se come 256 px. */
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.panel {
+  container-type: inline-size;
+  display: grid;
+  gap: var(--space-6);
+}
+
+h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.panel__lead {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
+
+.panel__title {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+/* --- Hoy: en cielo, el color de lo más importante del día ------------------------------------
+   En el celular es una pizarra: cada cifra en su renglón, el número a la derecha. Desde 560 px,
+   tres columnas con el número grande arriba. */
+.panel__today {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-m);
+  background: var(--color-sky);
+}
+
+.panel__today .z-eyebrow {
+  margin: 0;
+}
+
+.panel__figures {
+  display: grid;
+  margin: 0;
+}
+
+.panel__figure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'label value'
+    'context value';
+  align-items: center;
+  column-gap: var(--space-3);
+  padding: var(--space-3) 0;
+  min-width: 0;
+}
+
+.panel__figure + .panel__figure {
+  border-top: var(--border);
+}
+
+.panel__figure dt {
+  grid-area: label;
+  font-weight: 600;
+}
+
+.panel__figure dd {
+  margin: 0;
+}
+
+.panel__value {
+  grid-area: value;
+  font: 600 28px / 1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.panel__context {
+  grid-area: context;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+@container (min-width: 560px) {
+  .panel__figures {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-5) var(--space-6);
+  }
+
+  .panel__figure {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'label' 'value' 'context';
+    align-items: start;
+    row-gap: var(--space-2);
+    padding: 0;
+  }
+
+  .panel__figure + .panel__figure {
+    border-top: 0;
+  }
+
+  .panel__figure dt {
+    font-size: var(--text-small);
+  }
+
+  .panel__value {
+    font-size: var(--text-figure);
+  }
+}
+
+/* --- La temporada: el rango arriba y los tres gráficos ---------------------------------------- */
+.panel__season {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* El calendario se abre debajo de las fechas: el título queda arriba, donde estaba. */
+.panel__range {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@container (min-width: 760px) {
+  .panel__range {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  }
+}
+
+.panel__grid {
+  display: grid;
+  gap: var(--space-4);
+  transition: opacity var(--duration) var(--ease);
+}
+
+/* Mientras llega un rango nuevo, los gráficos anteriores quedan atenuados: sin saltos. */
+.panel__grid--refreshing {
+  opacity: 0.55;
+}
+
+@container (min-width: 760px) {
+  .panel__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel__card--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.panel__card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.panel__summary {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.panel__chart {
+  margin-top: var(--space-3);
+  height: 220px;
+}
+
+.panel__chart--tall {
+  height: 260px;
+}
+
+.panel__none {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-sand-soft);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* --- Cancelaciones y reseñas ------------------------------------------------------------------ */
+.panel__feeds {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@container (min-width: 760px) {
+  .panel__feeds {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.panel__lines {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.panel__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel__list > li + li {
+  border-top: var(--border);
+}
+
+.panel__notice {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.panel__notice:hover .panel__notice-text {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.panel__meta {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.panel__review {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+}
+
+.panel__stars {
+  display: flex;
+  gap: 2px;
+  color: var(--color-line-strong);
+}
+
+/* Coral-texto: el coral de la marca no llega a 3:1 contra la espuma. */
+.panel__star--on {
+  color: var(--color-coral-text);
+  fill: var(--color-coral-text);
+}
+
+.panel__quote {
+  margin: 0;
+}

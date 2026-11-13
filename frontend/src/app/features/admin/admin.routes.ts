@@ -3,7 +3,7 @@ import { PlaceholderPage } from '../../core/placeholder-page';
 
 /** Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. */
 export const adminRoutes: Routes = [
-  { path: '', component: PlaceholderPage, data: { title: 'Panel' } },
+  { path: '', loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard) },
   { path: 'resort', component: PlaceholderPage, data: { title: 'Mi balneario' } },
   { path: 'units', loadComponent: () => import('./units/units').then((m) => m.Units) },
   {
