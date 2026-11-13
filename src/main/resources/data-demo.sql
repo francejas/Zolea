@@ -788,3 +788,31 @@ SELECT CONCAT('demo-mp-', LPAD(b.id, 5, '0')), 'approved', b.total_price,
        b.created_at + INTERVAL 10 MINUTE, b.created_at + INTERVAL 11 MINUTE, b.id
 FROM booking b
 WHERE b.id IN (62, 63, 64, 65, 66, 67, 71);
+
+-- =============================================================================
+-- 13. MIS RESERVAS DE SANTI (11.4)
+--
+-- santi.rodriguez@gmail.com (cliente 7) tenía solo reservas pasadas y una
+-- cancelada, así que la pestaña de próximas de Mis reservas salía vacía. Se le
+-- suman tres próximas en otros balnearios: una confirmada que incluye hoy (la
+-- tarjeta destacada), otra confirmada más adelante y una pendiente de pago,
+-- creada hace diez minutos como las demás pendientes. Ninguna toca Mar del Plata,
+-- así los números del panel de admin.mdp@zolea.com no cambian.
+-- =============================================================================
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, id_client, id_rental_unit)
+SELECT d.id, @today + INTERVAL d.desde DAY, @today + INTERVAL (d.desde + d.dias - 1) DAY,
+       d.dias * u.daily_price, d.estado, d.creada, 7, u.id_rental_unit
+FROM (
+              SELECT 72 AS id, 30 AS unidad, -1 AS desde, 4 AS dias, 'CONFIRMED' AS estado,
+                     @today - INTERVAL 15 DAY + INTERVAL 14 HOUR AS creada
+    UNION ALL SELECT 73, 48, 20, 4, 'CONFIRMED', @today - INTERVAL 3 DAY + INTERVAL 22 HOUR
+    UNION ALL SELECT 74, 88, 40, 2, 'PENDING',   UTC_TIMESTAMP() - INTERVAL 10 MINUTE
+) d
+JOIN rental_unit u ON u.id_rental_unit = d.unidad;
+
+-- El titular de cada una, con su DNI y su QR sin usar.
+INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
+SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
+       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-SAN'), false, b.id
+FROM booking b JOIN client c ON c.id_client = b.id_client
+WHERE b.id BETWEEN 72 AND 74;
