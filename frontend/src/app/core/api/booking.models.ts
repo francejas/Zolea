@@ -62,3 +62,11 @@ export interface BookingCheckout {
   booking: Booking;
   paymentUrl: string;
 }
+
+/** Condiciones calculadas por el servidor antes de confirmar la cancelación. */
+export interface CancellationResponse {
+  canCancel: boolean;
+  refundAmount: number | null;
+  refundPercent: number | null;
+  reason: string | null;
+}
