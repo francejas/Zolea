@@ -1,0 +1,108 @@
+/* Mis reservas. La tarjeta es el bloque Tarjeta de reserva de componentes.css (global, en
+   styles/booking-card.scss). Se diseña desde el celular: una columna, con las pestañas a todo el
+   ancho; en la computadora, las tarjetas en una grilla. */
+
+.my-bookings {
+  display: grid;
+  gap: var(--space-5);
+  align-content: start;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-5) var(--gutter) var(--space-8);
+}
+
+.my-bookings__title {
+  margin: 0;
+  font: 400 32px / var(--leading-title) var(--font-display);
+}
+
+/* En el celular las tres pestañas se reparten el ancho. */
+.my-bookings__tabs {
+  display: flex;
+  width: auto;
+}
+
+.my-bookings__tabs .z-tab {
+  flex: 1;
+}
+
+.my-bookings__count {
+  font: 500 var(--text-label) / 1 var(--font-mono);
+  color: var(--color-text-muted);
+}
+
+.my-bookings__panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.my-bookings__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-bookings__list > li {
+  display: grid;
+}
+
+/* Las tarjetas de una misma fila tienen el mismo alto: el contenido arriba y el total abajo, en
+   vez de repartir el espacio que sobra entre los datos. */
+.my-bookings__list .z-booking-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.my-bookings__list .z-booking-card__foot {
+  margin-top: auto;
+}
+
+.my-bookings__name {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.my-bookings__name .z-eyebrow {
+  margin: 0;
+}
+
+.my-bookings__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.my-bookings__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.my-bookings__none {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-6) 0;
+  color: var(--color-text-muted);
+}
+
+.my-bookings__none p {
+  margin: 0;
+}
+
+@media (min-width: 720px) {
+  .my-bookings__title {
+    font-size: 40px;
+  }
+
+  .my-bookings__tabs {
+    display: inline-flex;
+    width: fit-content;
+  }
+
+  .my-bookings__tabs .z-tab {
+    flex: none;
+  }
+}

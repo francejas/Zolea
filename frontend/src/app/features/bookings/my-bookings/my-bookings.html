@@ -1,0 +1,157 @@
+<section class="my-bookings">
+  <h1 class="my-bookings__title">Mis reservas</h1>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="my-bookings__list" aria-busy="true" aria-label="Cargando tus reservas">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="z-booking-card">
+            <z-skeleton width="70%" height="26px" />
+            <z-skeleton width="55%" height="15px" />
+            <z-skeleton width="65%" height="15px" />
+            <z-skeleton width="35%" height="34px" />
+          </div>
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer tus reservas" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (bookings().length === 0) {
+        <z-empty
+          title="Todavía no reservaste"
+          text="Elegí un balneario y reservá una carpa o una sombrilla para los días que quieras."
+          actionLabel="Buscar balnearios"
+          (action)="goToResorts()"
+        />
+      } @else {
+        <div class="z-tabs my-bookings__tabs" role="tablist" aria-label="Qué reservas ver">
+          @for (t of tabs; track t) {
+            <button
+              #tabButton
+              class="z-tab"
+              type="button"
+              role="tab"
+              [id]="'my-bookings-tab-' + t"
+              aria-controls="my-bookings-panel"
+              [attr.aria-selected]="tab() === t"
+              [tabindex]="tab() === t ? 0 : -1"
+              (click)="selectTab(t)"
+              (keydown)="onTabKeydown($event)"
+            >
+              {{ tabLabel[t] }}
+              <span class="my-bookings__count">{{ counts()[t] }}</span>
+            </button>
+          }
+        </div>
+
+        <div
+          class="my-bookings__panel"
+          id="my-bookings-panel"
+          role="tabpanel"
+          [attr.aria-labelledby]="'my-bookings-tab-' + tab()"
+        >
+          @if (cards().length === 0) {
+            <div class="my-bookings__none">
+              <p>{{ emptyText() }}</p>
+              @if (tab() === 'upcoming') {
+                <a class="z-btn z-btn--secondary" routerLink="/">Buscar balnearios</a>
+              }
+            </div>
+          } @else {
+            <ul class="my-bookings__list">
+              @for (card of cards(); track card.booking.id) {
+                <li>
+                  <article class="z-booking-card" [class.z-booking-card--today]="card.today">
+                    <div class="z-booking-card__head">
+                      <div class="my-bookings__name">
+                        @if (card.today) {
+                          <p class="z-eyebrow">Hoy</p>
+                        }
+                        <h2 class="z-booking-card__title">
+                          <a
+                            class="my-bookings__link"
+                            [routerLink]="['/bookings', card.booking.id]"
+                            >{{ card.booking.resortName }}</a
+                          >
+                        </h2>
+                      </div>
+                      <span class="z-status z-status--{{ card.status.modifier }}">{{
+                        card.status.label
+                      }}</span>
+                    </div>
+
+                    <ul class="z-facts">
+                      <li>
+                        @if (card.booking.rentalUnitType === 'TENT') {
+                          <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+                        } @else {
+                          <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+                        }
+                        {{ card.unit }}
+                      </li>
+                      <li>
+                        <svg lucideCalendarDays class="z-icon" aria-hidden="true"></svg>
+                        {{ card.days }}
+                      </li>
+                    </ul>
+
+                    @if (isExpired(card.booking)) {
+                      <z-alert
+                        variant="warning"
+                        title="La reserva venció"
+                        text="Pasó la hora para pagarla y se cancela sola. Si todavía te sirve, reservala de nuevo."
+                      />
+                    } @else if (payErrors()[card.booking.id]; as error) {
+                      <z-alert variant="danger" title="No se pudo pagar" [text]="error" />
+                    }
+
+                    <div class="z-booking-card__foot">
+                      <div class="z-total">
+                        <span>Total</span>
+                        <strong class="z-money">{{ card.total }}</strong>
+                      </div>
+
+                      @switch (card.booking.status) {
+                        @case ('CONFIRMED') {
+                          <a
+                            class="z-btn z-btn--secondary"
+                            [routerLink]="['/bookings', card.booking.id]"
+                          >
+                            {{ tab() === 'upcoming' ? 'Ver entradas' : 'Ver reserva' }}
+                          </a>
+                        }
+                        @case ('PENDING') {
+                          @if (isExpired(card.booking)) {
+                            <a
+                              class="z-btn z-btn--primary"
+                              [routerLink]="['/book', card.booking.resortId]"
+                              [queryParams]="rebookQuery(card.booking)"
+                            >
+                              Volver a reservar
+                            </a>
+                          } @else {
+                            <z-btn
+                              [loading]="paying() === card.booking.id"
+                              [disabled]="paying() !== null"
+                              (click)="pay(card.booking)"
+                            >
+                              Pagar
+                            </z-btn>
+                          }
+                        }
+                      }
+                    </div>
+                  </article>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    }
+  }
+</section>
