@@ -28,7 +28,7 @@ public record BookingRequest(
 
         // Sin @NotNull ni @Positive a propósito: la reserva de mostrador llega con cero.
         // Ver la anotación @HolderRequired de arriba.
-        @Schema(description = "Quién reserva. Tiene que ser el usuario del token; un administrador puede omitirlo para cargar una reserva de mostrador", example = "7")
+        @Schema(description = "Quién reserva. Tiene que ser el usuario del token; la reserva de mostrador va sin él", example = "7")
         Long clientId,
 
         @Schema(description = "La carpa o sombrilla que se reserva", example = "12")
