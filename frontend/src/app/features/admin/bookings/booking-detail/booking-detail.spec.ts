@@ -197,10 +197,41 @@ describe('Detalle de reserva del administrador', () => {
     expect(section('payments-title').querySelectorAll('tbody tr')).toHaveLength(1);
   });
 
-  it('una cancelada suma solo los pagos aprobados en el aviso manual', async () => {
+  it('el aviso respeta el reintegro parcial registrado por cancelación del cliente', async () => {
     await respond(
       aBooking({
         status: 'CANCELED',
+        canceledBy: 'CLIENT',
+        refundAmount: 18000,
+        payments: [payment({ amount: 36000 })],
+      }),
+    );
+
+    const warning = section('payments-title').querySelector('z-alert');
+
+    expect(text(warning)).toContain('Hay que reintegrar a mano ' + money(18000));
+    expect(text(warning)).not.toContain(money(36000));
+    expect(text(section('entry-title'))).toContain(money(18000));
+  });
+
+  it('un reintegro registrado en cero no se reemplaza por los pagos aprobados', async () => {
+    await respond(
+      aBooking({
+        status: 'CANCELED',
+        refundAmount: 0,
+        payments: [payment({ amount: 36000 })],
+      }),
+    );
+
+    expect(section('payments-title').querySelector('z-alert')).toBeNull();
+    expect(text(section('entry-title'))).toContain(money(0));
+  });
+
+  it('una cancelada sin reintegro registrado suma solo los pagos aprobados en el aviso manual', async () => {
+    await respond(
+      aBooking({
+        status: 'CANCELED',
+        refundAmount: null,
         payments: [
           payment({ amount: 10.1 }),
           payment({
@@ -224,7 +255,7 @@ describe('Detalle de reserva del administrador', () => {
 
     const warning = section('payments-title').querySelector('z-alert');
 
-    expect(text(warning)).toContain('Hay un pago de ' + money(30.3) + ' para reintegrar a mano');
+    expect(text(warning)).toContain('Hay que reintegrar a mano ' + money(30.3));
     expect(button('Cancelar reserva')).toBeUndefined();
   });
 
@@ -242,10 +273,11 @@ describe('Detalle de reserva del administrador', () => {
     },
   );
 
-  it('una cancelada sin pagos aprobados no muestra el aviso manual', async () => {
+  it('una cancelada sin pagos aprobados ni reintegro registrado no muestra el aviso manual', async () => {
     await respond(
       aBooking({
         status: 'CANCELED',
+        refundAmount: null,
         payments: [payment({ status: 'refunded' })],
       }),
     );
@@ -367,6 +399,7 @@ describe('Detalle de reserva del administrador', () => {
       aBooking({
         status: 'CANCELED',
         canceledBy: 'ADMIN',
+        refundAmount: null,
         payments: [payment()],
       }),
     );
@@ -375,7 +408,7 @@ describe('Detalle de reserva del administrador', () => {
 
     expect(dialog().hasAttribute('open')).toBe(false);
     expect(text(section('entry-title'))).toContain('el administrador');
-    expect(text(section('payments-title'))).toContain('para reintegrar a mano');
+    expect(text(section('payments-title'))).toContain('Hay que reintegrar a mano');
     expect(button('Cancelar reserva')).toBeUndefined();
   });
 

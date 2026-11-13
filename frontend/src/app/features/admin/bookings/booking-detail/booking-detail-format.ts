@@ -41,9 +41,13 @@ export function paymentModifier(status: string): string {
   }
 }
 
-/** Suma en centavos solamente los pagos aprobados de una reserva cancelada. */
+/** Prioriza el reintegro registrado; si no existe, suma los pagos aprobados. */
 export function manualRefund(booking: Booking): number {
   if (booking.status !== 'CANCELED') return 0;
+
+  if (booking.refundAmount !== null) {
+    return booking.refundAmount;
+  }
 
   return (
     booking.payments
