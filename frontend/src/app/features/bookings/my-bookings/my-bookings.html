@@ -99,11 +99,11 @@
                       </li>
                     </ul>
 
-                    @if (isExpired(card.booking)) {
+                    @if (card.notice; as notice) {
                       <z-alert
-                        variant="warning"
-                        title="La reserva venció"
-                        text="Pasó la hora para pagarla y se cancela sola. Si todavía te sirve, reservala de nuevo."
+                        [variant]="notice.variant"
+                        [title]="notice.title"
+                        [text]="notice.text"
                       />
                     } @else if (payErrors()[card.booking.id]; as error) {
                       <z-alert variant="danger" title="No se pudo pagar" [text]="error" />
@@ -115,25 +115,25 @@
                         <strong class="z-money">{{ card.total }}</strong>
                       </div>
 
-                      @switch (card.booking.status) {
-                        @case ('CONFIRMED') {
-                          <a
-                            class="z-btn z-btn--secondary"
-                            [routerLink]="['/bookings', card.booking.id]"
-                          >
-                            {{ tab() === 'upcoming' ? 'Ver entradas' : 'Ver reserva' }}
-                          </a>
-                        }
-                        @case ('PENDING') {
-                          @if (isExpired(card.booking)) {
+                      @if (card.rebook) {
+                        <a
+                          class="z-btn z-btn--primary"
+                          [routerLink]="['/book', card.booking.resortId]"
+                          [queryParams]="rebookQuery(card.booking)"
+                        >
+                          Volver a reservar
+                        </a>
+                      } @else {
+                        @switch (card.booking.status) {
+                          @case ('CONFIRMED') {
                             <a
-                              class="z-btn z-btn--primary"
-                              [routerLink]="['/book', card.booking.resortId]"
-                              [queryParams]="rebookQuery(card.booking)"
+                              class="z-btn z-btn--secondary"
+                              [routerLink]="['/bookings', card.booking.id]"
                             >
-                              Volver a reservar
+                              {{ tab() === 'upcoming' ? 'Ver entradas' : 'Ver reserva' }}
                             </a>
-                          } @else {
+                          }
+                          @case ('PENDING') {
                             <z-btn
                               [loading]="paying() === card.booking.id"
                               [disabled]="paying() !== null"

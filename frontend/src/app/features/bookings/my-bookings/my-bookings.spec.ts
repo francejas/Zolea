@@ -195,12 +195,25 @@ describe('MyBookings', () => {
   });
 
   describe('pagar una pendiente', () => {
-    const pending = aBooking({ id: 52, status: 'PENDING' });
+    // Hecha a las 11:30 de Buenos Aires: se puede pagar hasta las 12:30.
+    const pending = aBooking({ id: 52, status: 'PENDING', createdAt: '2026-01-10T11:30:00' });
+
+    beforeEach(() => vi.setSystemTime(new Date('2026-01-10T12:00:00-03:00')));
 
     function spyRedirect() {
       return vi
         .spyOn(fixture.componentInstance as unknown as { redirect(url: string): void }, 'redirect')
         .mockImplementation(() => undefined);
+    }
+
+    /** Toca «Pagar», el backend responde 400 y la reserva vuelve a traerse como está ahora. */
+    async function payRejected(now: Booking): Promise<void> {
+      button('Pagar')!.click();
+      http
+        .expectOne(`${API}/52/pay`)
+        .flush({ error: 'otro texto cualquiera' }, { status: 400, statusText: 'Bad Request' });
+      http.expectOne(`${API}/52`).flush(now);
+      await fixture.whenStable();
     }
 
     it('pide una dirección de pago nueva y va a MercadoPago', async () => {
@@ -213,21 +226,98 @@ describe('MyBookings', () => {
       expect(redirect).toHaveBeenCalledWith('https://mercadopago.example/checkout');
     });
 
-    it('si responde 400, avisa que venció y ofrece volver a reservar lo mismo', async () => {
+    it('si pasó la hora, ya al cargar avisa que venció y ofrece volver a reservar', async () => {
+      vi.setSystemTime(new Date('2026-01-10T12:30:00-03:00'));
       await respondWith([pending]);
-      spyRedirect();
-
-      button('Pagar')!.click();
-      http
-        .expectOne(`${API}/52/pay`)
-        .flush({ error: 'otro texto cualquiera' }, { status: 400, statusText: 'Bad Request' });
-      await fixture.whenStable();
 
       expect(page.textContent).toContain('La reserva venció');
       expect(button('Pagar')).toBeUndefined();
       expect(link('Volver a reservar')?.getAttribute('href')).toBe(
         '/book/1?unit=3&from=2026-01-15&to=2026-01-17',
       );
+    });
+
+    it('si responde 400 y sigue pendiente, venció: lo avisa y ofrece volver a reservar', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      // La computadora atrasa: para el backend ya pasó la hora, para la pantalla todavía no.
+      await payRejected(pending);
+
+      expect(page.textContent).toContain('La reserva venció');
+      expect(button('Pagar')).toBeUndefined();
+      expect(link('Volver a reservar')?.getAttribute('href')).toBe(
+        '/book/1?unit=3&from=2026-01-15&to=2026-01-17',
+      );
+    });
+
+    it('si responde 400 porque ya se pagó, muestra que está confirmada y sus entradas', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      await payRejected({ ...pending, status: 'CONFIRMED' });
+
+      expect(page.textContent).toContain('Ya está paga');
+      expect(page.textContent).not.toContain('La reserva venció');
+      expect(page.querySelector('.z-status')!.textContent).toContain('Confirmada');
+      expect(button('Pagar')).toBeUndefined();
+      expect(link('Volver a reservar')).toBeUndefined();
+      expect(link('Ver entradas')?.getAttribute('href')).toBe('/bookings/52');
+    });
+
+    it('si la limpieza ya la canceló, avisa que venció sin sacarla de la pestaña', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      await payRejected({ ...pending, status: 'CANCELED', canceledBy: 'SYSTEM' });
+
+      expect(tab('Próximas').getAttribute('aria-selected')).toBe('true');
+      expect(tab('Próximas').textContent).toContain('1');
+      expect(page.querySelector('.z-status')!.textContent).toContain('Cancelada');
+      expect(page.textContent).toContain('La reserva venció');
+      expect(link('Volver a reservar')).toBeDefined();
+    });
+
+    it('si la cancelaron desde otro lado, lo dice y ofrece volver a reservar', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      await payRejected({ ...pending, status: 'CANCELED', canceledBy: 'CLIENT' });
+
+      expect(page.textContent).toContain('La reserva se canceló');
+      expect(page.textContent).not.toContain('La reserva venció');
+      expect(link('Volver a reservar')).toBeDefined();
+    });
+
+    it('si responde 400 y no se puede volver a traer, muestra el motivo del backend', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      button('Pagar')!.click();
+      http
+        .expectOne(`${API}/52/pay`)
+        .flush(
+          { error: 'La reserva no está pendiente de pago.' },
+          { status: 400, statusText: 'Bad Request' },
+        );
+      http.expectOne(`${API}/52`).flush({ error: 'x' }, { status: 500, statusText: 'Error' });
+      await fixture.whenStable();
+
+      expect(page.textContent).toContain('No se pudo pagar');
+      expect(page.textContent).toContain('La reserva no está pendiente de pago.');
+    });
+
+    it('volver a cargar la pantalla deja cada reserva en su pestaña', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+      await payRejected({ ...pending, status: 'CANCELED', canceledBy: 'SYSTEM' });
+
+      (fixture.componentInstance as unknown as { load(): void }).load();
+      await respondWith([{ ...pending, status: 'CANCELED', canceledBy: 'SYSTEM' }]);
+
+      expect(tab('Próximas').textContent).toContain('0');
+      expect(tab('Canceladas').textContent).toContain('1');
+      expect(page.textContent).not.toContain('La reserva venció');
     });
 
     it('con otro error, lo muestra y deja volver a intentar', async () => {
@@ -253,6 +343,29 @@ describe('MyBookings', () => {
       expect(page.textContent).toContain('Todavía no reservaste');
       expect(button('Buscar balnearios')).toBeDefined();
       expect(page.querySelector('[role="tablist"]')).toBeNull();
+    });
+
+    it('sin cliente en la sesión, no queda cargando: muestra el problema', async () => {
+      http.expectOne(`${API}/client/7`).flush([]);
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [MyBookings],
+        providers: [
+          provideRouter([]),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: SessionService, useValue: { user: () => null } },
+        ],
+      });
+      http = TestBed.inject(HttpTestingController);
+      const noClient = TestBed.createComponent(MyBookings);
+      noClient.detectChanges();
+      await noClient.whenStable();
+
+      const text = noClient.nativeElement.textContent;
+      expect(text).toContain('No pudimos traer tus reservas');
+      expect(noClient.nativeElement.querySelector('[aria-busy="true"]')).toBeNull();
+      http.expectNone(`${API}/client/undefined`);
     });
 
     it('si falla la carga, deja reintentar', async () => {
