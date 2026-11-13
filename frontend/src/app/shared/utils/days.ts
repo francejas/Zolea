@@ -36,6 +36,25 @@ export function todayIso(): string {
   return toIsoDate(new Date());
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Las fechas que llegan en la dirección (`?from=…&to=…`), si sirven para buscar: las dos, con la
+ * forma `YYYY-MM-DD`, desde hoy y la salida no antes de la entrada. Si no, null: es lo mismo que el
+ * backend rechazaría con un 400.
+ */
+export function validRange(
+  from: unknown,
+  to: unknown,
+  today: string = todayIso(),
+): { from: string; to: string } | null {
+  if (typeof from !== 'string' || typeof to !== 'string') return null;
+  if (!ISO_DATE.test(from) || !ISO_DATE.test(to)) return null;
+  if (toIsoDate(parseIsoDate(from)) !== from || toIsoDate(parseIsoDate(to)) !== to) return null;
+  if (from < today || to < from) return null;
+  return { from, to };
+}
+
 function toUtc(iso: string): number {
   const [year, month, day] = iso.split('-').map(Number);
   return Date.UTC(year, month - 1, day);

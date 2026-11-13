@@ -55,3 +55,52 @@ select.z-input {
   color: var(--color-ink-soft);
   pointer-events: none;
 }
+
+/* Opción para marcar, en forma de pastilla (componentes.css, «Opción»): el filtro de servicios. */
+.z-choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-compact);
+  padding: 0 16px 0 12px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  font: 500 15px / 1 var(--font-body);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.z-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.z-choice:hover {
+  background: var(--color-sand-soft);
+}
+
+.z-choice .z-choice__check {
+  display: none;
+}
+
+.z-choice:has(input:checked) {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.z-choice:has(input:checked) .z-choice__check {
+  display: block;
+}
+
+.z-choice:has(input:checked) .z-choice__icon {
+  display: none;
+}
+
+.z-choice:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}

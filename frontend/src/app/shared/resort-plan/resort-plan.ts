@@ -53,7 +53,9 @@ let nextId = 0;
  * la lista en texto de las mismas unidades (pestaña «Lista»), que es lo que usan el teclado y el
  * lector de pantalla. El diseño está en Zolea-docs/diseno/plano-del-balneario.html.
  *
- * El plano no sabe de fechas: marca solo las bloqueadas (`isBlocked`).
+ * El plano no sabe de fechas: marca las bloqueadas (`isBlocked`) y, si se las pasan en
+ * `occupiedIds`, las ocupadas en las fechas elegidas. Las dos se dibujan igual (la sombrilla
+ * cerrada) y ninguna se puede elegir; lo que cambia es lo que dicen.
  */
 @Component({
   selector: 'z-resort-plan',
@@ -68,6 +70,8 @@ let nextId = 0;
 export class ResortPlan {
   /** Las unidades del balneario, en cualquier orden: el plano las ordena y las agrupa. */
   units = input.required<RentalUnit[]>();
+  /** Los `idRentalUnit` reservados en las fechas elegidas: se ven ocupados y no se eligen. */
+  occupiedIds = input<readonly number[]>([]);
   /** Mientras carga se ve el esqueleto en lugar del plano. */
   loading = input(false);
   /** El `idRentalUnit` de la unidad elegida, o null. Se puede enlazar con `[(selectedId)]`. */
@@ -95,12 +99,30 @@ export class ResortPlan {
     })).filter((zone) => zone.rows.length > 0);
   });
 
+  private readonly occupied = computed(() => new Set(this.occupiedIds()));
+
+  /** Hay alguna ocupada en las fechas: recién ahí la leyenda suma ese estado. */
+  protected readonly hasOccupied = computed(() =>
+    this.units().some((unit) => !unit.isBlocked && this.occupied().has(unit.idRentalUnit)),
+  );
+
   protected readonly skeletonRows = [1, 2];
   protected readonly skeletonCells = [1, 2, 3, 4, 5, 6];
 
+  /** Bloqueada u ocupada en las fechas: en los dos casos no se puede elegir. */
+  protected isUnavailable(unit: RentalUnit): boolean {
+    return unit.isBlocked || this.occupied().has(unit.idRentalUnit);
+  }
+
+  /** «Libre», «No disponible» (bloqueada) u «Ocupada en tus fechas». */
+  protected stateOf(unit: RentalUnit): string {
+    if (unit.isBlocked) return 'No disponible';
+    return this.occupied().has(unit.idRentalUnit) ? 'Ocupada en tus fechas' : 'Libre';
+  }
+
   /** «Sombrilla A-01, libre, $ 8.500 por día». La elegida se dice con aria-pressed. */
   protected unitLabel(unit: RentalUnit): string {
-    const state = unit.isBlocked ? 'no disponible' : 'libre';
+    const state = this.stateOf(unit).toLowerCase();
     return `${TYPE_NAME[unit.type]} ${unit.identifier}, ${state}, ${pesos.format(unit.dailyPrice)} por día`;
   }
 
@@ -109,15 +131,15 @@ export class ResortPlan {
     return pesos.format(unit.dailyPrice);
   }
 
-  /** Tocar una libre la elige; tocar la elegida la deselecciona; una bloqueada no hace nada. */
+  /** Tocar una libre la elige; tocar la elegida la deselecciona; una no disponible no hace nada. */
   protected toggle(unit: RentalUnit): void {
-    if (unit.isBlocked) return;
+    if (this.isUnavailable(unit)) return;
     this.setSelected(this.selectedId() === unit.idRentalUnit ? null : unit);
   }
 
   /** Elegir en la lista: un botón de opción siempre elige, no alterna. */
   protected choose(unit: RentalUnit): void {
-    if (unit.isBlocked) return;
+    if (this.isUnavailable(unit)) return;
     this.setSelected(unit);
   }
 
