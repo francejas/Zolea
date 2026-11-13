@@ -11,7 +11,6 @@ import com.zolea.backend.exceptions.client.ClientInvalidRegisterException;
 import com.zolea.backend.exceptions.client.ClientNotFoundException;
 import com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException;
 import com.zolea.backend.exceptions.guest.BookingNotPaidException;
-import com.zolea.backend.exceptions.guest.GuestAlreadyEnteredException;
 import com.zolea.backend.exceptions.guest.GuestNotFoundException;
 import com.zolea.backend.exceptions.booking.BookingStateException;
 import com.zolea.backend.exceptions.booking.InvalidBookingRangeException;
@@ -74,7 +73,6 @@ public class GlobalExceptionHandler {
             InvalidAmenityException.class,
             BookingNotPaidException.class,
             BookingNotInValidPeriodException.class,
-            GuestAlreadyEnteredException.class,
             ClientInvalidRegisterException.class,
             ResortInvalidRegisterException.class,
             BookingAlreadyCanceledException.class,

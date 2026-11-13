@@ -263,9 +263,11 @@ public class BookingService {
 
     private BookingResponse mapToBookingResponse(Booking booking, boolean reviewed,
                                                  List<PaymentSummaryResponse> payments) {
+        LocalDate today = today();
         List<GuestSummaryResponse> guestResponses = booking.getGuests() != null ?
                 booking.getGuests().stream()
-                .map(g -> new GuestSummaryResponse(g.getIdGuest(), g.getFullName(), g.getDni(), g.getIsEntryValidated(), g.getQrToken()))
+                .map(g -> new GuestSummaryResponse(g.getIdGuest(), g.getFullName(), g.getDni(),
+                        g.enteredOn(today), g.getLastEntryAt(), g.getQrToken()))
                 .toList() : new ArrayList<>();
 
         var unit = booking.getRentalUnit();

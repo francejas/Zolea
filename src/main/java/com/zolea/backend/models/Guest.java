@@ -5,6 +5,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 /**
  * <p><b>Sobre {@code equals}, {@code hashCode} y {@code toString}:</b> los tres se limitan al
  * identificador. {@code @Data} de Lombok los genera con <b>todos</b> los campos, y sobre relaciones
@@ -34,10 +37,22 @@ public class Guest {
     @Column(unique = true)
     private String qrToken;
 
-    private Boolean isEntryValidated;
+    /**
+     * Cuándo entró por última vez, en la hora del balneario; {@code null} si nunca entró.
+     *
+     * <p>Hasta la 15.6 era un {@code isEntryValidated}: el código servía una sola vez. Ahora sirve
+     * para entrar todas las veces que haga falta durante la estadía, así que lo que importa es
+     * cuándo fue el último ingreso.
+     */
+    private LocalDateTime lastEntryAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_booking")
     @ToString.Exclude
     private Booking booking;
+
+    /** Si entró ese día: es lo que la reserva informa como {@code isEntryValidated}. */
+    public boolean enteredOn(LocalDate day) {
+        return lastEntryAt != null && lastEntryAt.toLocalDate().equals(day);
+    }
 }

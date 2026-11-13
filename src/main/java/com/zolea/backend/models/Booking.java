@@ -309,7 +309,6 @@ public class Booking {
         guest.setFullName(fullName);
         guest.setDni(dni);
         guest.setQrToken(UUID.randomUUID().toString());
-        guest.setIsEntryValidated(false);
         if (guests == null) {
             guests = new ArrayList<>();
         }
