@@ -25,6 +25,20 @@ export function dayRange(start: string, end: string): string {
   return `${sameMonth ? from.getDate() : dayMonth.format(from)} → ${dayMonth.format(to)}`;
 }
 
+const weekdayDayMonth = new Intl.DateTimeFormat('es-AR', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
+
+/** «vie 15 ene»: sin la coma ni los puntos que agrega `Intl`. */
+export function shortDate(iso: string): string {
+  const parts = weekdayDayMonth.formatToParts(parseDate(iso));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    (parts.find((p) => p.type === type)?.value ?? '').replace('.', '');
+  return `${part('weekday')} ${part('day')} ${part('month')}`;
+}
+
 /** Las dos fechas cuentan: del 15 al 17 son tres días. */
 export function dayCount(start: string, end: string): number {
   const days = (parseDate(end).getTime() - parseDate(start).getTime()) / 86_400_000;
