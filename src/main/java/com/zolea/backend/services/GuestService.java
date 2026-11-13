@@ -3,7 +3,6 @@ package com.zolea.backend.services;
 import com.zolea.backend.dtos.guest.GuestValidationResponse;
 import com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException;
 import com.zolea.backend.exceptions.guest.BookingNotPaidException;
-import com.zolea.backend.exceptions.guest.GuestAlreadyEnteredException;
 import com.zolea.backend.exceptions.guest.GuestNotFoundException;
 import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.Guest;
@@ -16,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
@@ -38,14 +38,15 @@ public class GuestService {
     /**
      * Valida el ingreso de un huésped por su código QR.
      *
-     * <p>Las tres comprobaciones, en este orden: que la reserva esté <b>confirmada</b> —o sea,
-     * pagada—, que <b>hoy</b> caiga dentro de sus fechas, y que ese código <b>no se haya usado
-     * antes</b>. La última es la que impide que un mismo QR reenviado por mensaje haga entrar a
-     * varias personas: el ingreso se marca como validado y el código queda quemado.
+     * <p>Las dos comprobaciones, en este orden: que la reserva esté <b>confirmada</b> —o sea,
+     * pagada— y que <b>hoy</b> caiga dentro de sus fechas, las dos incluidas. Desde la 15.6 el
+     * código sirve para entrar todas las veces que haga falta durante la estadía: la persona sale a
+     * comer y vuelve, o viene los tres días de la reserva. Cada ingreso guarda la fecha y la hora,
+     * así el balneario sabe quién entró hoy y cuándo fue la última vez.
      *
-     * <p>Los mensajes de error son explícitos a propósito («la reserva todavía no comenzó», «ya
-     * registró su ingreso»): del otro lado hay un operador con la persona parada enfrente, que
-     * necesita saber qué pasó para poder resolverlo.
+     * <p>Los mensajes de error son explícitos a propósito («la reserva todavía no comenzó», «venció
+     * el…»): del otro lado hay un operador con la persona parada enfrente, que necesita saber qué
+     * pasó para poder resolverlo.
      *
      * <p>Antes que todo eso, que la reserva sea del balneario de quien valida: un administrador no
      * marca ingresos de otro balneario, y tampoco se entera de en qué estado está esa reserva.
@@ -56,7 +57,7 @@ public class GuestService {
      * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si el código no existe.
      * @throws org.springframework.security.access.AccessDeniedException si la reserva es de otro balneario.
      * @throws com.zolea.backend.exceptions.guest.BookingNotPaidException si la reserva no está confirmada.
-     * @throws com.zolea.backend.exceptions.guest.GuestAlreadyEnteredException si el código ya se usó.
+     * @throws com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException si hoy está fuera de sus fechas.
      */
     @Transactional
     public GuestValidationResponse validateGuestEntry(String token, Long resortId) {
@@ -73,10 +74,6 @@ public class GuestService {
 
         checkBookingPeriod(guest.getBooking());
 
-        if (guest.getIsEntryValidated()) {
-            throw new GuestAlreadyEnteredException("ALERTA: Este código ya registró su ingreso al balneario.");
-        }
-
         return confirmEntry(guest);
     }
 
@@ -88,9 +85,9 @@ public class GuestService {
      * que el que el código resuelve.
      *
      * <p>Es más débil que el QR —un DNI tiene ocho dígitos y se puede adivinar— así que se acota por
-     * los dos lados: solo considera reservas <b>confirmadas</b> y <b>vigentes hoy</b>, y el ingreso
-     * se marca como usado igual que con el código. Un DNI acertado sirve una sola vez y deja al
-     * titular real sin poder entrar, que es un problema visible en el momento.
+     * los dos lados: solo considera reservas <b>confirmadas</b> y <b>vigentes hoy</b>, y solo las del
+     * balneario de quien valida. Como el código, sirve todas las veces que haga falta durante la
+     * estadía, y cada ingreso guarda la fecha y la hora.
      *
      * <p>Cuando hay reservas con ese DNI pero ninguna vigente, el mensaje dice <b>cuál</b> es el
      * caso: si la más próxima todavía no empezó, informa desde cuándo; si todas terminaron, que ya
@@ -104,7 +101,6 @@ public class GuestService {
      * @return los datos del huésped que acaba de ingresar.
      * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si no hay ninguna reserva confirmada con ese DNI en el balneario.
      * @throws com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException si ninguna está vigente hoy.
-     * @throws com.zolea.backend.exceptions.guest.GuestAlreadyEnteredException si ya registró su ingreso.
      */
     @Transactional
     public GuestValidationResponse validateGuestEntryByDni(String dni, Long resortId) {
@@ -140,16 +136,17 @@ public class GuestService {
                             + ". El ingreso ya no está disponible.");
         }
 
+        // Con más de una vigente (dos unidades el mismo día), la que empezó primero.
         Guest guest = active.stream()
-                .filter(g -> !g.getIsEntryValidated())
-                .findFirst()
-                .orElseThrow(() -> new GuestAlreadyEnteredException("ALERTA: El ingreso para este DNI ya fue registrado."));
+                .min(Comparator.comparing((Guest g) -> g.getBooking().getStartDate())
+                        .thenComparing(Guest::getIdGuest))
+                .orElseThrow();
 
         return confirmEntry(guest);
     }
 
     private GuestValidationResponse confirmEntry(Guest guest) {
-        guest.setIsEntryValidated(true);
+        guest.setLastEntryAt(LocalDateTime.now(clock));
         guestRepository.save(guest);
 
         String unitIdentifier = guest.getBooking().getRentalUnit().getIdentifier();

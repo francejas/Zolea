@@ -56,21 +56,25 @@ public class ClientController {
         return ResponseEntity.ok(clientService.getClientsOfResort(principal.requireManagedResort()));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.idClient")
+    // Solo el propio perfil, también para un administrador: a sus clientes los ve en GET
+    // /api/clients, y por acá habría leído y editado cualquier cuenta del sistema (RNF03).
+    @PreAuthorize("#id == principal.idClient")
     @GetMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Obtener cliente por ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El perfil del cliente"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "El perfil es de otra persona", content = @Content),
+            @ApiResponse(responseCode = "403", description = "El perfil es de otra persona, aunque quien pide sea un administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe un cliente con ese identificador", content = @Content)
     })
     public ResponseEntity<ClientResponse> getClientById(@PathVariable Long id) {
         return ResponseEntity.ok(clientService.getClientById(id));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.idClient")
+    // Solo el propio perfil, también para un administrador: a sus clientes los ve en GET
+    // /api/clients, y por acá habría leído y editado cualquier cuenta del sistema (RNF03).
+    @PreAuthorize("#id == principal.idClient")
     @PutMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Actualizar datos del cliente")
@@ -78,7 +82,7 @@ public class ClientController {
             @ApiResponse(responseCode = "200", description = "El perfil como quedó. Los campos que no vengan en el pedido no se tocan"),
             @ApiResponse(responseCode = "400", description = "Algún dato tiene formato inválido", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "El perfil es de otra persona", content = @Content),
+            @ApiResponse(responseCode = "403", description = "El perfil es de otra persona, aunque quien pide sea un administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe un cliente con ese identificador", content = @Content),
             @ApiResponse(responseCode = "409", description = "El email, el teléfono o el DNI ya son de otra cuenta", content = @Content)
     })

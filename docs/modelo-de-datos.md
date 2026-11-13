@@ -74,7 +74,7 @@ classDiagram
         +String fullName
         +String dni
         +String qrToken
-        +Boolean isEntryValidated
+        +LocalDateTime lastEntryAt
     }
 
     class Payment {
@@ -193,7 +193,7 @@ erDiagram
         varchar full_name
         varchar dni
         varchar qr_token UK
-        bit is_entry_validated
+        datetime last_entry_at
         bigint id_booking FK
     }
 
@@ -252,7 +252,7 @@ previo en el servicio lo pasan dos peticiones simultáneas, una restricción de 
 | `payment` | `uk_pago_de_pasarela` (`gateway_payment_id`) | Que un mismo pago de MercadoPago deje dos filas — y con ellas dos juegos de códigos QR |
 | `review` | `uk_resena_de_reserva` (`id_booking`) | Dos reseñas de la misma reserva, aunque los dos pedidos lleguen a la vez |
 
-La última es la que sostiene el cobro: MercadoPago reintenta sus avisos, y dos que lleguen
+La de `payment` es la que sostiene el cobro: MercadoPago reintenta sus avisos, y dos que lleguen
 exactamente a la vez leerían los dos la reserva como pendiente. La explicación completa está
 en [decisiones.md](decisiones.md#8-el-pago-se-registra-antes-de-confirmar-la-reserva).
 

@@ -116,12 +116,17 @@ a los controles del formulario.
 
 | Código | Qué pasó | Qué hacer en el frontend |
 |---|---|---|
-| **400** | Una regla rechazó el pedido | Mostrar `error`, y marcar los controles de `campos` si viene |
+| **400** | Una regla rechazó el pedido, o el pedido está mal armado | Mostrar `error`, y marcar los controles de `campos` si viene |
 | **401** | Falta el token o venció | Limpiar la sesión e ir al login |
 | **403** | El recurso existe, pero no es tuyo | Mostrar «no tenés permiso». **No** desloguear |
 | **404** | No existe | Pantalla de «no encontrado» |
 | **409** | Era válido al comprobarlo y dejó de serlo al guardar | Mostrar `error`: alguien se adelantó |
 | **502** | MercadoPago no respondió | Ofrecer reintentar el pago |
+
+Un pedido mal armado nunca responde `500` (RNF06): un id que no es un número
+(`GET /api/bookings/abc`), un cuerpo que no es JSON válido, un parámetro obligatorio que falta o un
+valor fuera de una lista cerrada (`"type": "CABANA"`) responden `400` con el motivo en `error`; si
+es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre un error nuestro.
 
 ---
 
@@ -133,7 +138,12 @@ a los controles del formulario.
 - Un **administrador** ve y toca solo **su** balneario: sus unidades, las reservas hechas en ellas y
   los clientes que reservaron ahí. **No existe un administrador que vea todo**: si una cuenta con rol
   ADMIN no tiene balneario asignado, esos tres listados responden `403` con el motivo, en vez de
-  devolver el sistema entero.
+  devolver el sistema entero. Lo mismo al tocar algo por id: editar, desactivar o reactivar otro
+  balneario, ver una reserva de otro balneario, sus condiciones de cancelación o su link de pago, y
+  la reserva de mostrador sobre una unidad ajena responden `403`.
+- Un administrador **no reserva por `POST /api/bookings`**, ni a su nombre: usa la de mostrador. Y
+  por `GET /api/clients/{id}`, `PUT /api/clients/{id}` y `GET /api/bookings/client/{id}` solo llega
+  a **su propio** perfil: a sus clientes los ve en `GET /api/clients`.
 - `GET /api/clients` devuelve **los clientes de su balneario**, cada uno con su historial en ese
   balneario. Incluye a quienes reservaron por mostrador: esos no tienen cuenta, así que vienen con
   `walkIn: true` y sin `idClient`, `email` ni `phone`. El importe `totalSpent` ya viene sumado por el
@@ -281,8 +291,8 @@ POST /api/bookings/{id}/review     { "rating": 5, "comment": "..." }
 → 201 { "author": "Santiago R.", "rating": 5, "comment": "...", "createdAt": "2026-01-12T18:30:00" }
 ```
 
-Solo la califica su dueño: la de otro cliente responde `403`, también para el administrador del
-balneario. Los rechazos:
+Solo la califica su dueño, y solo si es un cliente: la de otro cliente responde `403`, también para
+el administrador del balneario, y un administrador recibe `403` aunque la reserva figure a su nombre. Los rechazos:
 
 | Caso | Respuesta |
 |---|---|
@@ -356,9 +366,31 @@ Sin token responde `401`; con una cuenta de cliente, o con el código de una res
 balneario, `403`. Por DNI busca solo entre las reservas de su balneario: un DNI que tiene reserva en
 otro responde `404`, igual que uno que no existe.
 
-El ingreso **se marca como usado**: el mismo código no sirve dos veces, y el segundo intento
-devuelve 400 con el motivo. Los mensajes de error están escritos para que el operador los lea tal
-cual («la reserva todavía no comenzó, el ingreso se habilita el 20/01/2026»).
+El código —y el DNI— sirven para entrar **todas las veces que haga falta mientras dura la
+estadía**: responde `200` cada vez que la reserva está confirmada y hoy (el día de Buenos Aires)
+está entre la fecha de inicio y la de fin, las dos incluidas. Volver a escanear el mismo QR, el
+mismo día o al siguiente, sale en verde.
+
+Responde `400` con el motivo cuando la reserva no está pagada, todavía no empezó o ya terminó; `404`
+si el código no existe. Los mensajes de error están escritos para que el operador los lea tal cual
+(«la reserva todavía no comenzó, el ingreso se habilita el 20/01/2026»).
+
+Cada ingreso guarda la fecha y la hora. En la reserva, cada persona de `guests` trae:
+
+```
+{
+  "idGuest": 12,
+  "fullName": "Lucía Gutiérrez",
+  "dni": "40123456",
+  "isEntryValidated": true,                  ← entró HOY
+  "lastEntryAt": "2026-01-10T10:00:00",      ← la última vez, en hora de Buenos Aires; null si nunca entró
+  "qrToken": "…"
+}
+```
+
+`isEntryValidated` quiere decir **«entró hoy»**: al día siguiente vuelve a `false` hasta que se
+valide de nuevo, y `lastEntryAt` sigue con el último ingreso. En el Panel, `today.checkedIn` cuenta a
+las personas que entraron hoy.
 
 ---
 

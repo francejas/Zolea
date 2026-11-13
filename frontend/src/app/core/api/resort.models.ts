@@ -39,4 +39,18 @@ export interface Resort {
   active: boolean;
   amenities: Amenity[];
   rentalUnits: RentalUnit[];
+  /** Cuántas unidades cumplen la búsqueda: solo viene cuando se buscó con fechas; si no, null. */
+  availableUnits?: number | null;
+}
+
+/**
+ * Los filtros opcionales de `GET /api/resorts`. Las fechas van las dos o ninguna, `YYYY-MM-DD`;
+ * `maxPrice` incluye ese valor y `amenityIds` pide que estén todos.
+ */
+export interface ResortFilters {
+  from?: string | null;
+  to?: string | null;
+  type?: UnitType | null;
+  maxPrice?: number | null;
+  amenityIds?: number[];
 }

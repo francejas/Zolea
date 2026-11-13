@@ -96,8 +96,10 @@
                     class="z-unit"
                     [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
                     [class.z-unit--tent]="unit.type === 'TENT'"
-                    [attr.aria-pressed]="unit.isBlocked ? null : selectedId() === unit.idRentalUnit"
-                    [attr.aria-disabled]="unit.isBlocked ? 'true' : null"
+                    [attr.aria-pressed]="
+                      isUnavailable(unit) ? null : selectedId() === unit.idRentalUnit
+                    "
+                    [attr.aria-disabled]="isUnavailable(unit) ? 'true' : null"
                     [attr.aria-label]="unitLabel(unit)"
                     (click)="toggle(unit)"
                   >
@@ -139,6 +141,14 @@
         ></span>
         No disponible
       </li>
+      @if (hasOccupied()) {
+        <li>
+          <span class="z-unit z-unit--mini z-unit--umbrella" aria-disabled="true" aria-hidden="true"
+            ><span class="z-unit__shape"></span
+          ></span>
+          Ocupada en tus fechas
+        </li>
+      }
     </ul>
   </div>
 
@@ -161,7 +171,7 @@
                   type="radio"
                   [name]="id + '-unidad'"
                   [value]="unit.idRentalUnit"
-                  [disabled]="unit.isBlocked"
+                  [disabled]="isUnavailable(unit)"
                   [checked]="selectedId() === unit.idRentalUnit"
                   (change)="choose(unit)"
                 />
@@ -170,9 +180,7 @@
                 @if (!row.samePrice) {
                   <span class="z-unit-option__price">{{ price(unit) }}</span>
                 }
-                <span class="z-unit-option__state">{{
-                  unit.isBlocked ? 'No disponible' : 'Libre'
-                }}</span>
+                <span class="z-unit-option__state">{{ stateOf(unit) }}</span>
               </label>
             }
           </fieldset>

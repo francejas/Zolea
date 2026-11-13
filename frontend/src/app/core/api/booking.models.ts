@@ -9,7 +9,10 @@ export interface GuestSummary {
   idGuest: number;
   fullName: string;
   dni: string | null;
+  /** Si entró hoy. El código sirve para entrar todas las veces que haga falta durante la estadía. */
   isEntryValidated: boolean;
+  /** Cuándo entró por última vez (`YYYY-MM-DDTHH:mm:ss`, hora de Buenos Aires); `null` si nunca entró. */
+  lastEntryAt: string | null;
   qrToken: string;
 }
 
@@ -34,6 +37,11 @@ export interface Booking {
   resortName: string;
   resortLocation: string;
   resortCoverPhotoUrl: string | null;
+  canceledAt: string | null;
+  canceledBy: 'CLIENT' | 'ADMIN' | 'SYSTEM' | null;
+  refundAmount: number | null;
+  reviewed: boolean;
+  payments: PaymentSummary[];
 }
 
 /** La dirección de MercadoPago para pagar una reserva pendiente. */
@@ -61,4 +69,21 @@ export interface BookingRequest {
 export interface BookingCheckout {
   booking: Booking;
   paymentUrl: string;
+}
+
+/** Condiciones calculadas por el servidor antes de confirmar la cancelación. */
+export interface CancellationResponse {
+  canCancel: boolean;
+  refundAmount: number | null;
+  refundPercent: number | null;
+  reason: string | null;
+}
+
+/** Un cobro registrado de la reserva. */
+export interface PaymentSummary {
+  gatewayPaymentId: string;
+  amount: number;
+  status: string;
+  /** Hora de Buenos Aires informada por el servidor. */
+  paidAt: string | null;
 }

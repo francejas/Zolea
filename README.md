@@ -194,23 +194,23 @@ http://localhost:8080/swagger-ui/index.html
 | `POST` | `/api/auth/login` | — | Obtener JWT |
 | `POST` | `/api/clients` | — | Registrar cliente |
 | `GET` | `/api/clients` | ADMIN | Los clientes de su balneario, con su historial ahí |
-| `GET` | `/api/clients/{id}` | DUEÑO o ADMIN | Perfil del cliente |
-| `PUT` | `/api/clients/{id}` | DUEÑO o ADMIN | Actualizar perfil |
+| `GET` | `/api/clients/{id}` | DUEÑO | Perfil del cliente (un admin, solo el suyo) |
+| `PUT` | `/api/clients/{id}` | DUEÑO | Actualizar perfil (un admin, solo el suyo) |
 | `GET` | `/api/resorts` | — | Listar balnearios; con filtros, los que tienen lugar (`q`, `from`, `to`, `type`, `maxPrice`, `amenityIds`) |
 | `GET` | `/api/resorts/{id}` | — | Detalle + unidades del balneario |
 | `GET` | `/api/resorts/{id}/occupied-units` | — | Unidades ocupadas entre `from` y `to` |
 | `GET` | `/api/resorts/my` | ADMIN | Mi balneario |
 | `PUT` | `/api/resorts/my` | ADMIN | Actualizar datos del balneario |
 | `POST` | `/api/resorts` | ADMIN | Crear balneario |
-| `PUT` | `/api/resorts/{id}` | ADMIN | Actualizar balneario por ID |
-| `PUT` | `/api/resorts/{id}/inactive` | ADMIN | Desactivar balneario |
-| `PUT` | `/api/resorts/{id}/active` | ADMIN | Activar balneario |
-| `POST` | `/api/bookings` | AUTH | Crear reserva (flujo MercadoPago) |
+| `PUT` | `/api/resorts/{id}` | ADMIN del balneario | Actualizar balneario por ID |
+| `PUT` | `/api/resorts/{id}/inactive` | ADMIN del balneario | Desactivar balneario |
+| `PUT` | `/api/resorts/{id}/active` | ADMIN del balneario | Activar balneario |
+| `POST` | `/api/bookings` | CLIENTE | Crear reserva a su nombre (flujo MercadoPago); un admin usa el mostrador |
 | `POST` | `/api/bookings/{id}/pay` | DUEÑO o ADMIN | Reintentar pago (reserva PENDING) |
-| `POST` | `/api/bookings/walkin` | ADMIN | Reserva presencial instantánea |
+| `POST` | `/api/bookings/walkin` | ADMIN del balneario | Reserva presencial instantánea, en una unidad de su balneario |
 | `GET` | `/api/bookings` | ADMIN | Reservas del balneario del admin |
 | `GET` | `/api/bookings/{id}` | DUEÑO o ADMIN | Detalle de reserva |
-| `GET` | `/api/bookings/client/{id}` | DUEÑO o ADMIN | Reservas de un cliente |
+| `GET` | `/api/bookings/client/{id}` | DUEÑO | Reservas de un cliente (el admin ve a sus clientes en `GET /api/clients`) |
 | `PATCH` | `/api/bookings/{id}/cancel` | DUEÑO o ADMIN | Cancelar reserva |
 | `GET` | `/api/bookings/success` | — | Retorno de pago exitoso (MercadoPago) |
 | `GET` | `/api/bookings/pending` | — | Retorno de pago pendiente (MercadoPago) |
@@ -226,8 +226,11 @@ http://localhost:8080/swagger-ui/index.html
 | `GET` | `/api/amenities`, `/api/amenities/{id}` | — | Servicios del balneario |
 | `POST`, `PUT`, `DELETE` | `/api/amenities` | ADMIN | Administrar servicios |
 
-**DUEÑO o ADMIN** quiere decir que el recurso solo lo ve quien es su titular; un administrador
-también, dentro de su balneario. Los endpoints de MercadoPago son públicos porque quien los
+**DUEÑO o ADMIN** quiere decir que el recurso solo lo ve quien es su titular, o el administrador
+del balneario de la reserva; el de otro balneario recibe `403` (RNF03). **DUEÑO** es solo el
+titular, también cuando quien pide es un administrador. La matriz de accesos cruzados
+(`CrossAccessMatrixTest`) prueba cada una de estas operaciones sin token, con un cliente ajeno, con
+el administrador de otro balneario y con quien sí puede. Los endpoints de MercadoPago son públicos porque quien los
 llama no tiene el token de la aplicación — y por eso no le creen a lo que les llega.
 
 ### Autenticación
@@ -312,6 +315,9 @@ Para medir además la cobertura:
 ```bash
 ./mvnw verify                          # el informe queda en target/site/jacoco/index.html
 ```
+
+`verify` falla si la cobertura de instrucciones baja del 70 % (RNF11), así que el CI la controla en
+cada envío.
 
 Todo esto corre solo en cada push a `main` o `develop` y en cada pull request, salvo que el cambio
 sea solo del frontend: ver [.github/workflows/ci.yml](.github/workflows/ci.yml). El frontend tiene

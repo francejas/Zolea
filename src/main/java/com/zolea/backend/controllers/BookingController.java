@@ -6,6 +6,7 @@ import com.zolea.backend.dtos.booking.BookingResponse;
 import com.zolea.backend.dtos.booking.CancellationResponse;
 import com.zolea.backend.dtos.booking.PaymentUrlResponse;
 import com.zolea.backend.dtos.booking.WalkInBookingResponse;
+import com.zolea.backend.exceptions.booking.WalkInWithClientException;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.BookingCheckoutService;
 import com.zolea.backend.services.BookingService;
@@ -43,8 +44,9 @@ public class BookingController {
     // firma la petición: sin esto, cualquier usuario autenticado creaba reservas y generaba pagos
     // a nombre de otro. Se rechaza en vez de sobreescribirlo en silencio, para que un cliente mal
     // programado se entere en lugar de recibir una reserva con otro titular.
-    // Un ADMIN queda exento porque es el que carga las reservas de mostrador.
-    @PreAuthorize("hasRole('ADMIN') or #request.clientId == null or #request.clientId == principal.idClient")
+    // Un ADMIN no reserva por acá, ni a su nombre ni al de otro (RNF03): para eso está el
+    // mostrador, que confirma sin pasar por MercadoPago y queda en su balneario.
+    @PreAuthorize("!hasRole('ADMIN') and (#request.clientId == null or #request.clientId == principal.idClient)")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     @Operation(summary = "Crear reserva web", description = "Crea la reserva y devuelve la URL de pago de MercadoPago.")
@@ -52,7 +54,7 @@ public class BookingController {
             @ApiResponse(responseCode = "201", description = "Reserva creada, en estado PENDING, con su URL de pago"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos, rango de fechas al revés, o unidad bloqueada u ocupada", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin credenciales o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Se intentó reservar a nombre de otro cliente", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Se intentó reservar a nombre de otro cliente, o quien pide es un administrador: él usa la reserva de mostrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "La unidad o el cliente no existen", content = @Content),
             @ApiResponse(responseCode = "502", description = "MercadoPago no respondió", content = @Content)
     })
@@ -62,7 +64,7 @@ public class BookingController {
                 .body(new BookingCheckoutResponse(checkout.booking(), checkout.paymentUrl()));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @bookingAccess.canAccess(#id, principal.idClient)")
+    @PreAuthorize("@bookingAccess.canRead(#id, principal)")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/{id}/pay")
     @Operation(summary = "Reintentar pago (reserva pendiente)", description = "Genera una nueva URL de MercadoPago para una reserva PENDING existente.")
@@ -70,7 +72,7 @@ public class BookingController {
             @ApiResponse(responseCode = "200", description = "Una dirección de pago nueva para la misma reserva"),
             @ApiResponse(responseCode = "400", description = "La reserva ya no está pendiente (está confirmada o cancelada), o pasó la hora para pagarla", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content),
             @ApiResponse(responseCode = "502", description = "MercadoPago no respondió", content = @Content)
     })
@@ -80,14 +82,25 @@ public class BookingController {
 
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/walkin")
-    @PreAuthorize("hasRole('ADMIN')")
+    // Solo sobre unidades del balneario del administrador (RNF03). Una unidad que no existe pasa,
+    // para que el servicio responda su 404.
+    @PreAuthorize("hasRole('ADMIN') and @unitAccess.belongsToResort(#request.rentalUnitId, principal.idManagedResort)")
     @Operation(summary = "Crear reserva presencial (Admin)", description = "Crea y confirma automáticamente la reserva sin pasar por MercadoPago.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Reserva confirmada, con un código QR por huésped"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos, o la unidad está bloqueada u ocupada", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Datos inválidos, vino un clientId, o la unidad está bloqueada u ocupada", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o la unidad es de otro balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "No existe una unidad con ese identificador", content = @Content)
     })
     public ResponseEntity<WalkInBookingResponse> createWalkInBooking(@Valid @RequestBody BookingRequest request) {
+        // La de mostrador es para quien no tiene cuenta. Con un clientId, un administrador se armaba
+        // una reserva confirmada a su propio nombre y después la calificaba. El cero se sigue
+        // aceptando: es como mandaba «sin cliente» el formulario viejo.
+        if (request.clientId() != null && request.clientId() > 0) {
+            throw new WalkInWithClientException(
+                    "La reserva de mostrador es para quien no tiene cuenta: va sin clientId, con el nombre y el DNI del titular.");
+        }
         BookingResponse booking = bookingService.createBooking(request);
         bookingService.confirmBookingPayment(booking.id());
         BookingResponse confirmed = bookingService.getBookingById(booking.id());
@@ -113,14 +126,16 @@ public class BookingController {
                 bookingService.getBookingsByResortId(principal.requireManagedResort()));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or #clientId == principal.idClient")
+    // Solo el propio cliente. El administrador ve a sus clientes, con su historial en su
+    // balneario, en GET /api/clients; por acá habría visto las reservas en los cinco (RNF03).
+    @PreAuthorize("#clientId == principal.idClient")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/client/{clientId}")
     @Operation(summary = "Reservas de un cliente")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Las reservas de ese cliente, con sus códigos QR"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Son las reservas de otra persona", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Son las reservas de otra persona. Un administrador ve a sus clientes en GET /api/clients", content = @Content)
     })
     public ResponseEntity<List<BookingResponse>> getBookingsByClient(@PathVariable Long clientId) {
         return ResponseEntity.ok(bookingService.getBookingsByClientId(clientId));
@@ -131,21 +146,21 @@ public class BookingController {
     // lectura y descartar la respuesta habría modificado datos a pedido de un intruso. Comprobar
     // antes sigue siendo lo correcto: leer un recurso ajeno para después decidir no mostrarlo
     // implica haberlo leído.
-    @PreAuthorize("hasRole('ADMIN') or @bookingAccess.canAccess(#id, principal.idClient)")
+    @PreAuthorize("@bookingAccess.canRead(#id, principal)")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{id}")
     @Operation(summary = "Detalle de una reserva")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "La reserva, con sus huéspedes y sus códigos QR"),
             @ApiResponse(responseCode = "401", description = "Sin credenciales o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
     })
     public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.getBookingById(id));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @bookingAccess.canAccess(#id, principal.idClient)")
+    @PreAuthorize("@bookingAccess.canRead(#id, principal)")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{id}/cancellation")
     @Operation(summary = "Cuánto se reintegraría si se cancela hoy",

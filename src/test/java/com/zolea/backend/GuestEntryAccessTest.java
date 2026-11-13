@@ -48,7 +48,7 @@ class GuestEntryAccessTest extends IntegrationTest {
 
     private boolean entryValidated(Guest guest) {
         syncWithDatabase();
-        return guestRepository.findById(guest.getIdGuest()).orElseThrow().getIsEntryValidated();
+        return guestRepository.findById(guest.getIdGuest()).orElseThrow().enteredOn(today());
     }
 
     @Test
