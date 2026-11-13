@@ -3,7 +3,6 @@ package com.zolea.backend;
 import com.zolea.backend.dtos.guest.GuestValidationResponse;
 import com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException;
 import com.zolea.backend.exceptions.guest.BookingNotPaidException;
-import com.zolea.backend.exceptions.guest.GuestAlreadyEnteredException;
 import com.zolea.backend.exceptions.guest.GuestNotFoundException;
 import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.Client;
@@ -54,18 +53,18 @@ class GuestEntryTest extends IntegrationTest {
         GuestValidationResponse response = guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest));
 
         assertThat(response.fullName()).isEqualTo("Titular Vigente");
-        assertThat(guestRepository.findById(guest.getIdGuest()).orElseThrow().getIsEntryValidated())
-                .isTrue();
+        assertThat(guestRepository.findById(guest.getIdGuest()).orElseThrow().getLastEntryAt())
+                .isNotNull();
     }
 
     @Test
-    @DisplayName("el mismo QR no se puede usar dos veces")
-    void validateQr_twice_rejected() {
+    @DisplayName("el mismo QR sirve otra vez durante la estadía")
+    void validateQr_twice_allowsEntry() {
         Guest guest = huespedDeReservaVigente();
         guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest));
 
-        assertThatThrownBy(() -> guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest)))
-                .isInstanceOf(GuestAlreadyEnteredException.class);
+        assertThat(guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest)).fullName())
+                .isEqualTo("Titular Vigente");
     }
 
     @Test
@@ -124,18 +123,18 @@ class GuestEntryTest extends IntegrationTest {
         GuestValidationResponse response = guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest));
 
         assertThat(response.fullName()).isEqualTo("Titular Vigente");
-        assertThat(guestRepository.findById(guest.getIdGuest()).orElseThrow().getIsEntryValidated())
-                .isTrue();
+        assertThat(guestRepository.findById(guest.getIdGuest()).orElseThrow().getLastEntryAt())
+                .isNotNull();
     }
 
     @Test
-    @DisplayName("un DNI ya validado se rechaza")
-    void validateId_twice_rejected() {
+    @DisplayName("un DNI ya validado sirve otra vez durante la estadía")
+    void validateId_twice_allowsEntry() {
         Guest guest = huespedDeReservaVigente();
         guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest));
 
-        assertThatThrownBy(() -> guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest)))
-                .isInstanceOf(GuestAlreadyEnteredException.class);
+        assertThat(guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest)).fullName())
+                .isEqualTo("Titular Vigente");
     }
 
     @Test

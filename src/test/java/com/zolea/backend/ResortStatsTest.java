@@ -93,7 +93,7 @@ class ResortStatsTest extends IntegrationTest {
         Resort resort = aResort();
         Booking active = confirmed(aUnitIn(resort, 10_000.0), "2026-01-09", "2026-01-12");
         Guest inside = aGuest(active, "Titular", "40000001");
-        inside.setIsEntryValidated(true);
+        inside.setLastEntryAt(now());
         guestRepository.save(inside);
         aGuest(active, "Acompañante uno", "40000002");
         aGuest(active, "Acompañante dos", "40000003");

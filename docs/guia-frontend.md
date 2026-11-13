@@ -366,9 +366,31 @@ Sin token responde `401`; con una cuenta de cliente, o con el código de una res
 balneario, `403`. Por DNI busca solo entre las reservas de su balneario: un DNI que tiene reserva en
 otro responde `404`, igual que uno que no existe.
 
-El ingreso **se marca como usado**: el mismo código no sirve dos veces, y el segundo intento
-devuelve 400 con el motivo. Los mensajes de error están escritos para que el operador los lea tal
-cual («la reserva todavía no comenzó, el ingreso se habilita el 20/01/2026»).
+El código —y el DNI— sirven para entrar **todas las veces que haga falta mientras dura la
+estadía**: responde `200` cada vez que la reserva está confirmada y hoy (el día de Buenos Aires)
+está entre la fecha de inicio y la de fin, las dos incluidas. Volver a escanear el mismo QR, el
+mismo día o al siguiente, sale en verde.
+
+Responde `400` con el motivo cuando la reserva no está pagada, todavía no empezó o ya terminó; `404`
+si el código no existe. Los mensajes de error están escritos para que el operador los lea tal cual
+(«la reserva todavía no comenzó, el ingreso se habilita el 20/01/2026»).
+
+Cada ingreso guarda la fecha y la hora. En la reserva, cada persona de `guests` trae:
+
+```
+{
+  "idGuest": 12,
+  "fullName": "Lucía Gutiérrez",
+  "dni": "40123456",
+  "isEntryValidated": true,                  ← entró HOY
+  "lastEntryAt": "2026-01-10T10:00:00",      ← la última vez, en hora de Buenos Aires; null si nunca entró
+  "qrToken": "…"
+}
+```
+
+`isEntryValidated` quiere decir **«entró hoy»**: al día siguiente vuelve a `false` hasta que se
+valide de nuevo, y `lastEntryAt` sigue con el último ingreso. En el Panel, `today.checkedIn` cuenta a
+las personas que entraron hoy.
 
 ---
 

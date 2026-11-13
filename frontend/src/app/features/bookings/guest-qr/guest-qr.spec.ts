@@ -40,13 +40,13 @@ describe('GuestQr', () => {
     expect(fact('Unidad')).toBe('Sombrilla A-03');
     expect(fact('Días')).toBe('15 → 17 ene');
     expect(fact('Reserva')).toBe('#0047');
-    expect(fact('Ingreso')).toBe('Sin usar');
+    expect(fact('Ingreso')).toBe('Todavía no entró hoy');
   });
 
-  it('una entrada ya usada lo dice', async () => {
-    await render(aGuest({ isEntryValidated: true }));
+  it('si ya entró hoy lo dice', async () => {
+    await render(aGuest({ isEntryValidated: true, lastEntryAt: '2026-01-15T10:00:00' }));
 
-    expect(fact('Ingreso')).toBe('Ya entró');
+    expect(fact('Ingreso')).toBe('Entró hoy');
   });
 
   it('sin DNI no muestra la línea del DNI', async () => {

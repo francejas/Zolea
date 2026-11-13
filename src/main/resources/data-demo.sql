@@ -395,141 +395,142 @@ INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, 
 
 -- =============================================================================
 -- 7. HUÉSPEDES
---    Solo para reservas CONFIRMED. Pasadas: is_entry_validated=true.
---    Actuales/futuras: is_entry_validated=false.
+--    Solo para reservas CONFIRMED. last_entry_at (cuándo entró por última vez,
+--    en hora de Buenos Aires) arranca en NULL: se completa más abajo, cuando las
+--    fechas de las reservas ya quedaron corridas a hoy.
 --    Tokens: formato tok-{bookingId:05d}-{seq}-{chars}
 -- =============================================================================
-INSERT INTO guest (id_guest, full_name, qr_token, is_entry_validated, id_booking) VALUES
+INSERT INTO guest (id_guest, full_name, qr_token, last_entry_at, id_booking) VALUES
 
 -- Booking 1 (Santiago Rodríguez, A-01, dic 2025, pasada)
-(1,  'Santiago Rodríguez',   'tok-00001-A1-SAN9',  true,  1),
-(2,  'Clara Rodríguez',      'tok-00001-A2-CLA8',  true,  1),
+(1,  'Santiago Rodríguez',   'tok-00001-A1-SAN9',  NULL ,  1),
+(2,  'Clara Rodríguez',      'tok-00001-A2-CLA8',  NULL ,  1),
 
 -- Booking 2 (Valentina García, A-02, dic 2025, pasada)
-(3,  'Valentina García',     'tok-00002-A1-VAL7',  true,  2),
-(4,  'Tomás García',         'tok-00002-A2-TOM6',  true,  2),
-(5,  'Lucía García',         'tok-00002-A3-LUC5',  true,  2),
+(3,  'Valentina García',     'tok-00002-A1-VAL7',  NULL ,  2),
+(4,  'Tomás García',         'tok-00002-A2-TOM6',  NULL ,  2),
+(5,  'Lucía García',         'tok-00002-A3-LUC5',  NULL ,  2),
 
 -- Booking 3 (Matías Fernández, A-03, dic 2025 – ene 2026, pasada)
-(6,  'Matías Fernández',     'tok-00003-A1-MAT4',  true,  3),
-(7,  'Renata Fernández',     'tok-00003-A2-REN3',  true,  3),
+(6,  'Matías Fernández',     'tok-00003-A1-MAT4',  NULL ,  3),
+(7,  'Renata Fernández',     'tok-00003-A2-REN3',  NULL ,  3),
 
 -- Booking 4 (Camila Martínez, C-01, ene 2026, pasada)
-(8,  'Camila Martínez',      'tok-00004-A1-CAM2',  true,  4),
-(9,  'Julián Martínez',      'tok-00004-A2-JUL1',  true,  4),
-(10, 'Felipe Martínez',      'tok-00004-A3-FEL0',  true,  4),
+(8,  'Camila Martínez',      'tok-00004-A1-CAM2',  NULL ,  4),
+(9,  'Julián Martínez',      'tok-00004-A2-JUL1',  NULL ,  4),
+(10, 'Felipe Martínez',      'tok-00004-A3-FEL0',  NULL ,  4),
 
 -- Booking 5 (Luciano Torres, C-02, ene 2026, pasada)
-(11, 'Luciano Torres',       'tok-00005-A1-LUC9',  true,  5),
-(12, 'Maite Torres',         'tok-00005-A2-MAI8',  true,  5),
+(11, 'Luciano Torres',       'tok-00005-A1-LUC9',  NULL ,  5),
+(12, 'Maite Torres',         'tok-00005-A2-MAI8',  NULL ,  5),
 
 -- Booking 6 (Agustina López, A-01, ene 2026, pasada)
-(13, 'Agustina López',       'tok-00006-A1-AGU7',  true,  6),
-(14, 'Bruno López',          'tok-00006-A2-BRU6',  true,  6),
+(13, 'Agustina López',       'tok-00006-A1-AGU7',  NULL ,  6),
+(14, 'Bruno López',          'tok-00006-A2-BRU6',  NULL ,  6),
 
 -- Booking 7 (Ramiro Gómez, C-03, feb 2026, pasada)
-(15, 'Ramiro Gómez',         'tok-00007-A1-RAM5',  true,  7),
-(16, 'Paz Gómez',            'tok-00007-A2-PAZ4',  true,  7),
-(17, 'Marcos Gómez',         'tok-00007-A3-MAR3',  true,  7),
+(15, 'Ramiro Gómez',         'tok-00007-A1-RAM5',  NULL ,  7),
+(16, 'Paz Gómez',            'tok-00007-A2-PAZ4',  NULL ,  7),
+(17, 'Marcos Gómez',         'tok-00007-A3-MAR3',  NULL ,  7),
 
 -- Booking 9 (Micaela Flores, C-06, feb 2026, pasada)
-(18, 'Micaela Flores',       'tok-00009-A1-MIC2',  true,  9),
-(19, 'Ignacio Flores',       'tok-00009-A2-IGN1',  true,  9),
+(18, 'Micaela Flores',       'tok-00009-A1-MIC2',  NULL ,  9),
+(19, 'Ignacio Flores',       'tok-00009-A2-IGN1',  NULL ,  9),
 
 -- Booking 10 (Santiago Rodríguez, D-02, mar 2026, pasada)
-(20, 'Santiago Rodríguez',   'tok-00010-A1-SAN0',  true,  10),
-(21, 'Clara Rodríguez',      'tok-00010-A2-CLA9',  true,  10),
+(20, 'Santiago Rodríguez',   'tok-00010-A1-SAN0',  NULL ,  10),
+(21, 'Clara Rodríguez',      'tok-00010-A2-CLA9',  NULL ,  10),
 
 -- Booking 12 (Ezequiel Sánchez, B-01, ACTUAL 10-17 jun 2026)
-(22, 'Ezequiel Sánchez',     'tok-00012-A1-EZE8',  false, 12),
-(23, 'Daniela Sánchez',      'tok-00012-A2-DAN7',  false, 12),
+(22, 'Ezequiel Sánchez',     'tok-00012-A1-EZE8',  NULL , 12),
+(23, 'Daniela Sánchez',      'tok-00012-A2-DAN7',  NULL , 12),
 
 -- Booking 13 (Walk-in Santiago Mora, D-01, ACTUAL 14-16 jun)
-(24, 'Santiago Mora',        'tok-00013-A1-SAN6',  true,  13),
+(24, 'Santiago Mora',        'tok-00013-A1-SAN6',  NULL ,  13),
 
 -- Booking 17 (Facundo Ruiz, T-01 Pinamar, dic 2025, pasada)
-(25, 'Facundo Ruiz',         'tok-00017-A1-FAC5',  true,  17),
-(26, 'Sofía Ruiz',           'tok-00017-A2-SOF4',  true,  17),
-(27, 'Martín Ruiz',          'tok-00017-A3-MAR3',  true,  17),
+(25, 'Facundo Ruiz',         'tok-00017-A1-FAC5',  NULL ,  17),
+(26, 'Sofía Ruiz',           'tok-00017-A2-SOF4',  NULL ,  17),
+(27, 'Martín Ruiz',          'tok-00017-A3-MAR3',  NULL ,  17),
 
 -- Booking 18 (Milagros Jiménez, T-02 Pinamar, dic 2025 – ene 2026, pasada)
-(28, 'Milagros Jiménez',     'tok-00018-A1-MIL2',  true,  18),
-(29, 'Federico Jiménez',     'tok-00018-A2-FED1',  true,  18),
+(28, 'Milagros Jiménez',     'tok-00018-A1-MIL2',  NULL ,  18),
+(29, 'Federico Jiménez',     'tok-00018-A2-FED1',  NULL ,  18),
 
 -- Booking 19 (Santiago Rodríguez, U-01 Pinamar, ene 2026, pasada)
-(30, 'Santiago Rodríguez',   'tok-00019-A1-SAN0',  true,  19),
-(31, 'Clara Rodríguez',      'tok-00019-A2-CLA9',  true,  19),
+(30, 'Santiago Rodríguez',   'tok-00019-A1-SAN0',  NULL ,  19),
+(31, 'Clara Rodríguez',      'tok-00019-A2-CLA9',  NULL ,  19),
 
 -- Booking 20 (Valentina García, T-03 Pinamar, ene 2026, pasada)
-(32, 'Valentina García',     'tok-00020-A1-VAL8',  true,  20),
-(33, 'Tomás García',         'tok-00020-A2-TOM7',  true,  20),
-(34, 'Lucía García',         'tok-00020-A3-LUC6',  true,  20),
+(32, 'Valentina García',     'tok-00020-A1-VAL8',  NULL ,  20),
+(33, 'Tomás García',         'tok-00020-A2-TOM7',  NULL ,  20),
+(34, 'Lucía García',         'tok-00020-A3-LUC6',  NULL ,  20),
 
 -- Booking 22 (Rocío Villalba, T-07 Pinamar, feb 2026, pasada)
-(35, 'Rocío Villalba',       'tok-00022-A1-ROC5',  true,  22),
-(36, 'Diego Villalba',       'tok-00022-A2-DIE4',  true,  22),
+(35, 'Rocío Villalba',       'tok-00022-A1-ROC5',  NULL ,  22),
+(36, 'Diego Villalba',       'tok-00022-A2-DIE4',  NULL ,  22),
 
 -- Booking 23 (Sebastián Medina, U-05 Pinamar, mar 2026, pasada)
-(37, 'Sebastián Medina',     'tok-00023-A1-SEB3',  true,  23),
-(38, 'Laura Medina',         'tok-00023-A2-LAU2',  true,  23),
+(37, 'Sebastián Medina',     'tok-00023-A1-SEB3',  NULL ,  23),
+(38, 'Laura Medina',         'tok-00023-A2-LAU2',  NULL ,  23),
 
 -- Booking 24 (Camila Martínez, T-04 Pinamar, ACTUAL 13-18 jun)
-(39, 'Camila Martínez',      'tok-00024-A1-CAM1',  false, 24),
-(40, 'Julián Martínez',      'tok-00024-A2-JUL0',  false, 24),
+(39, 'Camila Martínez',      'tok-00024-A1-CAM1',  NULL , 24),
+(40, 'Julián Martínez',      'tok-00024-A2-JUL0',  NULL , 24),
 
 -- Booking 25 (Walk-in María González, U-04 Pinamar, ACTUAL 14-15 jun)
-(41, 'María González',       'tok-00025-A1-MAR9',  true,  25),
+(41, 'María González',       'tok-00025-A1-MAR9',  NULL ,  25),
 
 -- Booking 28 (Agustina López, GC-01 Gesell, dic 2025, pasada)
-(42, 'Agustina López',       'tok-00028-A1-AGU8',  true,  28),
-(43, 'Bruno López',          'tok-00028-A2-BRU7',  true,  28),
-(44, 'Valentina López',      'tok-00028-A3-VAL6',  true,  28),
+(42, 'Agustina López',       'tok-00028-A1-AGU8',  NULL ,  28),
+(43, 'Bruno López',          'tok-00028-A2-BRU7',  NULL ,  28),
+(44, 'Valentina López',      'tok-00028-A3-VAL6',  NULL ,  28),
 
 -- Booking 29 (Ramiro Gómez, GC-02 Gesell, ene 2026, pasada)
-(45, 'Ramiro Gómez',         'tok-00029-A1-RAM5',  true,  29),
-(46, 'Paz Gómez',            'tok-00029-A2-PAZ4',  true,  29),
+(45, 'Ramiro Gómez',         'tok-00029-A1-RAM5',  NULL ,  29),
+(46, 'Paz Gómez',            'tok-00029-A2-PAZ4',  NULL ,  29),
 
 -- Booking 31 (Ezequiel Sánchez, GC-03 Gesell, feb 2026, pasada)
-(47, 'Ezequiel Sánchez',     'tok-00031-A1-EZE3',  true,  31),
-(48, 'Daniela Sánchez',      'tok-00031-A2-DAN2',  true,  31),
+(47, 'Ezequiel Sánchez',     'tok-00031-A1-EZE3',  NULL ,  31),
+(48, 'Daniela Sánchez',      'tok-00031-A2-DAN2',  NULL ,  31),
 
 -- Booking 32 (Natalia Romero, AG-02 Gesell, ACTUAL 12-16 jun)
-(49, 'Natalia Romero',       'tok-00032-A1-NAT1',  false, 32),
-(50, 'Carlos Romero',        'tok-00032-A2-CAR0',  false, 32),
+(49, 'Natalia Romero',       'tok-00032-A1-NAT1',  NULL , 32),
+(50, 'Carlos Romero',        'tok-00032-A2-CAR0',  NULL , 32),
 
 -- Booking 35 (Tomás Gutiérrez, KA-01 Miramar, dic 2025, pasada)
-(51, 'Tomás Gutiérrez',      'tok-00035-A1-TOM9',  true,  35),
-(52, 'Florencia Gutiérrez',  'tok-00035-A2-FLO8',  true,  35),
+(51, 'Tomás Gutiérrez',      'tok-00035-A1-TOM9',  NULL ,  35),
+(52, 'Florencia Gutiérrez',  'tok-00035-A2-FLO8',  NULL ,  35),
 
 -- Booking 36 (Micaela Flores, KA-02 Miramar, ene 2026, pasada)
-(53, 'Micaela Flores',       'tok-00036-A1-MIC7',  true,  36),
-(54, 'Ignacio Flores',       'tok-00036-A2-IGN6',  true,  36),
+(53, 'Micaela Flores',       'tok-00036-A1-MIC7',  NULL ,  36),
+(54, 'Ignacio Flores',       'tok-00036-A2-IGN6',  NULL ,  36),
 
 -- Booking 37 (Facundo Ruiz, PM-01 Miramar, ene 2026, pasada)
-(55, 'Facundo Ruiz',         'tok-00037-A1-FAC5',  true,  37),
-(56, 'Sofía Ruiz',           'tok-00037-A2-SOF4',  true,  37),
-(57, 'Martín Ruiz',          'tok-00037-A3-MAR3',  true,  37),
+(55, 'Facundo Ruiz',         'tok-00037-A1-FAC5',  NULL ,  37),
+(56, 'Sofía Ruiz',           'tok-00037-A2-SOF4',  NULL ,  37),
+(57, 'Martín Ruiz',          'tok-00037-A3-MAR3',  NULL ,  37),
 
 -- Booking 39 (Nicolás Acosta, PM-02 Miramar, ACTUAL 14-19 jun)
-(58, 'Nicolás Acosta',       'tok-00039-A1-NIC2',  false, 39),
-(59, 'Camila Acosta',        'tok-00039-A2-CAA1',  false, 39),
+(58, 'Nicolás Acosta',       'tok-00039-A1-NIC2',  NULL , 39),
+(59, 'Camila Acosta',        'tok-00039-A2-CAA1',  NULL , 39),
 
 -- Booking 42 (Rocío Villalba, MS-01 Necochea, dic 2025, pasada)
-(60, 'Rocío Villalba',       'tok-00042-A1-ROC0',  true,  42),
-(61, 'Diego Villalba',       'tok-00042-A2-DIE9',  true,  42),
+(60, 'Rocío Villalba',       'tok-00042-A1-ROC0',  NULL ,  42),
+(61, 'Diego Villalba',       'tok-00042-A2-DIE9',  NULL ,  42),
 
 -- Booking 43 (Sebastián Medina, MS-02 Necochea, ene 2026, pasada)
-(62, 'Sebastián Medina',     'tok-00043-A1-SEB8',  true,  43),
-(63, 'Laura Medina',         'tok-00043-A2-LAU7',  true,  43),
+(62, 'Sebastián Medina',     'tok-00043-A1-SEB8',  NULL ,  43),
+(63, 'Laura Medina',         'tok-00043-A2-LAU7',  NULL ,  43),
 
 -- Booking 44 (Santiago Rodríguez, NC-01 Necochea, feb 2026, pasada)
-(64, 'Santiago Rodríguez',   'tok-00044-A1-SAN6',  true,  44),
-(65, 'Clara Rodríguez',      'tok-00044-A2-CLA5',  true,  44),
+(64, 'Santiago Rodríguez',   'tok-00044-A1-SAN6',  NULL ,  44),
+(65, 'Clara Rodríguez',      'tok-00044-A2-CLA5',  NULL ,  44),
 
 -- Booking 45 (Valentina García, MS-03 Necochea, ACTUAL empieza hoy)
-(66, 'Valentina García',     'tok-00045-A1-VAL4',  false, 45),
-(67, 'Tomás García',         'tok-00045-A2-TOM3',  false, 45),
-(68, 'Lucía García',         'tok-00045-A3-LUC2',  false, 45);
+(66, 'Valentina García',     'tok-00045-A1-VAL4',  NULL , 45),
+(67, 'Tomás García',         'tok-00045-A2-TOM3',  NULL , 45),
+(68, 'Lucía García',         'tok-00045-A3-LUC2',  NULL , 45);
 
 -- =============================================================================
 -- BACKFILL DNI — permite validar el ingreso por DNI (además del QR/token)
@@ -587,13 +588,12 @@ SET end_date   = @today + INTERVAL (30 + (id MOD 20)) DAY
     start_date = @today + INTERVAL (30 + (id MOD 20)) DAY
 WHERE status = 'PENDING';
 
--- Huéspedes de las reservas vigentes: el ingreso tiene que estar SIN validar
--- para poder demostrar el camino feliz del escáner. Las dos walk-in (13 y 25)
--- venían con is_entry_validated = true, así que escanear su QR o su DNI siempre
--- respondía "ALERTA: ya registró su ingreso" y el validador no se podía mostrar
--- funcionando.
-UPDATE guest SET is_entry_validated = false
-WHERE id_booking IN (12, 13, 24, 25, 32, 39, 45);
+-- Las personas de las reservas confirmadas que ya terminaron entraron por última
+-- vez el último día, a las 11. Las de las vigentes y las que vienen, todavía no:
+-- desde la 15.6 el QR sirve toda la estadía, así que escanearlas pasa en verde.
+UPDATE guest g JOIN booking b ON b.id = g.id_booking
+SET g.last_entry_at = TIMESTAMP(b.end_date) + INTERVAL 11 HOUR
+WHERE b.status = 'CONFIRMED' AND b.end_date < @today;
 
 -- Recalcular total_price de TODAS las reservas contra el precio de su unidad.
 -- Los UPDATE de fechas de arriba cambian la duración pero no tocaban el importe,
@@ -737,22 +737,27 @@ JOIN rental_unit u ON u.id_rental_unit = d.unidad;
 
 -- El titular de cada una, con su DNI. Las que ya terminaron entraron; las que
 -- vienen, todavía no.
-INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
+INSERT INTO guest (full_name, dni, qr_token, last_entry_at, id_booking)
 SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
-       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-PNL'), b.end_date < @today, b.id
+       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-PNL'),
+       IF(b.end_date < @today, TIMESTAMP(b.end_date) + INTERVAL 11 HOUR, NULL), b.id
 FROM booking b JOIN client c ON c.id_client = b.id_client
 WHERE b.id BETWEEN 51 AND 70;
 
--- Las que incluyen hoy: en la 62, la 63 y la 65 el titular ya entró; en la 64,
--- que empieza hoy, todavía no. Con los acompañantes, hoy hay gente adentro y
--- gente por llegar.
-UPDATE guest SET is_entry_validated = true WHERE id_booking IN (62, 63, 65);
+-- Las que incluyen hoy: en la 62, la 63 y la 65 el titular ya entró hoy, hace
+-- una hora (o a la medianoche, si la demostración arranca antes de la una); en
+-- la 64, que empieza hoy, todavía no. Con los acompañantes, hoy hay gente
+-- adentro y gente por llegar. La hora es la de Buenos Aires, como @today.
+SET @entered_today = GREATEST(TIMESTAMP(@today), UTC_TIMESTAMP() - INTERVAL 4 HOUR);
+UPDATE guest SET last_entry_at = @entered_today WHERE id_booking IN (62, 63, 65);
 
-INSERT INTO guest (full_name, qr_token, is_entry_validated, id_booking) VALUES
-('Lucía Gutiérrez', 'tok-00062-A2-PNL', true,  62),
-('Joaquín Flores',  'tok-00063-A2-PNL', false, 63),
-('Ana Flores',      'tok-00063-A3-PNL', false, 63),
-('Paula Ruiz',      'tok-00064-A2-PNL', false, 64);
+-- Del titular de la 63 (que empezó antes de hoy) también se ve que ya había
+-- entrado ayer: el QR sirve toda la estadía.
+INSERT INTO guest (full_name, qr_token, last_entry_at, id_booking) VALUES
+('Lucía Gutiérrez', 'tok-00062-A2-PNL', @entered_today,                   62),
+('Joaquín Flores',  'tok-00063-A2-PNL', @entered_today - INTERVAL 1 DAY,  63),
+('Ana Flores',      'tok-00063-A3-PNL', NULL,                             63),
+('Paula Ruiz',      'tok-00064-A2-PNL', NULL,                             64);
 
 -- =============================================================================
 -- 12. UNIDAD DADA DE BAJA Y PAGOS REGISTRADOS (TFI, 15.4)
@@ -767,8 +772,9 @@ SELECT 71, @today - INTERVAL 20 DAY, @today - INTERVAL 18 DAY, 3 * u.daily_price
        UTC_TIMESTAMP() - INTERVAL 30 DAY, 11, u.id_rental_unit
 FROM rental_unit u WHERE u.id_rental_unit = 23;
 
-INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
-SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni, 'tok-00071-A1-BAJ', true, 71
+INSERT INTO guest (full_name, dni, qr_token, last_entry_at, id_booking)
+SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni, 'tok-00071-A1-BAJ',
+       TIMESTAMP(@today - INTERVAL 18 DAY) + INTERVAL 11 HOUR, 71
 FROM client c WHERE c.id_client = 11;
 
 UPDATE rental_unit SET retired = true WHERE id_rental_unit = 23;

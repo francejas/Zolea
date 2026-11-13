@@ -390,7 +390,7 @@ public class ResortService {
                 .flatMap(b -> b.getGuests().stream())
                 .toList();
         long checkedIn = guests.stream()
-                .filter(g -> Boolean.TRUE.equals(g.getIsEntryValidated()))
+                .filter(g -> g.enteredOn(today))
                 .count();
         long occupiedUsable = active.stream()
                 .map(Booking::getRentalUnit)

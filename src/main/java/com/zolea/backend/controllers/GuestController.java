@@ -31,10 +31,10 @@ public class GuestController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/validate/{token}")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Validar ingreso por token QR (Admin)", description = "Marca el ingreso del huésped y devuelve sus datos. Solo para reservas del balneario del administrador.")
+    @Operation(summary = "Validar ingreso por token QR (Admin)", description = "Registra el ingreso del huésped (fecha y hora) y devuelve sus datos. El código sirve todas las veces que haga falta mientras dura la estadía. Solo para reservas del balneario del administrador.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ingreso registrado. El código queda usado y no sirve una segunda vez"),
-            @ApiResponse(responseCode = "400", description = "La reserva no está paga, no empezó todavía, ya venció, o el código ya se usó", content = @Content),
+            @ApiResponse(responseCode = "200", description = "Ingreso registrado. El mismo código vuelve a servir durante toda la estadía"),
+            @ApiResponse(responseCode = "400", description = "La reserva no está paga, no empezó todavía o ya venció", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el código es de una reserva de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "El código no existe", content = @Content)
@@ -48,10 +48,10 @@ public class GuestController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/validate/dni/{dni}")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Validar ingreso por DNI (Admin)", description = "Alternativa al QR para validar ingreso. Busca solo entre las reservas del balneario del administrador.")
+    @Operation(summary = "Validar ingreso por DNI (Admin)", description = "Alternativa al QR para validar ingreso. Sirve todas las veces que haga falta mientras dura la estadía. Busca solo entre las reservas del balneario del administrador.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Ingreso registrado"),
-            @ApiResponse(responseCode = "400", description = "Hay una reserva con ese DNI, pero no está vigente hoy o ya registró su ingreso", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Hay una reserva con ese DNI, pero no está vigente hoy", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "No hay ninguna reserva confirmada con ese DNI en el balneario", content = @Content)
