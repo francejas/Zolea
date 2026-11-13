@@ -131,6 +131,16 @@ class PredictableErrorsTest extends IntegrationTest {
     }
 
     @Test
+    @DisplayName("una dirección de la API que no existe: 404, no 500")
+    void direccionQueNoExiste() throws Exception {
+        Client cliente = aClient();
+
+        mockMvc.perform(get("/api/bookings/1/no/existe").header("Authorization", bearer(cliente)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("No existe la dirección pedida."));
+    }
+
+    @Test
     @DisplayName("un cuerpo que no es JSON: 415, no 500")
     void tipoDeContenidoNoAdmitido() throws Exception {
         mockMvc.perform(post("/api/auth/login")
