@@ -74,7 +74,7 @@ classDiagram
         +String fullName
         +String dni
         +String qrToken
-        +Boolean isEntryValidated
+        +LocalDateTime lastEntryAt
     }
 
     class Payment {
@@ -193,7 +193,7 @@ erDiagram
         varchar full_name
         varchar dni
         varchar qr_token UK
-        bit is_entry_validated
+        datetime last_entry_at
         bigint id_booking FK
     }
 
