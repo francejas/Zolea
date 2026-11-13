@@ -29,6 +29,95 @@
         (input)="onSearch($event)"
       />
     </div>
+
+    <div class="filters" [class.filters--open]="filtersOpen()">
+      <!-- Solo en el celular: en la computadora los filtros se ven siempre. -->
+      <button
+        class="z-btn z-btn--secondary z-btn--compact filters__toggle"
+        type="button"
+        aria-controls="filters-panel"
+        [attr.aria-expanded]="filtersOpen()"
+        (click)="filtersOpen.set(!filtersOpen())"
+      >
+        <svg lucideSlidersHorizontal class="z-icon z-icon--s" aria-hidden="true"></svg>
+        Filtros
+        @if (activeFilters() > 0) {
+          <span class="filters__count"
+            >{{ activeFilters() }}<span class="z-visually-hidden"> puestos</span></span
+          >
+        }
+      </button>
+
+      <form
+        id="filters-panel"
+        class="filters__panel"
+        aria-label="Filtros de búsqueda"
+        novalidate
+        (submit)="onSubmit($event)"
+      >
+        <fieldset class="filters__group filters__dates">
+          <legend class="z-field__label">Fechas</legend>
+          <z-date-range [(from)]="draftFrom" [(to)]="draftTo" [summary]="false" />
+          @if (datesError(); as message) {
+            <p class="filters__error" aria-live="polite">{{ message }}</p>
+          }
+        </fieldset>
+
+        <z-field [field]="filterForm.type" inputId="f-type" label="Tipo">
+          <select id="f-type" class="z-input" [formField]="filterForm.type">
+            <option value="">Carpa o sombrilla</option>
+            <option value="TENT">Carpa</option>
+            <option value="UMBRELLA">Sombrilla</option>
+          </select>
+        </z-field>
+
+        <z-field [field]="filterForm.maxPrice" inputId="f-max-price" label="Precio máximo por día">
+          <input
+            id="f-max-price"
+            class="z-input"
+            type="number"
+            inputmode="numeric"
+            step="500"
+            autocomplete="off"
+            placeholder="Sin tope"
+            [formField]="filterForm.maxPrice"
+          />
+        </z-field>
+
+        @if (amenities().length > 0) {
+          <fieldset class="filters__group filters__amenities">
+            <legend class="z-field__label">Servicios</legend>
+            <div class="filters__choices">
+              @for (amenity of amenities(); track amenity.idAmenity) {
+                <label class="z-choice">
+                  <input
+                    type="checkbox"
+                    [checked]="isAmenityChecked(amenity.idAmenity)"
+                    (change)="toggleAmenity(amenity.idAmenity)"
+                  />
+                  <svg
+                    [lucideIcon]="amenityIcon(amenity.name)"
+                    class="z-icon z-icon--s z-choice__icon"
+                    aria-hidden="true"
+                  ></svg>
+                  <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg
+                  >{{ amenity.name }}
+                </label>
+              }
+            </div>
+          </fieldset>
+        }
+
+        <div class="filters__actions">
+          <button class="z-btn z-btn--primary" type="submit">Buscar</button>
+          @if (activeFilters() > 0) {
+            <button class="z-btn z-btn--ghost" type="button" (click)="clearFilters()">
+              Limpiar filtros
+            </button>
+          }
+        </div>
+      </form>
+    </div>
   </section>
 
   <section class="resorts-section" aria-labelledby="resorts-title">
@@ -65,6 +154,13 @@
         text="Revisá tu conexión y probá de nuevo."
         (retry)="loadResorts()"
       />
+    } @else if (resorts().length === 0 && activeFilters() > 0) {
+      <z-empty
+        title="No hay lugares libres con esos filtros"
+        text="Probá con otras fechas o sacá algún filtro."
+        actionLabel="Limpiar filtros"
+        (action)="clearFilters()"
+      />
     } @else if (resorts().length === 0) {
       <z-empty
         title="Todavía no hay balnearios"
@@ -88,11 +184,17 @@
 
             <div class="z-resort-card__body">
               <h3 class="z-resort-card__name">
-                <a [routerLink]="['/resorts', resort.idResort]">{{ resort.name }}</a>
+                <a [routerLink]="['/resorts', resort.idResort]" [queryParams]="cardParams()">{{
+                  resort.name
+                }}</a>
               </h3>
               <p class="z-place">
                 <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
               </p>
+
+              @if (freeUnitsLabel(resort); as free) {
+                <p class="z-resort-card__free">{{ free }}</p>
+              }
 
               <div class="z-amenities">
                 @for (amenity of getTopAmenities(resort); track amenity.idAmenity) {

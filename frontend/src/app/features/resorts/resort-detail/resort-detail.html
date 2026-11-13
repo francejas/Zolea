@@ -90,9 +90,25 @@
           <section class="detail__section">
             <h2>Elegí tu lugar</h2>
             <p class="detail__hint">
-              Tocá una sombrilla o una carpa libre. Las de adelante están más cerca del mar.
+              Tocá una sombrilla o una carpa libre{{ days() > 0 ? ' en tus fechas' : '' }}. Las de
+              adelante están más cerca del mar.
             </p>
-            <z-resort-plan [units]="resort.rentalUnits" [(selectedId)]="selectedId" />
+            @if (notice(); as message) {
+              <z-alert class="detail__notice" variant="warning" [text]="message" />
+            }
+            @if (occupiedError()) {
+              <z-alert
+                class="detail__notice"
+                variant="warning"
+                text="No pudimos ver qué lugares están ocupados en esas fechas. Si elegís uno tomado, te avisamos al reservar."
+              />
+            }
+            <z-resort-plan
+              [units]="resort.rentalUnits"
+              [occupiedIds]="occupiedIds()"
+              [(selectedId)]="selectedId"
+              (unitSelected)="onUnitSelected()"
+            />
           </section>
         }
       </div>

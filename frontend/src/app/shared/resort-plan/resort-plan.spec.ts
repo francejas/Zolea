@@ -213,6 +213,52 @@ describe('ResortPlan', () => {
     });
   });
 
+  describe('las ocupadas en las fechas', () => {
+    // A-03 es la unidad 3 del Zolea Club de Playa.
+    it('una ocupada se marca aria-disabled, lo dice en la etiqueta y no se puede elegir', async () => {
+      await render(zoleaClub(), { occupiedIds: [3] });
+      const selected = vi.fn();
+      fixture.componentInstance.unitSelected.subscribe(selected);
+
+      const occupied = unitButton('A-03');
+      expect(occupied.getAttribute('aria-disabled')).toBe('true');
+      expect(occupied.hasAttribute('aria-pressed')).toBe(false);
+      expect(label(occupied)).toBe('Sombrilla A-03, ocupada en tus fechas, $ 8.500 por día');
+
+      occupied.click();
+      await fixture.whenStable();
+
+      expect(selected).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.selectedId()).toBeNull();
+    });
+
+    it('la leyenda suma «Ocupada en tus fechas» solo si hay alguna', async () => {
+      await render(zoleaClub(), { occupiedIds: [3] });
+
+      const items = Array.from(page.querySelectorAll('.z-plan-legend li')).map((li) => text(li));
+      expect(items).toEqual(['Libre', 'Elegida', 'No disponible', 'Ocupada en tus fechas']);
+    });
+
+    it('una bloqueada que además está ocupada sigue diciendo «no disponible»', async () => {
+      await render(zoleaClub(), { occupiedIds: [8] });
+
+      expect(label(unitButton('A-08'))).toBe('Sombrilla A-08, no disponible, $ 8.500 por día');
+      expect(page.querySelectorAll('.z-plan-legend li').length).toBe(3);
+    });
+
+    it('en la lista, la ocupada está deshabilitada y dice «Ocupada en tus fechas»', async () => {
+      await render(zoleaClub(), { occupiedIds: [3] });
+      page.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      await fixture.whenStable();
+
+      const option = Array.from(page.querySelectorAll('.z-unit-option')).find((o) =>
+        text(o).includes('A-03'),
+      )!;
+      expect(option.querySelector<HTMLInputElement>('input')!.disabled).toBe(true);
+      expect(text(option.querySelector('.z-unit-option__state'))).toBe('Ocupada en tus fechas');
+    });
+  });
+
   describe('la lista', () => {
     async function openList() {
       await render(zoleaClub());

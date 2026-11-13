@@ -58,8 +58,84 @@
 }
 
 .search-section {
-  max-width: 520px;
+  display: grid;
+  gap: var(--space-3);
   margin-bottom: var(--space-6);
+
+  .z-search {
+    max-width: 520px;
+  }
+}
+
+/* --- Filtros ---
+   En el celular, un panel que se abre con «Filtros»; en la computadora, siempre a la vista. */
+.filters__toggle {
+  justify-self: start;
+}
+
+.filters__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-cream);
+  font: 500 var(--text-caption) / 1 var(--font-mono);
+}
+
+.filters__panel {
+  display: none;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+}
+
+.filters--open .filters__panel {
+  display: grid;
+}
+
+.filters__group {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: var(--space-2);
+    padding: 0;
+  }
+}
+
+.filters__error {
+  margin: 0;
+  font: 500 var(--text-small) / 1.4 var(--font-body);
+  color: var(--color-danger-text);
+}
+
+.filters__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.z-resort-card__free {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--text-small);
+  color: var(--color-ink);
 }
 
 .resorts-grid {
@@ -158,6 +234,22 @@
 
 /* --- Computadora --- */
 @media (min-width: 768px) {
+  .filters__toggle {
+    display: none;
+  }
+
+  .filters__panel {
+    display: grid;
+    grid-template-columns: minmax(280px, 2fr) minmax(160px, 1fr) minmax(160px, 1fr);
+    align-items: start;
+    margin-top: 0;
+  }
+
+  .filters__amenities,
+  .filters__actions {
+    grid-column: 1 / -1;
+  }
+
   .page-container {
     padding-top: var(--space-5);
   }
