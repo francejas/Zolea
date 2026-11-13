@@ -184,6 +184,10 @@ Los rechazos responden `400` con el motivo en `error`: una sola de las dos fecha
 `occupied-units` van siempre las dos), `from` después de `to`, `from` antes de hoy, un `type` que
 no existe o una fecha que no viene como `AAAA-MM-DD`. Un balneario que no existe, `404`.
 
+Un balneario **desactivado** no aparece en la portada y su ficha, `GET /api/resorts/{id}`, responde
+`404` como si no existiera; su administrador lo sigue viendo con `GET /api/resorts/my`. Las unidades
+**dadas de baja** no vienen en la ficha ni cuentan en `availableUnits`.
+
 ### Reservar
 
 ```
@@ -212,6 +216,18 @@ demorado.
 Si el pago falla, el cliente vuelve por `/failure`; para reintentar hay
 `POST /api/bookings/{id}/pay`, que genera una dirección de pago nueva para la misma reserva.
 
+Además de los datos inválidos y de la unidad bloqueada u ocupada, reservar —por la web o por
+mostrador— responde `400` con el motivo en `error` cuando:
+
+| Caso | Mensaje |
+|---|---|
+| El inicio es anterior a hoy (el día de Buenos Aires). Hoy todavía se puede | «No se puede reservar para una fecha que ya pasó.» |
+| El balneario está desactivado | «Este balneario no está tomando reservas.» |
+| La unidad está dada de baja | «La unidad D-01 fue dada de baja.» |
+
+Las reservas que un balneario ya tenía antes de desactivarse siguen como siempre: se pagan, se
+cancelan y se validan en la entrada.
+
 ### Cancelar con reintegro
 
 El reintegro es **simulado**: no se toca MercadoPago. La política se cuenta por días:
@@ -237,6 +253,21 @@ Si no se puede, `canCancel` es `false` y `reason` dice por qué. Después,
 `canceledAt`, `canceledBy` (`CLIENT`, `ADMIN` o `SYSTEM`, cuando una pendiente vence sola) y
 `refundAmount` (`null` si no estaba pagada). El administrador solo cancela reservas de su
 balneario: las de otro responden `403`.
+
+### El pago en el detalle
+
+`GET /api/bookings/{id}` trae `payments`: cada cobro registrado, el más nuevo primero, y la lista
+vacía si no hubo ninguno (una pendiente, una de mostrador).
+
+```
+"payments": [
+  { "gatewayPaymentId": "1234567890", "amount": 25500.00, "status": "approved", "paidAt": "2026-01-10T10:15:00" }
+]
+```
+
+`status` es el de MercadoPago, sin traducir, y `paidAt` puede venir en `null` si la pasarela no lo
+informó. Si una reserva está **cancelada y tiene un pago aprobado** —el pago que llegó después de
+que venciera—, el administrador tiene que reintegrarlo a mano: conviene marcarlo en el detalle.
 
 ### Calificar la estadía
 
@@ -270,6 +301,28 @@ Del autor sale solo el nombre y la inicial del apellido, y `comment` es `null` s
 comentario. Cada balneario (`GET /api/resorts` y `GET /api/resorts/{id}`) trae además
 `averageRating`, el promedio con un decimal (`null` si todavía no tiene reseñas), y
 `reviewCount`.
+
+### Unidades: bloquear y dar de baja (administrador)
+
+El **bloqueo** es temporal (`PATCH /api/rental-units/{id}/block?isBlocked=true`) y la **baja** es
+definitiva:
+
+```
+PATCH /api/rental-units/{id}/retire
+→ 200 { "idRentalUnit": 23, "identifier": "D-01", ..., "isBlocked": false, "retired": true }
+```
+
+Una unidad dada de baja:
+
+- no aparece en la ficha pública ni en el plano, y no se puede reservar;
+- no se puede bloquear, desbloquear ni cambiarle el precio: `400`;
+- sigue en `GET /api/rental-units` del administrador con `retired: true` (conviene mostrarla aparte
+  o atenuada, sin los botones de bloquear y de precio), y sus reservas pasadas quedan como estaban;
+- su identificador sigue ocupado: crear otra con el mismo responde `400`.
+
+No se puede dar de baja mientras tenga reservas pendientes o confirmadas que terminan hoy o después:
+`400` «Tiene reservas por delante: cancelalas o esperá a que terminen.». Solo la da de baja el
+administrador de su balneario; el de otro recibe `403`. Darla de baja otra vez no hace nada.
 
 ### Detalles que ahorran errores
 

@@ -54,7 +54,7 @@ tiene despliegue propio.
 ### Para administradores
 - **Dashboard** con métricas en tiempo real: reservas del día, unidades libres, ingresos del mes
 - **Widget de clima** en tiempo real (Open-Meteo + Nominatim, sin API key)
-- Gestión de unidades: crear, bloquear, actualizar precios individualmente
+- Gestión de unidades: crear, bloquear, dar de baja, actualizar precios individualmente
 - **Reservas presenciales (walk-in)** con confirmación y QR instantáneo
 - Validación de ingreso por **código QR** o **DNI**
 - Historial completo de todas las reservas del balneario
@@ -220,6 +220,7 @@ http://localhost:8080/swagger-ui/index.html
 | `POST` | `/api/rental-units` | ADMIN | Crear unidad |
 | `PATCH` | `/api/rental-units/{id}/price` | ADMIN | Actualizar precio |
 | `PATCH` | `/api/rental-units/{id}/block` | ADMIN | Bloquear / desbloquear |
+| `PATCH` | `/api/rental-units/{id}/retire` | ADMIN | Dar de baja (definitiva; sin reservas por delante) |
 | `POST` | `/api/guests/validate/{token}` | — | Validar QR |
 | `POST` | `/api/guests/validate/dni/{dni}` | — | Validar por DNI |
 | `GET` | `/api/amenities`, `/api/amenities/{id}` | — | Servicios del balneario |
