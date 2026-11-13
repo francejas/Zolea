@@ -37,6 +37,11 @@ export interface Booking {
   resortName: string;
   resortLocation: string;
   resortCoverPhotoUrl: string | null;
+  canceledAt: string | null;
+  canceledBy: 'CLIENT' | 'ADMIN' | 'SYSTEM' | null;
+  refundAmount: number | null;
+  reviewed: boolean;
+  payments: PaymentSummary[];
 }
 
 /** La dirección de MercadoPago para pagar una reserva pendiente. */
@@ -72,4 +77,13 @@ export interface CancellationResponse {
   refundAmount: number | null;
   refundPercent: number | null;
   reason: string | null;
+}
+
+/** Un cobro registrado de la reserva. */
+export interface PaymentSummary {
+  gatewayPaymentId: string;
+  amount: number;
+  status: string;
+  /** Hora de Buenos Aires informada por el servidor. */
+  paidAt: string | null;
 }

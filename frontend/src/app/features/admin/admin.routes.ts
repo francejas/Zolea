@@ -14,7 +14,11 @@ export const adminRoutes: Routes = [
     path: 'bookings',
     loadComponent: () => import('./bookings/bookings/bookings').then((m) => m.Bookings),
   },
-  { path: 'bookings/:id', component: PlaceholderPage, data: { title: 'Detalle de reserva' } },
+  {
+    path: 'bookings/:id',
+    loadComponent: () =>
+      import('./bookings/booking-detail/booking-detail').then((m) => m.AdminBookingDetail),
+  },
   { path: 'clients', component: PlaceholderPage, data: { title: 'Mis clientes' } },
   { path: 'walkin', component: PlaceholderPage, data: { title: 'Reserva en mostrador' } },
 ];
