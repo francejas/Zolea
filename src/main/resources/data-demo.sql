@@ -38,6 +38,7 @@ SET @today = DATE(UTC_TIMESTAMP() - INTERVAL 3 HOUR);
 SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM review;
+DELETE FROM payment;
 DELETE FROM guest;
 DELETE FROM booking;
 DELETE FROM resort_amenities;
@@ -47,6 +48,7 @@ DELETE FROM resort;
 DELETE FROM client;
 
 ALTER TABLE review      AUTO_INCREMENT = 1;
+ALTER TABLE payment     AUTO_INCREMENT = 1;
 ALTER TABLE guest       AUTO_INCREMENT = 1;
 ALTER TABLE booking     AUTO_INCREMENT = 1;
 ALTER TABLE rental_unit AUTO_INCREMENT = 1;
@@ -753,7 +755,36 @@ INSERT INTO guest (full_name, qr_token, is_entry_validated, id_booking) VALUES
 ('Paula Ruiz',      'tok-00064-A2-PNL', false, 64);
 
 -- =============================================================================
--- 12. MIS RESERVAS DE SANTI (11.4)
+-- 12. UNIDAD DADA DE BAJA Y PAGOS REGISTRADOS (TFI, 15.4)
+--
+-- En Zolea Club de Playa (balneario 1), la D-01 (unidad 23) está dada de baja:
+-- tiene dos reservas pasadas —la 13, de mostrador, y la 71— y ninguna por
+-- delante, que es lo único que permite la baja. No aparece en la ficha ni en el
+-- plano, y admin.mdp@zolea.com la sigue viendo en Unidades, con retired en true.
+-- =============================================================================
+INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, id_client, id_rental_unit)
+SELECT 71, @today - INTERVAL 20 DAY, @today - INTERVAL 18 DAY, 3 * u.daily_price, 'CONFIRMED',
+       UTC_TIMESTAMP() - INTERVAL 30 DAY, 11, u.id_rental_unit
+FROM rental_unit u WHERE u.id_rental_unit = 23;
+
+INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
+SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni, 'tok-00071-A1-BAJ', true, 71
+FROM client c WHERE c.id_client = 11;
+
+UPDATE rental_unit SET retired = true WHERE id_rental_unit = 23;
+
+-- Pagos aprobados de algunas reservas confirmadas del balneario 1, así el
+-- detalle de la reserva los muestra: las cuatro que incluyen hoy (62 a 65), dos
+-- de las que vienen (66 y 67) y la 71. Cada uno por el total de su reserva, diez
+-- minutos después de crearla. Las horas van en UTC, como created_at.
+INSERT INTO payment (gateway_payment_id, status, amount, paid_at, recorded_at, id_booking)
+SELECT CONCAT('demo-mp-', LPAD(b.id, 5, '0')), 'approved', b.total_price,
+       b.created_at + INTERVAL 10 MINUTE, b.created_at + INTERVAL 11 MINUTE, b.id
+FROM booking b
+WHERE b.id IN (62, 63, 64, 65, 66, 67, 71);
+
+-- =============================================================================
+-- 13. MIS RESERVAS DE SANTI (11.4)
 --
 -- santi.rodriguez@gmail.com (cliente 7) tenía solo reservas pasadas y una
 -- cancelada, así que la pestaña de próximas de Mis reservas salía vacía. Se le
@@ -766,10 +797,10 @@ INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, 
 SELECT d.id, @today + INTERVAL d.desde DAY, @today + INTERVAL (d.desde + d.dias - 1) DAY,
        d.dias * u.daily_price, d.estado, d.creada, 7, u.id_rental_unit
 FROM (
-              SELECT 71 AS id, 30 AS unidad, -1 AS desde, 4 AS dias, 'CONFIRMED' AS estado,
+              SELECT 72 AS id, 30 AS unidad, -1 AS desde, 4 AS dias, 'CONFIRMED' AS estado,
                      @today - INTERVAL 15 DAY + INTERVAL 14 HOUR AS creada
-    UNION ALL SELECT 72, 48, 20, 4, 'CONFIRMED', @today - INTERVAL 3 DAY + INTERVAL 22 HOUR
-    UNION ALL SELECT 73, 88, 40, 2, 'PENDING',   UTC_TIMESTAMP() - INTERVAL 10 MINUTE
+    UNION ALL SELECT 73, 48, 20, 4, 'CONFIRMED', @today - INTERVAL 3 DAY + INTERVAL 22 HOUR
+    UNION ALL SELECT 74, 88, 40, 2, 'PENDING',   UTC_TIMESTAMP() - INTERVAL 10 MINUTE
 ) d
 JOIN rental_unit u ON u.id_rental_unit = d.unidad;
 
@@ -778,4 +809,4 @@ INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
 SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
        CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-SAN'), false, b.id
 FROM booking b JOIN client c ON c.id_client = b.id_client
-WHERE b.id BETWEEN 71 AND 73;
+WHERE b.id BETWEEN 72 AND 74;

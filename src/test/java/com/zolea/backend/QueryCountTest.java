@@ -33,8 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * mejora por supuesta. Los límites salen de una medición, no de un número redondo elegido a gusto:
  *
  * <ul>
- *   <li>10 reservas: <b>33</b> consultas antes, <b>4 o menos</b> ahora. Eran 3; la cuarta llegó con
- *       las reseñas (14.1) y averigua cuáles ya se calificaron, una sola vez para todo el listado.
+ *   <li>10 reservas: <b>33</b> consultas antes, <b>5 o menos</b> ahora. Eran 3; la cuarta llegó con
+ *       las reseñas (14.1) y averigua cuáles ya se calificaron, y la quinta con los pagos (15.4) y
+ *       trae los cobros registrados; cada una, una sola vez para todo el listado.
  *   <li>5 balnearios con 2 unidades cada uno: <b>11</b> consultas antes, <b>4 o menos</b> ahora.
  * </ul>
  *
@@ -83,7 +84,7 @@ class QueryCountTest extends IntegrationTest {
         long consultas = stats.getPrepareStatementCount();
         assertThat(consultas)
                 .withFailMessage("el listado disparó %d consultas para %d reservas", consultas, HOW_MANY)
-                .isLessThanOrEqualTo(4);
+                .isLessThanOrEqualTo(5);
     }
 
     @Test

@@ -174,6 +174,19 @@ public class Booking {
     }
 
     /**
+     * Lo mismo que {@link #validateDateRange()}, y además que no empiece en un día que ya pasó
+     * (RF13). Hoy todavía se puede: es el día de quien llega a la playa sin reserva.
+     *
+     * @param today hoy, con el reloj de la aplicación: el día de Buenos Aires, no el de la máquina.
+     */
+    public void validateDateRange(LocalDate today) {
+        validateDateRange();
+        if (startDate.isBefore(today)) {
+            throw new InvalidBookingRangeException("No se puede reservar para una fecha que ya pasó.");
+        }
+    }
+
+    /**
      * Confirma el pago de la reserva.
      *
      * <p>Es <b>idempotente</b>: confirmar una reserva ya confirmada no hace nada y no falla. Tiene

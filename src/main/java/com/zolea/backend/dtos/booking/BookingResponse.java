@@ -36,6 +36,8 @@ public record BookingResponse(
         CanceledBy canceledBy,
         BigDecimal refundAmount,
         // Si el cliente ya la calificó: Mis reservas muestra «Calificar» solo si no.
-        boolean reviewed
+        boolean reviewed,
+        // Los cobros registrados, el más nuevo primero; la lista vacía si no hubo ninguno (RF40).
+        List<PaymentSummaryResponse> payments
 ) {
 }
