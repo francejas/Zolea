@@ -30,15 +30,13 @@
 
 h1 {
   margin: 0;
-  font: 400 var(--text-display-m) / var(--leading-title)
-    var(--font-display);
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
   overflow-wrap: anywhere;
 }
 
 h2 {
   margin: 0;
-  font: 400 var(--text-display-s) / var(--leading-title)
-    var(--font-display);
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
 }
 
 p {
@@ -86,8 +84,7 @@ p {
 }
 
 .detail__count {
-  font: 400 var(--text-display-m) / var(--leading-title)
-    var(--font-display);
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
 }
 
 .detail__photo {
