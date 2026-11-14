@@ -19,6 +19,9 @@ export const adminRoutes: Routes = [
     loadComponent: () =>
       import('./bookings/booking-detail/booking-detail').then((m) => m.AdminBookingDetail),
   },
-  { path: 'clients', component: PlaceholderPage, data: { title: 'Mis clientes' } },
+  {
+    path: 'clients',
+    loadComponent: () => import('./clients/clients/clients').then((m) => m.Clients),
+  },
   { path: 'walkin', loadComponent: () => import('./walkin/walkin').then((m) => m.WalkIn) },
 ];
