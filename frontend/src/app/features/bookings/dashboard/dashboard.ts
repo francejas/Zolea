@@ -39,6 +39,15 @@ const longToday = new Intl.DateTimeFormat('es-AR', {
   month: 'long',
 });
 
+/** Por qué una reserva que se iba a pagar ya no se paga, como en Mis reservas. */
+interface PayNotice {
+  variant: 'success' | 'warning';
+  title: string;
+  text: string;
+  /** Si está, el aviso ofrece volver a reservar lo mismo. */
+  rebook: Booking | null;
+}
+
 /** Lo que muestra cada tarjeta de las próximas, ya armado: la misma de Mis reservas. */
 interface UpcomingCard {
   booking: Booking;
@@ -87,6 +96,8 @@ export class ClientDashboard {
   /** La reserva que se está por pagar: mientras tanto, las otras no se pueden pagar. */
   protected readonly paying = signal<number | null>(null);
   protected readonly payError = signal('');
+  /** El motivo de una reserva que, al pagar, ya no estaba pendiente: puede que ya no esté en la lista. */
+  protected readonly payNotice = signal<PayNotice | null>(null);
   /** Las pendientes que, al pagar, respondieron 400: ya no se pagan. */
   private readonly rejected = signal<ReadonlySet<number>>(new Set());
   /** La hora contra la que se mira si una pendiente venció: se toma al traer las reservas. */
@@ -102,7 +113,9 @@ export class ClientDashboard {
     () => this.current()?.guests[this.ticketIndex()] ?? null,
   );
   protected readonly upcoming = computed(() =>
-    upcomingBookings(this.bookings(), this.today).map((booking) => this.toCard(booking)),
+    upcomingBookings(this.bookings(), this.today, this.current()).map((booking) =>
+      this.toCard(booking),
+    ),
   );
   protected readonly figures = computed(() => bookingFigures(this.bookings()));
 
@@ -153,18 +166,26 @@ export class ClientDashboard {
   protected pay(booking: Booking): void {
     this.paying.set(booking.id);
     this.payError.set('');
+    this.payNotice.set(null);
 
     this.bookingsApi.pay(booking.id).subscribe({
       next: ({ paymentUrl }) => this.redirect(paymentUrl),
       error: (error: HttpErrorResponse) => {
-        this.paying.set(null);
         if (error.status === 400) {
-          this.rejected.update((ids) => new Set(ids).add(booking.id));
-          this.refresh();
+          // Sigue «pagando» hasta que vuelve la lista: no se puede tocar de nuevo mientras tanto, y
+          // no dice «venció» antes de saber cómo está.
+          this.refresh(booking, toUserMessage(error));
         } else {
+          this.paying.set(null);
           this.payError.set(toUserMessage(error));
         }
       },
+    });
+  }
+
+  protected rebook(booking: Booking): void {
+    void this.router.navigate(['/book', booking.resortId], {
+      queryParams: this.rebookQuery(booking),
     });
   }
 
@@ -178,13 +199,33 @@ export class ClientDashboard {
     window.location.assign(url);
   }
 
-  /** Las reservas como están ahora, sin pasar por el esqueleto. */
-  private refresh(): void {
+  /**
+   * Al pagar respondió 400: las reservas como están ahora, sin pasar por el esqueleto, y por qué
+   * esa ya no se paga. Una cancelada sale de la lista: sin el aviso, desaparecería sin explicación.
+   * Si la lista no llega, queda el motivo que dio el backend.
+   */
+  private refresh(booking: Booking, rejection: string): void {
     const clientId = this.session.user()?.idClient;
-    if (clientId == null) return;
+    if (clientId == null) {
+      this.paying.set(null);
+      this.payError.set(rejection);
+      return;
+    }
     this.bookingsApi.byClient(clientId).subscribe({
-      next: (bookings) => this.show(bookings),
-      error: (error: HttpErrorResponse) => this.payError.set(toUserMessage(error)),
+      next: (bookings) => {
+        const current = bookings.find((b) => b.id === booking.id);
+        // Sigue pendiente: para el backend ya venció, aunque la computadora atrase.
+        if (current?.status === 'PENDING') {
+          this.rejected.update((ids) => new Set(ids).add(booking.id));
+        }
+        this.show(bookings);
+        this.paying.set(null);
+        if (current) this.payNotice.set(noticeFor(current));
+      },
+      error: () => {
+        this.paying.set(null);
+        this.payError.set(rejection);
+      },
     });
   }
 
@@ -215,4 +256,35 @@ export class ClientDashboard {
         (this.rejected().has(booking.id) || paymentExpired(booking, this.now())),
     };
   }
+}
+
+/**
+ * El aviso de una reserva que ya no se paga, según cómo está ahora. Una que sigue pendiente ya lo
+ * dice en su tarjeta («La reserva venció»): no lleva aviso aparte.
+ */
+function noticeFor(booking: Booking): PayNotice | null {
+  if (booking.status === 'CONFIRMED') {
+    return {
+      variant: 'success',
+      title: 'Ya está paga',
+      text: `El pago de ${booking.resortName} se acreditó mientras tanto: tus entradas están en la reserva.`,
+      rebook: null,
+    };
+  }
+  if (booking.status === 'CANCELED') {
+    return booking.canceledBy === 'SYSTEM'
+      ? {
+          variant: 'warning',
+          title: 'La reserva venció',
+          text: `La de ${booking.resortName} pasó la hora para pagarla y se canceló. Si todavía te sirve, reservala de nuevo.`,
+          rebook: booking,
+        }
+      : {
+          variant: 'warning',
+          title: 'La reserva se canceló',
+          text: `La de ${booking.resortName} ya no está pendiente de pago. Si todavía te sirve, reservala de nuevo.`,
+          rebook: booking,
+        };
+  }
+  return null;
 }

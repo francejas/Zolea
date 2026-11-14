@@ -18,10 +18,21 @@ export function todayBooking(bookings: Booking[], today: string): Booking | null
   );
 }
 
-/** Las que empiezan después de hoy y no están canceladas, de la más cercana a la más lejana. */
-export function upcomingBookings(bookings: Booking[], today: string): Booking[] {
+/**
+ * Las que no están canceladas y terminan hoy o después, como las próximas de Mis reservas, menos
+ * la que va arriba (`top`), de la más cercana a la más lejana. Así entra una pendiente que empieza
+ * hoy, que si no quedaría sin «Pagar» en ningún lado.
+ */
+export function upcomingBookings(
+  bookings: Booking[],
+  today: string,
+  top: Booking | null,
+): Booking[] {
   return bookings
-    .filter((booking) => booking.status !== 'CANCELED' && booking.startDate > today)
+    .filter(
+      (booking) =>
+        booking.status !== 'CANCELED' && booking.endDate >= today && booking.id !== top?.id,
+    )
     .sort((a, b) => a.startDate.localeCompare(b.startDate))
     .slice(0, UPCOMING_LIMIT);
 }

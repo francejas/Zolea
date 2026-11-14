@@ -90,6 +90,16 @@
               <z-alert variant="danger" title="No se pudo pagar" [text]="message" />
             }
 
+            @if (payNotice(); as notice) {
+              <z-alert
+                [variant]="notice.variant"
+                [title]="notice.title"
+                [text]="notice.text"
+                [actionLabel]="notice.rebook ? 'Volver a reservar' : undefined"
+                (action)="notice.rebook && rebook(notice.rebook)"
+              />
+            }
+
             @if (upcoming().length === 0) {
               <p class="home__none">No tenés reservas por delante.</p>
             } @else {

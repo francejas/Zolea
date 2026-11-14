@@ -35,20 +35,33 @@ describe('la reserva de hoy', () => {
 });
 
 describe('las próximas', () => {
-  it('son las que empiezan después de hoy y no están canceladas, de la más cercana a la más lejana', () => {
+  it('son las que no están canceladas y terminan hoy o después, de la más cercana a la más lejana', () => {
+    const top = aBooking({ id: 4, startDate: '2026-01-10', endDate: '2026-01-12' });
     const upcoming = upcomingBookings(
       [
         aBooking({ id: 1, startDate: '2026-02-01', endDate: '2026-02-03' }),
         aBooking({ id: 2, startDate: '2026-01-15', endDate: '2026-01-16', status: 'PENDING' }),
         aBooking({ id: 3, startDate: '2026-01-20', endDate: '2026-01-21', status: 'CANCELED' }),
-        // La de hoy no es próxima: va arriba.
-        aBooking({ id: 4, startDate: '2026-01-10', endDate: '2026-01-12' }),
+        // La de hoy no se repite: va arriba.
+        top,
         aBooking({ id: 5, startDate: '2025-12-01', endDate: '2025-12-02' }),
       ],
       TODAY,
+      top,
     );
 
     expect(upcoming.map((b) => b.id)).toEqual([2, 1]);
+  });
+
+  it('una pendiente que empieza hoy está, para poder pagarla', () => {
+    const pendingToday = aBooking({
+      id: 6,
+      status: 'PENDING',
+      startDate: '2026-01-10',
+      endDate: '2026-01-10',
+    });
+
+    expect(upcomingBookings([pendingToday], TODAY, null).map((b) => b.id)).toEqual([6]);
   });
 
   it('muestra hasta tres', () => {
@@ -56,7 +69,7 @@ describe('las próximas', () => {
       aBooking({ id: day, startDate: `2026-01-${day}`, endDate: `2026-01-${day}` }),
     );
 
-    expect(upcomingBookings(bookings, TODAY).map((b) => b.id)).toEqual([11, 12, 13]);
+    expect(upcomingBookings(bookings, TODAY, null).map((b) => b.id)).toEqual([11, 12, 13]);
   });
 });
 

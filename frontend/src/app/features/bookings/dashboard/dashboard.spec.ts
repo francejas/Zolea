@@ -167,6 +167,14 @@ describe('ClientDashboard', () => {
         .mockImplementation(() => undefined);
     }
 
+    it('una pendiente que empieza hoy está en las próximas, con «Pagar»', async () => {
+      await respondWith([{ ...pending, startDate: '2026-01-10', endDate: '2026-01-10' }]);
+
+      expect(page.textContent).not.toContain('No tenés reservas por delante.');
+      expect(page.querySelectorAll('.home__list .z-booking-card').length).toBe(1);
+      expect(button('Pagar')).toBeDefined();
+    });
+
     it('pide una dirección nueva y va a MercadoPago', async () => {
       await respondWith([pending]);
       const redirect = spyRedirect();
@@ -189,6 +197,62 @@ describe('ClientDashboard', () => {
       expect(text(page.querySelector('.z-status'))).toBe('Confirmada');
       expect(button('Pagar')).toBeUndefined();
       expect(link('Ver entradas')).toBeDefined();
+    });
+
+    it('si responde 400 porque ya se canceló, dice por qué en lugar de hacerla desaparecer', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      button('Pagar')!.click();
+      http.expectOne(`${API}/14/pay`).flush({ error: 'x' }, { status: 400, statusText: 'x' });
+      await fixture.whenStable();
+      // Mientras vuelve la lista, sigue «pagando»: no se puede tocar de nuevo.
+      expect(button('Pagar')!.disabled).toBe(true);
+
+      http
+        .expectOne(`${API}/client/16`)
+        .flush([{ ...pending, status: 'CANCELED', canceledBy: 'SYSTEM' }]);
+      await fixture.whenStable();
+
+      const notice = page.querySelector('.home__section z-alert');
+      expect(text(notice)).toContain('La reserva venció');
+      expect(text(notice)).toContain('Zolea Club de Playa');
+      expect(button('Pagar')).toBeUndefined();
+      expect(button('Volver a reservar')).toBeDefined();
+    });
+
+    it('si la canceló el balneario, lo dice así', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      button('Pagar')!.click();
+      http.expectOne(`${API}/14/pay`).flush({ error: 'x' }, { status: 400, statusText: 'x' });
+      http
+        .expectOne(`${API}/client/16`)
+        .flush([{ ...pending, status: 'CANCELED', canceledBy: 'ADMIN' }]);
+      await fixture.whenStable();
+
+      expect(text(page.querySelector('.home__section z-alert'))).toContain('La reserva se canceló');
+    });
+
+    it('si no puede volver a traer la lista, deja el motivo del 400', async () => {
+      await respondWith([pending]);
+      spyRedirect();
+
+      button('Pagar')!.click();
+      http
+        .expectOne(`${API}/14/pay`)
+        .flush(
+          { error: 'La reserva no está pendiente de pago.' },
+          { status: 400, statusText: 'x' },
+        );
+      http.expectOne(`${API}/client/16`).flush({ error: 'x' }, { status: 500, statusText: 'x' });
+      await fixture.whenStable();
+
+      expect(text(page.querySelector('.z-alert--danger'))).toContain(
+        'La reserva no está pendiente de pago.',
+      );
+      expect(button('Pagar')!.disabled).toBe(false);
     });
 
     it('si responde 400 y sigue pendiente, venció: ofrece volver a reservar', async () => {
