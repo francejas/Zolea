@@ -70,6 +70,26 @@
   gap: var(--space-3);
 }
 
+.units__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.units__filter {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 200px;
+}
+
+.units__filter-label {
+  font: 600 var(--text-small) / var(--leading-ui) var(--font-body);
+}
+
+.units__none {
+  color: var(--color-text-muted);
+}
+
 .units__type {
   display: inline-flex;
   align-items: center;

@@ -19,6 +19,7 @@ export interface RentalUnit {
   dailyPrice: number;
   isBlocked: boolean;
   resortId: number;
+  retired?: boolean;
 }
 
 /** El pedido de `POST /api/rental-units`. `resortId` es el `idManagedResort` de la sesión. */

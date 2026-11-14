@@ -46,6 +46,10 @@ interface PriceDraft {
   newPrice: number | null;
 }
 
+/** Qué estados muestra la tabla. Por defecto, las que están en servicio: disponibles y bloqueadas. */
+type StatusFilter = 'ACTIVE' | 'AVAILABLE' | 'BLOCKED' | 'RETIRED' | 'ALL';
+type TypeFilter = 'ALL' | UnitType;
+
 const EMPTY_DRAFT: UnitDraft = { type: 'UMBRELLA', identifier: '', dailyPrice: null };
 
 /** El precio tiene que ser mayor que cero; con centavos, el mínimo es un centavo. */
@@ -54,8 +58,9 @@ const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
 
 /**
  * Las unidades del balneario (12.1): las carpas y las sombrillas del administrador. Se listan, se
- * crean, se les cambia el precio desde la fila y se bloquean o desbloquean. Una unidad no se borra:
- * bloquearla es darla de baja, y se puede deshacer.
+ * crean, se les cambia el precio desde la fila y se bloquean o desbloquean (se deshace). Dar de baja
+ * es otra cosa: es definitivo, así que pide confirmación y no deja acciones en la fila. Una unidad
+ * no se borra. La tabla se filtra por tipo y por estado; por defecto no muestra las dadas de baja.
  *
  * Los errores del backend se pegan en su campo. El precio que no es mayor que cero llega en `campos`
  * y va por `toFieldErrors`. El identificador repetido llega como mensaje general (400, y 409 si dos
@@ -97,12 +102,42 @@ export class Units {
     { value: 'TENT', label: UNIT_TYPE_LABEL.TENT },
   ];
 
+  protected readonly typeFilterOptions: { value: TypeFilter; label: string }[] = [
+    { value: 'ALL', label: 'Todos los tipos' },
+    { value: 'TENT', label: 'Carpas' },
+    { value: 'UMBRELLA', label: 'Sombrillas' },
+  ];
+
+  protected readonly statusFilterOptions: { value: StatusFilter; label: string }[] = [
+    { value: 'ACTIVE', label: 'Disponibles y bloqueadas' },
+    { value: 'AVAILABLE', label: 'Solo disponibles' },
+    { value: 'BLOCKED', label: 'Solo bloqueadas' },
+    { value: 'RETIRED', label: 'Dadas de baja' },
+    { value: 'ALL', label: 'Todas' },
+  ];
+
+  protected readonly typeFilter = signal<TypeFilter>('ALL');
+  protected readonly statusFilter = signal<StatusFilter>('ACTIVE');
+
+  /** Las unidades que pasan los dos filtros. */
+  protected readonly visibleUnits = computed(() => {
+    const type = this.typeFilter();
+    const status = this.statusFilter();
+    return this.units().filter(
+      (unit) => (type === 'ALL' || unit.type === type) && matchesStatus(unit, status),
+    );
+  });
+
+  /** Cuántas hay en servicio, cuántas bloqueadas y cuántas dadas de baja, sin importar el filtro. */
   protected readonly summary = computed(() => {
     const all = this.units();
-    const blocked = all.filter((unit) => unit.isBlocked).length;
-    const total = `${all.length} ${all.length === 1 ? 'unidad' : 'unidades'}`;
-    if (blocked === 0) return total;
-    return `${total} · ${blocked} ${blocked === 1 ? 'bloqueada' : 'bloqueadas'}`;
+    const retired = all.filter(isRetired).length;
+    const inService = all.length - retired;
+    const blocked = all.filter((unit) => !isRetired(unit) && unit.isBlocked).length;
+    const parts = [`${inService} ${inService === 1 ? 'unidad' : 'unidades'}`];
+    if (blocked > 0) parts.push(`${blocked} ${blocked === 1 ? 'bloqueada' : 'bloqueadas'}`);
+    if (retired > 0) parts.push(`${retired} ${retired === 1 ? 'dada de baja' : 'dadas de baja'}`);
+    return parts.join(' · ');
   });
 
   // --- Alta -------------------------------------------------------------------------------
@@ -138,6 +173,15 @@ export class Units {
   protected readonly pendingBlock = signal<{ unit: RentalUnit; block: boolean } | null>(null);
   protected readonly blocking = signal(false);
   private readonly blockDialog = viewChild<ElementRef<HTMLDialogElement>>('blockDialog');
+
+  // --- Dar de baja ------------------------------------------------------------------------
+
+  /** La unidad que espera confirmación de la baja. */
+  protected readonly pendingRetire = signal<RentalUnit | null>(null);
+  protected readonly retiring = signal(false);
+  /** Por qué no se pudo dar de baja (por ejemplo, reservas por delante): va dentro de la confirmación. */
+  protected readonly retireError = signal('');
+  private readonly retireDialog = viewChild<ElementRef<HTMLDialogElement>>('retireDialog');
 
   constructor() {
     this.load();
@@ -177,6 +221,23 @@ export class Units {
 
   protected typeLabel(type: UnitType): string {
     return UNIT_TYPE_LABEL[type];
+  }
+
+  protected isRetired(unit: RentalUnit): boolean {
+    return isRetired(unit);
+  }
+
+  protected setTypeFilter(event: Event): void {
+    this.typeFilter.set((event.target as HTMLSelectElement).value as TypeFilter);
+  }
+
+  protected setStatusFilter(event: Event): void {
+    this.statusFilter.set((event.target as HTMLSelectElement).value as StatusFilter);
+  }
+
+  protected clearFilters(): void {
+    this.typeFilter.set('ALL');
+    this.statusFilter.set('ACTIVE');
   }
 
   protected price(amount: number): string {
@@ -355,10 +416,69 @@ export class Units {
     });
   }
 
+  // --- Dar de baja ------------------------------------------------------------------------
+
+  protected askRetire(unit: RentalUnit): void {
+    this.notice.set('');
+    this.actionError.set('');
+    this.retireError.set('');
+    this.pendingRetire.set(unit);
+    this.retireDialog()?.nativeElement.showModal();
+  }
+
+  protected closeRetire(): void {
+    this.retireDialog()?.nativeElement.close();
+    this.pendingRetire.set(null);
+    this.retireError.set('');
+  }
+
+  protected confirmRetire(): void {
+    const unit = this.pendingRetire();
+    if (!unit || this.retiring()) return;
+    this.retiring.set(true);
+    this.retireError.set('');
+
+    this.unitsApi.retire(unit.idRentalUnit).subscribe({
+      next: (updated) => {
+        // Si justo se estaba editando su precio, ya no hay nada que editar.
+        if (this.editingId() === updated.idRentalUnit) this.editingId.set(null);
+        this.replace({ ...updated, retired: true });
+        this.retiring.set(false);
+        this.closeRetire();
+        this.notice.set(`La ${this.label(updated)} se dio de baja. Ya no se puede reservar.`);
+      },
+      error: (error: HttpErrorResponse) => {
+        // La confirmación sigue abierta: el motivo se lee ahí, junto al botón que se apretó.
+        this.retiring.set(false);
+        this.retireError.set(toUserMessage(error));
+      },
+    });
+  }
+
   private replace(updated: RentalUnit): void {
     this.units.update((units) =>
       units.map((unit) => (unit.idRentalUnit === updated.idRentalUnit ? updated : unit)),
     );
+  }
+}
+
+function isRetired(unit: RentalUnit): boolean {
+  return unit.retired === true;
+}
+
+function matchesStatus(unit: RentalUnit, status: StatusFilter): boolean {
+  const retired = isRetired(unit);
+  switch (status) {
+    case 'ACTIVE':
+      return !retired;
+    case 'AVAILABLE':
+      return !retired && !unit.isBlocked;
+    case 'BLOCKED':
+      return !retired && unit.isBlocked;
+    case 'RETIRED':
+      return retired;
+    case 'ALL':
+      return true;
   }
 }
 
