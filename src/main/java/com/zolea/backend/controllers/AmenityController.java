@@ -28,11 +28,13 @@ public class AmenityController {
     /**
      * El catálogo es uno solo para todos los balnearios, así que lo carga Zolea y no cada balneario
      * (15.7): crear, renombrar y borrar es solo de la cuenta de Zolea, un administrador sin balneario.
-     * El rol lo exige el {@code @PreAuthorize}; el balneario, {@link UserPrincipal#requireZoleaAccount()},
+     * El rol lo exige el {@code @PreAuthorize}; el balneario, {@link UserPrincipal#requireZoleaAccount(String)},
      * antes de validar el pedido, para que un administrador de balneario reciba el motivo y no un 400.
      */
     private static final String DESCRIPCION_CATALOGO = "Solo la cuenta de Zolea, un administrador sin balneario. "
             + "Cada balneario elige los servicios que ofrece en PUT /api/resorts/my.";
+
+    private static final String MOTIVO_CATALOGO = "Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.";
 
     private final AmenityService amenityService;
 
@@ -64,7 +66,7 @@ public class AmenityController {
     })
     public ResponseEntity<AmenityResponse> createAmenity(@RequestBody AmenityRequest request,
                                                          @AuthenticationPrincipal UserPrincipal principal) {
-        principal.requireZoleaAccount();
+        principal.requireZoleaAccount(MOTIVO_CATALOGO);
         return new ResponseEntity<>(amenityService.createAmenity(request), HttpStatus.CREATED);
     }
 
@@ -81,7 +83,7 @@ public class AmenityController {
     })
     public ResponseEntity<AmenityResponse> updateAmenity(@PathVariable Long id, @RequestBody AmenityRequest request,
                                                          @AuthenticationPrincipal UserPrincipal principal) {
-        principal.requireZoleaAccount();
+        principal.requireZoleaAccount(MOTIVO_CATALOGO);
         return ResponseEntity.ok(amenityService.updateAmenity(id, request));
     }
 
@@ -97,7 +99,7 @@ public class AmenityController {
     })
     public ResponseEntity<Void> deleteAmenity(@PathVariable Long id,
                                               @AuthenticationPrincipal UserPrincipal principal) {
-        principal.requireZoleaAccount();
+        principal.requireZoleaAccount(MOTIVO_CATALOGO);
         amenityService.deleteAmenity(id);
         return ResponseEntity.noContent().build();
     }

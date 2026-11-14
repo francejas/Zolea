@@ -26,7 +26,7 @@ Cuentas, todas con contraseña `admin123`:
 |---|---|---|
 | `santi.rodriguez@gmail.com` | `USER` | El recorrido de un cliente |
 | `admin.mdp@zolea.com` | `ADMIN` | El panel del balneario de Mar del Plata |
-| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: crea, renombra y borra los servicios del catálogo |
+| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: carga el catálogo de servicios y da de alta balnearios |
 
 **CORS ya está abierto** para cualquier origen, así que `ng serve` en el 4200 funciona sin
 configurar nada.
@@ -143,10 +143,14 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
   balneario, ver una reserva de otro balneario, sus condiciones de cancelación o su link de pago, y
   la reserva de mostrador sobre una unidad ajena responden `403`.
 - El **catálogo de servicios** (`POST`, `PUT` y `DELETE` en `/api/amenities`) lo administra solo
-  **la cuenta de Zolea**: el ADMIN sin balneario (`zolea@zolea.com` en la demo). Es lo único que
-  esa cuenta hace; el panel le sigue respondiendo `403`. El administrador de un balneario recibe
-  `403` con el motivo «Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.», y elige los
-  que ofrece en `PUT /api/resorts/my`, con `amenityIds`. Listar el catálogo sigue siendo público.
+  **la cuenta de Zolea**: el ADMIN sin balneario (`zolea@zolea.com` en la demo). El administrador
+  de un balneario recibe `403` con el motivo «Los servicios los carga Zolea. Elegí los tuyos en Mi
+  balneario.», y elige los que ofrece en `PUT /api/resorts/my`, con `amenityIds`. Listar el
+  catálogo sigue siendo público.
+- **Dar de alta un balneario** (`POST /api/resorts`) también es solo de la cuenta de Zolea, y solo
+  por la API: no tiene pantalla. El administrador de un balneario recibe `403` con el motivo «Los
+  balnearios los da de alta Zolea.». Esa cuenta carga el catálogo y da de alta balnearios, y nada
+  más: el panel le sigue respondiendo `403`.
 - Un administrador **no reserva por `POST /api/bookings`**, ni a su nombre: usa la de mostrador. Y
   por `GET /api/clients/{id}`, `PUT /api/clients/{id}` y `GET /api/bookings/client/{id}` solo llega
   a **su propio** perfil: a sus clientes los ve en `GET /api/clients`.

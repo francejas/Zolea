@@ -201,7 +201,7 @@ http://localhost:8080/swagger-ui/index.html
 | `GET` | `/api/resorts/{id}/occupied-units` | — | Unidades ocupadas entre `from` y `to` |
 | `GET` | `/api/resorts/my` | ADMIN | Mi balneario |
 | `PUT` | `/api/resorts/my` | ADMIN | Actualizar datos del balneario |
-| `POST` | `/api/resorts` | ADMIN | Crear balneario |
+| `POST` | `/api/resorts` | Cuenta de Zolea | Dar de alta un balneario. El administrador de un balneario recibe `403` |
 | `PUT` | `/api/resorts/{id}` | ADMIN del balneario | Actualizar balneario por ID |
 | `PUT` | `/api/resorts/{id}/inactive` | ADMIN del balneario | Desactivar balneario |
 | `PUT` | `/api/resorts/{id}/active` | ADMIN del balneario | Activar balneario |
@@ -412,9 +412,9 @@ Zolea/
 Un admin solo puede gestionar **su propio balneario** (el asignado en la base de datos).
 
 El catálogo de servicios (WiFi, Estacionamiento, Pileta…) es uno solo para todos los balnearios y
-lo administra **la cuenta de Zolea**: un `ADMIN` sin balneario asignado. No ve reservas, clientes
-ni balnearios; solo crea, renombra y borra servicios. Cada balneario elige cuáles ofrece en Mi
-balneario.
+lo administra **la cuenta de Zolea**: un `ADMIN` sin balneario asignado. Esa cuenta carga el
+catálogo de servicios y da de alta balnearios (solo por la API), y nada más: no ve reservas,
+clientes ni balnearios. Cada balneario elige cuáles servicios ofrece en Mi balneario.
 
 ### Cuentas de demostración
 
@@ -424,7 +424,7 @@ Todas con contraseña `admin123`:
 |---|---|---|
 | `santi.rodriguez@gmail.com` (y los demás `@gmail.com`) | `USER` | El recorrido de un cliente |
 | `admin.mdp@zolea.com`, `admin.pinamar@zolea.com`, `admin.gesell@zolea.com`, `admin.miramar@zolea.com`, `admin.necochea@zolea.com` | `ADMIN` | El panel de cada balneario |
-| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: el catálogo de servicios |
+| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: el catálogo de servicios y el alta de balnearios |
 
 ---
 
