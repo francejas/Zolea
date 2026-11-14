@@ -39,6 +39,7 @@ const units: RentalUnit[] = [
     dailyPrice: 8500,
     isBlocked: false,
     resortId: 1,
+    retired: false,
   },
   {
     idRentalUnit: 9,
@@ -47,6 +48,7 @@ const units: RentalUnit[] = [
     dailyPrice: 15000,
     isBlocked: false,
     resortId: 1,
+    retired: false,
   },
 ];
 

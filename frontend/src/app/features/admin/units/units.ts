@@ -47,8 +47,12 @@ interface PriceDraft {
 }
 
 /** Qué estados muestra la tabla. Por defecto, las que están en servicio: disponibles y bloqueadas. */
-type StatusFilter = 'ACTIVE' | 'AVAILABLE' | 'BLOCKED' | 'RETIRED' | 'ALL';
+const STATUS_FILTERS = ['ACTIVE', 'AVAILABLE', 'BLOCKED', 'RETIRED', 'ALL'] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
 type TypeFilter = 'ALL' | UnitType;
+
+const DEFAULT_TYPE_FILTER: TypeFilter = 'ALL';
+const DEFAULT_STATUS_FILTER: StatusFilter = 'ACTIVE';
 
 const EMPTY_DRAFT: UnitDraft = { type: 'UMBRELLA', identifier: '', dailyPrice: null };
 
@@ -102,22 +106,14 @@ export class Units {
     { value: 'TENT', label: UNIT_TYPE_LABEL.TENT },
   ];
 
-  protected readonly typeFilterOptions: { value: TypeFilter; label: string }[] = [
-    { value: 'ALL', label: 'Todos los tipos' },
-    { value: 'TENT', label: 'Carpas' },
-    { value: 'UMBRELLA', label: 'Sombrillas' },
-  ];
+  protected readonly typeFilter = signal<TypeFilter>(DEFAULT_TYPE_FILTER);
+  protected readonly statusFilter = signal<StatusFilter>(DEFAULT_STATUS_FILTER);
 
-  protected readonly statusFilterOptions: { value: StatusFilter; label: string }[] = [
-    { value: 'ACTIVE', label: 'Disponibles y bloqueadas' },
-    { value: 'AVAILABLE', label: 'Solo disponibles' },
-    { value: 'BLOCKED', label: 'Solo bloqueadas' },
-    { value: 'RETIRED', label: 'Dadas de baja' },
-    { value: 'ALL', label: 'Todas' },
-  ];
-
-  protected readonly typeFilter = signal<TypeFilter>('ALL');
-  protected readonly statusFilter = signal<StatusFilter>('ACTIVE');
+  /** Si el filtro se movió del de por defecto: si no, «Quitar los filtros» no tiene nada que hacer. */
+  protected readonly hasFilters = computed(
+    () =>
+      this.typeFilter() !== DEFAULT_TYPE_FILTER || this.statusFilter() !== DEFAULT_STATUS_FILTER,
+  );
 
   /** Las unidades que pasan los dos filtros. */
   protected readonly visibleUnits = computed(() => {
@@ -128,17 +124,27 @@ export class Units {
     );
   });
 
-  /** Cuántas hay en servicio, cuántas bloqueadas y cuántas dadas de baja, sin importar el filtro. */
+  /** Si quedan unidades en servicio. Si no, el filtro por defecto no muestra nada y se dice eso. */
+  protected readonly hasInService = computed(() => this.units().some((unit) => !isRetired(unit)));
+
+  /**
+   * Cuántas muestra el filtro de cuántas hay, como en Reservas, y después cuántas bloqueadas y
+   * cuántas dadas de baja, sin importar el filtro.
+   */
   protected readonly summary = computed(() => {
     const all = this.units();
     const retired = all.filter(isRetired).length;
-    const inService = all.length - retired;
     const blocked = all.filter((unit) => !isRetired(unit) && unit.isBlocked).length;
-    const parts = [`${inService} ${inService === 1 ? 'unidad' : 'unidades'}`];
+    const parts = [
+      `${this.visibleUnits().length} de ${all.length} ${all.length === 1 ? 'unidad' : 'unidades'}`,
+    ];
     if (blocked > 0) parts.push(`${blocked} ${blocked === 1 ? 'bloqueada' : 'bloqueadas'}`);
     if (retired > 0) parts.push(`${retired} ${retired === 1 ? 'dada de baja' : 'dadas de baja'}`);
     return parts.join(' · ');
   });
+
+  /** El resumen: al confirmar la baja, la fila sale de la tabla y el foco viene acá. */
+  private readonly summaryEl = viewChild<ElementRef<HTMLElement>>('summaryEl');
 
   // --- Alta -------------------------------------------------------------------------------
 
@@ -227,17 +233,25 @@ export class Units {
     return isRetired(unit);
   }
 
-  protected setTypeFilter(event: Event): void {
-    this.typeFilter.set((event.target as HTMLSelectElement).value as TypeFilter);
+  protected setTypeFilter(value: string): void {
+    if (value === 'ALL' || value === 'TENT' || value === 'UMBRELLA') this.typeFilter.set(value);
   }
 
-  protected setStatusFilter(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as StatusFilter);
+  protected setStatusFilter(value: string): void {
+    if ((STATUS_FILTERS as readonly string[]).includes(value)) {
+      this.statusFilter.set(value as StatusFilter);
+    }
   }
 
   protected clearFilters(): void {
-    this.typeFilter.set('ALL');
-    this.statusFilter.set('ACTIVE');
+    this.typeFilter.set(DEFAULT_TYPE_FILTER);
+    this.statusFilter.set(DEFAULT_STATUS_FILTER);
+  }
+
+  /** Sin unidades en servicio: deja ver las que se dieron de baja. */
+  protected showRetired(): void {
+    this.typeFilter.set(DEFAULT_TYPE_FILTER);
+    this.statusFilter.set('RETIRED');
   }
 
   protected price(amount: number): string {
@@ -442,10 +456,13 @@ export class Units {
       next: (updated) => {
         // Si justo se estaba editando su precio, ya no hay nada que editar.
         if (this.editingId() === updated.idRentalUnit) this.editingId.set(null);
-        this.replace({ ...updated, retired: true });
+        this.replace(updated);
         this.retiring.set(false);
         this.closeRetire();
         this.notice.set(`La ${this.label(updated)} se dio de baja. Ya no se puede reservar.`);
+        // La fila del botón que se apretó sale de la tabla: el foco no puede volver ahí. Va al
+        // resumen, que dice cómo quedó la tabla; el aviso de arriba se anuncia solo.
+        this.summaryEl()?.nativeElement.focus();
       },
       error: (error: HttpErrorResponse) => {
         // La confirmación sigue abierta: el motivo se lee ahí, junto al botón que se apretó.
@@ -463,7 +480,7 @@ export class Units {
 }
 
 function isRetired(unit: RentalUnit): boolean {
-  return unit.retired === true;
+  return unit.retired;
 }
 
 function matchesStatus(unit: RentalUnit, status: StatusFilter): boolean {

@@ -14,6 +14,7 @@ const unit: RentalUnit = {
   dailyPrice: 14500,
   isBlocked: false,
   resortId: 1,
+  retired: false,
 };
 
 describe('UnitsApi', () => {

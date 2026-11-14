@@ -70,20 +70,29 @@
   gap: var(--space-3);
 }
 
+/* Los filtros, como en Reservas: cada etiqueta envuelve su lista y el botón cierra la fila. */
 .units__filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--space-4);
 }
 
-.units__filter {
+.units__filters label {
   display: grid;
-  gap: var(--space-1);
-  min-width: 200px;
+  flex: 1 1 180px;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
-.units__filter-label {
-  font: 600 var(--text-small) / var(--leading-ui) var(--font-body);
+.units__filters select {
+  width: 100%;
+  min-width: 0;
+}
+
+/* El resumen recibe el foco tras la baja; no hace falta el anillo en un texto que no se toca. */
+.units__summary:focus {
+  outline: none;
 }
 
 .units__none {
@@ -125,6 +134,14 @@
 @media (max-width: 479px) {
   .units__create-actions z-btn {
     flex: 1 1 100%;
+  }
+
+  .units__filters label {
+    flex-basis: 100%;
+  }
+
+  .units__filters z-btn {
+    width: 100%;
   }
 }
 

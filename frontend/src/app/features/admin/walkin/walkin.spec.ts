@@ -27,6 +27,7 @@ const unit = (
   dailyPrice: price,
   isBlocked: blocked,
   resortId: 1,
+  retired: false,
 });
 
 const myResort: Resort = {

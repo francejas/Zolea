@@ -27,6 +27,7 @@ function unit(overrides: Partial<RentalUnit> = {}): RentalUnit {
     dailyPrice: 8500,
     isBlocked: false,
     resortId: 7,
+    retired: false,
     ...overrides,
   };
 }
@@ -472,17 +473,26 @@ describe('Units', () => {
       select.dispatchEvent(new Event('change'));
     }
 
+    const summary = () => page.querySelector('.units__summary')!;
+
     it('por defecto muestra disponibles y bloqueadas, sin las dadas de baja', () => {
       expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
-      expect(page.querySelector('.units__summary')!.textContent).toContain(
-        '3 unidades · 1 bloqueada · 1 dada de baja',
-      );
+      expect(page.querySelector<HTMLSelectElement>('#filter-type')!.value).toBe('ALL');
+      expect(page.querySelector<HTMLSelectElement>('#filter-status')!.value).toBe('ACTIVE');
+      expect(summary().getAttribute('role')).toBe('status');
+      expect(summary().textContent).toContain('3 de 4 unidades · 1 bloqueada · 1 dada de baja');
     });
 
-    it('por tipo', async () => {
+    it('con el filtro por defecto, Quitar los filtros está deshabilitado', () => {
+      expect(button('Quitar los filtros')!.disabled).toBe(true);
+    });
+
+    it('por tipo, y el resumen dice cuántas muestra de cuántas hay', async () => {
       choose('filter-type', 'TENT');
       await fixture.whenStable();
       expect(identifiers()).toEqual(['C-01']);
+      expect(summary().textContent).toContain('1 de 4 unidades');
+      expect(button('Quitar los filtros')!.disabled).toBe(false);
 
       choose('filter-type', 'UMBRELLA');
       await fixture.whenStable();
@@ -517,9 +527,22 @@ describe('Units', () => {
         'Ninguna unidad coincide con los filtros',
       );
 
+      page.querySelector<HTMLButtonElement>('z-empty button')!.click();
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
+      expect(page.querySelector<HTMLSelectElement>('#filter-type')!.value).toBe('ALL');
+      expect(page.querySelector<HTMLSelectElement>('#filter-status')!.value).toBe('ACTIVE');
+    });
+
+    it('el botón de los filtros vuelve al filtro por defecto', async () => {
+      choose('filter-status', 'RETIRED');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-09']);
+
       button('Quitar los filtros')!.click();
       await fixture.whenStable();
       expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
+      expect(button('Quitar los filtros')!.disabled).toBe(true);
     });
 
     it('la dada de baja va en neutro, sin acciones y con su nombre', async () => {
@@ -538,8 +561,8 @@ describe('Units', () => {
       await respondWith([sombrilla, carpa]);
     });
 
-    const dialogs = () => Array.from(page.querySelectorAll<HTMLDialogElement>('dialog'));
-    const retireDialog = () => dialogs()[1];
+    const retireDialog = () =>
+      page.querySelector<HTMLDialogElement>('dialog[aria-labelledby="retire-title"]')!;
 
     async function ask(identifier: string): Promise<void> {
       Array.from(rowOf(identifier).querySelectorAll('button'))
@@ -584,7 +607,20 @@ describe('Units', () => {
       expect(page.querySelector('z-alert')!.textContent).toContain(
         'La Sombrilla A-01 se dio de baja',
       );
-      expect(page.querySelector('.units__summary')!.textContent).toContain('1 dada de baja');
+      expect(page.querySelector('.units__summary')!.textContent).toContain(
+        '1 de 2 unidades · 1 dada de baja',
+      );
+      // La fila del botón se fue: el foco queda en el resumen, no en el body.
+      expect(document.activeElement).toBe(page.querySelector('.units__summary'));
+    });
+
+    it('usa la unidad tal como la devuelve el backend', async () => {
+      await ask('A-01');
+      confirm().click();
+      http.expectOne(`${API}/1/retire`).flush({ ...sombrilla, retired: false });
+      await fixture.whenStable();
+
+      expect(rows().map((row) => cells(row)[0])).toEqual(['A-01', 'C-01']);
     });
 
     it('con reservas por delante (400) muestra el motivo en la confirmación y no cambia la fila', async () => {
@@ -619,7 +655,15 @@ describe('Units', () => {
       http.expectOne(`${API}/3/retire`).flush({ ...bloqueada, retired: true });
       await fixture.whenStable();
 
-      expect(page.querySelector('z-empty')!.textContent).toContain('Ninguna unidad coincide');
+      // Sin unidades en servicio, el vacío lo dice y deja ver las dadas de baja.
+      expect(page.querySelector('z-empty')!.textContent).toContain(
+        'No te quedan unidades en servicio',
+      );
+      expect(button('Quitar los filtros')!.disabled).toBe(true);
+
+      button('Ver las dadas de baja')!.click();
+      await fixture.whenStable();
+      expect(rows().map((row) => cells(row)[0])).toEqual(['A-08']);
     });
   });
 });
