@@ -445,3 +445,39 @@ en una zona que no dice en ningún lado.
 SQL tiene que cargarlas en UTC. Las pruebas no pasan por `main`, así que corren con la zona de la
 máquina. No cambia nada, porque guardan y leen con la misma conversión, pero las horas de la base de
 pruebas no prueban esta decisión: la prueban la demo y una limpieza.
+
+---
+
+## 18. El catálogo de servicios y el alta de balnearios son de la cuenta de Zolea, no de cada balneario
+
+**Problema.** Los servicios (WiFi, Estacionamiento, Pileta…) son un catálogo único: los cinco
+balnearios eligen de la misma lista. Pero crearlos, renombrarlos y borrarlos solo pedía rol ADMIN,
+así que el administrador de Mar del Plata podía renombrar «Pileta» o borrarla, y el borrado se la
+sacaba también a los otros cuatro balnearios (la 15.5 cerró eso para los balnearios por id, pero el
+catálogo había quedado afuera). Lo mismo con `POST /api/resorts`: cualquier administrador podía
+sumar balnearios a la portada.
+
+**Decisión.** Crear, renombrar y borrar un servicio es solo de **la cuenta de Zolea**: un ADMIN sin
+balneario asignado (`zolea@zolea.com` en la demo). El `@PreAuthorize` sigue exigiendo el rol, y
+`UserPrincipal.requireZoleaAccount(motivo)` responde **403** con el motivo a un administrador con
+balneario: «Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.» en el catálogo y «Los
+balnearios los da de alta Zolea.» en el alta. Se mira antes de validar el pedido, para que ese
+administrador reciba el motivo y no un `400`. Cada balneario sigue eligiendo sus servicios en
+`PUT /api/resorts/my`, y listar el catálogo sigue siendo público. El alta es solo por la API: no
+tiene pantalla.
+
+**Cómo convive con la decisión 15.** Aquella dice que un administrador sin balneario no es «un
+administrador que ve todo», y eso no cambia: el panel le sigue respondiendo `403` o `404` a la
+cuenta de Zolea, que no ve reservas, clientes ni balnearios. Lo que cambia es que esa cuenta deja de
+ser solo un estado inválido: carga el catálogo de servicios y da de alta balnearios, y nada más.
+
+**Por qué no un rol nuevo.** Un rol aparte (`ZOLEA`, `SUPERADMIN`) sería lo más explícito, pero
+obliga a tocar el login, el `UserPrincipal`, el frontend que decide a qué panel mandar a cada uno y
+todas las expresiones que hoy dicen `hasRole('ADMIN')`. Con una sola cuenta y dos permisos acotados,
+la ausencia de balneario alcanza para distinguirla y el cambio queda en cuatro endpoints.
+
+**Lo que se paga.** La regla depende de un dato que falta, que es justo lo que la decisión 15
+desaconsejaba: un administrador al que se le olvidó asignar el balneario pasa a poder tocar el
+catálogo y dar de alta balnearios. A esta escala se acepta, porque las cuentas están fijas en
+`data-demo.sql` y eso es todo lo que esa cuenta alcanza; si aparecieran más permisos para Zolea,
+el camino es el rol nuevo.

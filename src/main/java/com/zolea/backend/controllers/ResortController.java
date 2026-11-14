@@ -127,15 +127,24 @@ public class ResortController {
         return ResponseEntity.ok(new ResortActionResponse("Balneario actualizado correctamente.", saved));
     }
 
+    /**
+     * Dar de alta un balneario es de la cuenta de Zolea, como el catálogo de servicios (15.7): antes
+     * cualquier administrador podía sumar balnearios a la portada. Se mira antes de validar el pedido,
+     * para que el administrador de un balneario reciba el motivo y no un 400. Es solo por la API.
+     */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Registrar nuevo balneario (Admin)")
+    @Operation(summary = "Registrar nuevo balneario (cuenta de Zolea)",
+            description = "Solo la cuenta de Zolea, un administrador sin balneario.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Balneario creado"),
-            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea. Un cliente, o el administrador de un balneario: «Los balnearios los da de alta Zolea.»", content = @Content)
     })
-    public ResponseEntity<ResortActionResponse> registerResort(@RequestBody ResortRequest request) {
+    public ResponseEntity<ResortActionResponse> registerResort(@RequestBody ResortRequest request,
+                                                               @AuthenticationPrincipal UserPrincipal principal) {
+        principal.requireZoleaAccount("Los balnearios los da de alta Zolea.");
         ResortResponse saved = resortService.registerResort(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResortActionResponse("Balneario registrado correctamente.", saved));

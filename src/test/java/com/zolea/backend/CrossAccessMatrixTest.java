@@ -1,5 +1,6 @@
 package com.zolea.backend;
 
+import com.zolea.backend.models.Amenity;
 import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.Client;
 import com.zolea.backend.models.RentalUnit;
@@ -8,6 +9,7 @@ import com.zolea.backend.models.Status;
 import com.zolea.backend.payments.CheckoutRequest;
 import com.zolea.backend.payments.PaymentGateway;
 import com.zolea.backend.payments.PaymentStatus;
+import com.zolea.backend.repositories.AmenityRepository;
 import com.zolea.backend.security.JwtUtil;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.support.IntegrationTest;
@@ -29,6 +31,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -52,6 +55,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JwtUtil jwtUtil;
+    @Autowired private AmenityRepository amenityRepository;
 
     private Resort mio;
     private Resort ajeno;
@@ -244,6 +248,41 @@ class CrossAccessMatrixTest extends IntegrationTest {
                 """.formatted(desde, desde.plusDays(1), unidad.getIdRentalUnit());
         matriz(() -> json(post("/api/bookings/walkin"), cuerpo),
                 201, adminDelBalneario, cliente, adminDeOtro);
+    }
+
+    // ---------------------------------------------------------------------
+    // El catálogo de servicios
+    // ---------------------------------------------------------------------
+
+    @Test
+    @DisplayName("crear un servicio del catálogo: solo la cuenta de Zolea")
+    void crearServicio() throws Exception {
+        matriz(() -> json(post("/api/amenities"), """
+                        {"name":"Guardavidas"}"""),
+                201, theZoleaAccount(), cliente, adminDelBalneario, adminDeOtro);
+    }
+
+    @Test
+    @DisplayName("renombrar un servicio del catálogo: solo la cuenta de Zolea")
+    void renombrarServicio() throws Exception {
+        Amenity servicio = unServicio();
+        matriz(() -> json(put("/api/amenities/" + servicio.getIdAmenity()), """
+                        {"name":"Duchas calientes"}"""),
+                200, theZoleaAccount(), cliente, adminDelBalneario, adminDeOtro);
+    }
+
+    @Test
+    @DisplayName("borrar un servicio del catálogo: solo la cuenta de Zolea")
+    void borrarServicio() throws Exception {
+        Amenity servicio = unServicio();
+        matriz(() -> delete("/api/amenities/" + servicio.getIdAmenity()),
+                204, theZoleaAccount(), cliente, adminDelBalneario, adminDeOtro);
+    }
+
+    private Amenity unServicio() {
+        Amenity servicio = new Amenity();
+        servicio.setName("Duchas de prueba");
+        return amenityRepository.save(servicio);
     }
 
     // ---------------------------------------------------------------------
