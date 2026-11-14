@@ -28,6 +28,7 @@ import { ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { ZRating } from '../../../shared/z-rating/z-rating';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 
 /** Cuántos servicios se ven en la tarjeta; el resto se resume en «+N». */
@@ -89,6 +90,7 @@ const sameFilters = (a: UrlFilters, b: UrlFilters) =>
     ZEmpty,
     ZField,
     ZProblem,
+    ZRating,
     ZSkeleton,
   ],
   selector: 'app-resort-list',
