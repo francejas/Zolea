@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -212,6 +213,25 @@ class CrossAccessMatrixTest extends IntegrationTest {
                 """.formatted(desde, desde.plusDays(1), cliente.getIdClient(), unidad.getIdRentalUnit());
         matriz(() -> json(post("/api/bookings"), cuerpo),
                 201, cliente, otroCliente, adminDeOtro, adminDelBalneario);
+    }
+
+    @Test
+    @DisplayName("reservar por la web sin clientId: nadie, ni siquiera con los datos de mostrador")
+    void reservarWebSinClientId() throws Exception {
+        LocalDate desde = today().plusDays(25);
+        String cuerpo = """
+                {"startDate":"%s","endDate":"%s","rentalUnitId":%d,"guests":[],
+                 "walkInName":"Marta Gómez","walkInDni":"31222333"}
+                """.formatted(desde, desde.plusDays(1), unidad.getIdRentalUnit());
+        syncWithDatabase();
+        long antes = bookingRepository.count();
+
+        mockMvc.perform(json(post("/api/bookings"), cuerpo)).andExpect(status().isUnauthorized());
+        for (Client negado : new Client[] {cliente, otroCliente, adminDeOtro, adminDelBalneario}) {
+            mockMvc.perform(json(post("/api/bookings"), cuerpo).header("Authorization", bearer(negado)))
+                    .andExpect(status().isForbidden());
+        }
+        assertThat(bookingRepository.count()).isEqualTo(antes);
     }
 
     @Test

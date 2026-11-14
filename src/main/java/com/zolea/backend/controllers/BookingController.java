@@ -7,6 +7,7 @@ import com.zolea.backend.dtos.booking.CancellationResponse;
 import com.zolea.backend.dtos.booking.PaymentUrlResponse;
 import com.zolea.backend.dtos.booking.WalkInBookingResponse;
 import com.zolea.backend.exceptions.booking.WalkInWithClientException;
+import com.zolea.backend.exceptions.booking.WebBookingWithWalkInException;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.BookingCheckoutService;
 import com.zolea.backend.services.BookingService;
@@ -30,6 +31,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.util.StringUtils.hasText;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/bookings")
@@ -46,19 +49,26 @@ public class BookingController {
     // programado se entere en lugar de recibir una reserva con otro titular.
     // Un ADMIN no reserva por acá, ni a su nombre ni al de otro (RNF03): para eso está el
     // mostrador, que confirma sin pasar por MercadoPago y queda en su balneario.
-    @PreAuthorize("!hasRole('ADMIN') and (#request.clientId == null or #request.clientId == principal.idClient)")
+    // El clientId es obligatorio: sin él, un cliente armaba una reserva sin titular con los datos
+    // de mostrador, que después ni él podía ver (ZOL-176).
+    @PreAuthorize("!hasRole('ADMIN') and #request.clientId != null and #request.clientId == principal.idClient")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     @Operation(summary = "Crear reserva web", description = "Crea la reserva y devuelve la URL de pago de MercadoPago.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Reserva creada, en estado PENDING, con su URL de pago"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos, rango de fechas al revés, o unidad bloqueada u ocupada", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (como un huésped vacío), vinieron los datos de mostrador (walkInName o walkInDni), rango de fechas al revés, o unidad bloqueada u ocupada", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin credenciales o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Se intentó reservar a nombre de otro cliente, o quien pide es un administrador: él usa la reserva de mostrador", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Falta el clientId, es de otro cliente, o quien pide es un administrador: él usa la reserva de mostrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "La unidad o el cliente no existen", content = @Content),
             @ApiResponse(responseCode = "502", description = "MercadoPago no respondió", content = @Content)
     })
     public ResponseEntity<BookingCheckoutResponse> createBooking(@Valid @RequestBody BookingRequest request) {
+        // El titular a mano es solo del mostrador: la reserva web siempre es del cliente que pide.
+        if (hasText(request.walkInName()) || hasText(request.walkInDni())) {
+            throw new WebBookingWithWalkInException(
+                    "La reserva web es del cliente que la pide: no lleva walkInName ni walkInDni, que son de la reserva de mostrador.");
+        }
         var checkout = checkoutService.start(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new BookingCheckoutResponse(checkout.booking(), checkout.paymentUrl()));
@@ -88,7 +98,7 @@ public class BookingController {
     @Operation(summary = "Crear reserva presencial (Admin)", description = "Crea y confirma automáticamente la reserva sin pasar por MercadoPago.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Reserva confirmada, con un código QR por huésped"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos, vino un clientId, o la unidad está bloqueada u ocupada", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (como un huésped vacío), vino un clientId, o la unidad está bloqueada u ocupada", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o la unidad es de otro balneario", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe una unidad con ese identificador", content = @Content)
