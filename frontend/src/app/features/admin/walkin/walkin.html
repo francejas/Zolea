@@ -99,7 +99,21 @@
             <section class="walkin__section" aria-labelledby="walkin-unit">
               <h2 id="walkin-unit" class="walkin__subtitle">Unidad</h2>
               <p class="walkin__hint">Tocá una sombrilla o una carpa libre de {{ resort.name }}.</p>
-              <z-resort-plan [units]="resort.rentalUnits" [(selectedId)]="selectedId" />
+              @if (notice(); as message) {
+                <z-alert variant="warning" [text]="message" />
+              }
+              @if (occupiedError()) {
+                <z-alert
+                  variant="warning"
+                  text="No pudimos ver qué unidades están ocupadas en esas fechas. Si elegís una tomada, te avisamos al confirmar."
+                />
+              }
+              <z-resort-plan
+                [units]="resort.rentalUnits"
+                [occupiedIds]="occupiedIds()"
+                [(selectedId)]="selectedId"
+                (unitSelected)="onUnitSelected()"
+              />
             </section>
 
             <section class="walkin__section" aria-labelledby="walkin-guests">

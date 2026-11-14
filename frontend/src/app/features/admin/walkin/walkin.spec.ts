@@ -10,6 +10,9 @@ import { WalkIn } from './walkin';
 
 const MY_RESORT = `${environment.apiUrl}/api/resorts/my`;
 const WALKIN = `${environment.apiUrl}/api/bookings/walkin`;
+const occupied = (from: string, to: string) =>
+  `${environment.apiUrl}/api/resorts/1/occupied-units?from=${from}&to=${to}`;
+const TODAY = occupied('2027-01-10', '2027-01-10');
 
 const unit = (
   id: number,
@@ -73,14 +76,33 @@ describe('WalkIn', () => {
     await fixture.whenStable();
   };
 
-  async function open(): Promise<void> {
+  /** Abre la pantalla y responde el balneario y las unidades ocupadas hoy. */
+  async function open(occupiedToday: number[] = []): Promise<void> {
     fixture = TestBed.createComponent(WalkIn);
     page = fixture.nativeElement;
     fixture.detectChanges();
     await fixture.whenStable();
     http.expectOne(MY_RESORT).flush(myResort);
     await settle();
+    http.expectOne(TODAY).flush(occupiedToday);
+    await settle();
   }
+
+  /** Cambia las fechas como lo hace z-date-range: escribe en los dos modelos enlazados. */
+  async function setDates(from: string, to: string): Promise<void> {
+    const walkIn = fixture.componentInstance as unknown as {
+      startDate: { set(value: string): void };
+      endDate: { set(value: string): void };
+    };
+    walkIn.startDate.set(from);
+    walkIn.endDate.set(to);
+    await settle();
+  }
+
+  const unitCell = (identifier: string) =>
+    Array.from(page.querySelectorAll<HTMLButtonElement>('.z-unit')).find((b) =>
+      b.getAttribute('aria-label')?.includes(identifier),
+    )!;
 
   async function type(selector: string, value: string): Promise<void> {
     const input = page.querySelector<HTMLInputElement>(selector)!;
@@ -207,13 +229,58 @@ describe('WalkIn', () => {
     await settle();
 
     button('Nueva reserva').click();
-    await fixture.whenStable();
+    await settle();
+    // Las fechas vuelven a hoy, y se vuelven a pedir las ocupadas: la A-01 ahora está tomada.
+    http.expectOne(TODAY).flush([1]);
+    await settle();
 
     expect(page.querySelector('app-guest-qr')).toBeNull();
     expect(page.querySelector<HTMLInputElement>('#walkin-name')!.value).toBe('');
     expect(page.querySelector<HTMLInputElement>('#walkin-dni')!.value).toBe('');
     expect(page.querySelectorAll('.walkin__guest').length).toBe(0);
     expect(summary()).toContain('Unidad—');
+    expect(unitCell('A-01').getAttribute('aria-label')).toContain('ocupada');
+  });
+
+  describe('las unidades ocupadas', () => {
+    it('el plano marca las ocupadas en las fechas y no deja elegirlas', async () => {
+      await open([1]);
+
+      expect(unitCell('A-01').getAttribute('aria-label')).toContain('ocupada');
+      await chooseUnit('A-01');
+      expect(summary()).toContain('Unidad—');
+    });
+
+    it('al cambiar las fechas las vuelve a pedir y suelta la elegida si quedó ocupada', async () => {
+      await open();
+      await chooseUnit('C-01');
+      expect(summary()).toContain('Carpa C-01');
+
+      await setDates('2027-01-12', '2027-01-14');
+      http.expectOne(occupied('2027-01-12', '2027-01-14')).flush([3]);
+      await settle();
+
+      expect(summary()).toContain('Unidad—');
+      expect(text(page)).toContain('Carpa C-01 está ocupada en esas fechas. Elegí otra unidad.');
+
+      await chooseUnit('A-01');
+      expect(text(page)).not.toContain('está ocupada en esas fechas');
+    });
+
+    it('si no se pueden pedir, lo avisa y deja elegir igual', async () => {
+      fixture = TestBed.createComponent(WalkIn);
+      page = fixture.nativeElement;
+      fixture.detectChanges();
+      await fixture.whenStable();
+      http.expectOne(MY_RESORT).flush(myResort);
+      await settle();
+      http.expectOne(TODAY).flush({ error: 'x' }, { status: 500, statusText: 'x' });
+      await settle();
+
+      expect(text(page)).toContain('No pudimos ver qué unidades están ocupadas en esas fechas.');
+      await chooseUnit('A-01');
+      expect(summary()).toContain('Sombrilla A-01');
+    });
   });
 
   it('sin nombre o sin DNI del titular no sale y marca los campos', async () => {

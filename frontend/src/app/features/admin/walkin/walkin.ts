@@ -35,6 +35,24 @@ const DNI_MESSAGE = 'El DNI son 7 u 8 números, sin puntos.';
 
 const emptyModel = (): WalkInModel => ({ walkInName: '', walkInDni: '', guests: [] });
 
+/** Lo que hace falta para pedir las ocupadas: el balneario y las dos fechas. */
+interface OccupiedQuery {
+  id: number;
+  from: string;
+  to: string;
+  /** Sube con «Nueva reserva»: las fechas vuelven a hoy, pero la unidad recién reservada ya no está libre. */
+  round: number;
+}
+
+const sameQuery = (a: OccupiedQuery | null, b: OccupiedQuery | null) =>
+  a === b ||
+  (a !== null &&
+    b !== null &&
+    a.id === b.id &&
+    a.from === b.from &&
+    a.to === b.to &&
+    a.round === b.round);
+
 /**
  * Reserva en mostrador (`/admin/walkin`): el administrador reserva para alguien que llega sin cuenta
  * y le da la entrada en el momento. Se carga el titular (nombre y DNI), las fechas, la unidad en el
@@ -98,6 +116,27 @@ export class WalkIn {
 
   /** Cada vez que sube, se vuelve a pedir el balneario: es lo que hace Reintentar. */
   private readonly attempt = signal(0);
+
+  /** Las unidades reservadas en las fechas elegidas: el plano las muestra ocupadas y no se eligen. */
+  protected readonly occupiedIds = signal<number[]>([]);
+  /** No se pudieron pedir: el plano queda sin marcar y el backend avisa al confirmar. */
+  protected readonly occupiedError = signal(false);
+  /** El aviso de que la unidad elegida quedó ocupada al cambiar las fechas. */
+  protected readonly notice = signal('');
+  /** Sube con «Nueva reserva», para volver a pedir las ocupadas aunque las fechas sean las mismas. */
+  private readonly round = signal(0);
+
+  /** El balneario y las fechas, o null si todavía no hay qué pedir. */
+  private readonly occupiedQuery = computed<OccupiedQuery | null>(
+    () => {
+      const resort = this.resort();
+      const from = this.startDate();
+      const to = this.endDate();
+      if (!resort || !from || !to || to < from) return null;
+      return { id: resort.idResort, from, to, round: this.round() };
+    },
+    { equal: sameQuery },
+  );
 
   protected readonly selectedUnit = computed<RentalUnit | null>(() => {
     const id = this.selectedId();
@@ -181,6 +220,47 @@ export class WalkIn {
         this.resort.set(resort);
         this.state.set(state);
       });
+
+    // Las ocupadas se piden como en la Ficha: cada vez que cambian las fechas.
+    toObservable(this.occupiedQuery)
+      .pipe(
+        tap((query) => {
+          this.occupiedError.set(false);
+          if (query === null) this.occupiedIds.set([]);
+        }),
+        switchMap((query) =>
+          query === null
+            ? of(null)
+            : this.resortsApi.occupiedUnits(query.id, query.from, query.to).pipe(
+                catchError(() => {
+                  this.occupiedError.set(true);
+                  return of<number[]>([]);
+                }),
+              ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((ids) => {
+        if (ids === null) return;
+        this.occupiedIds.set(ids);
+        this.dropIfOccupied(ids);
+      });
+  }
+
+  /** Si la unidad elegida quedó ocupada en las fechas nuevas, se suelta y se avisa por qué. */
+  private dropIfOccupied(ids: number[]): void {
+    const unit = this.selectedUnit();
+    if (unit === null || !ids.includes(unit.idRentalUnit)) return;
+
+    this.selectedId.set(null);
+    this.notice.set(
+      `${unitLabel(unit.type, unit.identifier)} está ocupada en esas fechas. Elegí otra unidad.`,
+    );
+  }
+
+  /** Al elegir otra unidad el aviso ya no hace falta. */
+  protected onUnitSelected(): void {
+    this.notice.set('');
   }
 
   reload(): void {
@@ -215,11 +295,13 @@ export class WalkIn {
   protected newBooking(): void {
     this.confirmed.set(null);
     this.formError.set('');
+    this.notice.set('');
     this.missingChoice.set(false);
     this.selectedId.set(null);
     this.startDate.set(todayIso());
     this.endDate.set(todayIso());
     this.walkInForm().reset(emptyModel());
+    this.round.update((round) => round + 1);
   }
 
   private async book(): Promise<void> {
