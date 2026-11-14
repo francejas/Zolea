@@ -23,6 +23,14 @@ export class ResortsApi {
     return this.http.get<Resort>(`${this.apiUrl}/${id}`);
   }
 
+  /**
+   * El balneario del administrador de la sesión, con todas sus unidades, también las bloqueadas.
+   * Responde 404 si el administrador no tiene balneario asignado.
+   */
+  mine(): Observable<Resort> {
+    return this.http.get<Resort>(`${this.apiUrl}/my`);
+  }
+
   /** Los `idRentalUnit` reservados en esas fechas, contando los dos extremos. */
   occupiedUnits(id: number | string, from: string, to: string): Observable<number[]> {
     return this.http.get<number[]>(`${this.apiUrl}/${id}/occupied-units`, {

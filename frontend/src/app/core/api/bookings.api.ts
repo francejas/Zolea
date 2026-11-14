@@ -8,6 +8,8 @@ import {
   BookingRequest,
   CancellationResponse,
   PaymentUrlResponse,
+  WalkInBookingRequest,
+  WalkInBookingResponse,
 } from './booking.models';
 
 /** Las reservas. Lo usan el Detalle, Reservar y las reservas del balneario: cada uno suma lo suyo. */
@@ -30,6 +32,14 @@ export class BookingsApi {
   /** Crea la reserva (queda pendiente) y trae la dirección de MercadoPago para pagarla. */
   create(request: BookingRequest): Observable<BookingCheckout> {
     return this.http.post<BookingCheckout>(this.apiUrl, request);
+  }
+
+  /**
+   * La reserva en mostrador, para quien llega sin cuenta. Se confirma en el acto, sin MercadoPago:
+   * se cobra en el mostrador. Solo sobre unidades del balneario del administrador.
+   */
+  walkIn(request: WalkInBookingRequest): Observable<WalkInBookingResponse> {
+    return this.http.post<WalkInBookingResponse>(`${this.apiUrl}/walkin`, request);
   }
 
   /** Una dirección de pago nueva para una reserva pendiente. */
