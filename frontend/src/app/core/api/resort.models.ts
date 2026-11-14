@@ -19,6 +19,8 @@ export interface RentalUnit {
   dailyPrice: number;
   isBlocked: boolean;
   resortId: number;
+  /** Dada de baja: definitivo. Sigue en la lista del administrador para conservar el historial. */
+  retired: boolean;
 }
 
 /** El pedido de `POST /api/rental-units`. `resortId` es el `idManagedResort` de la sesión. */

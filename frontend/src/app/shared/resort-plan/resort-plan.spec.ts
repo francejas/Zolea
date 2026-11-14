@@ -14,6 +14,7 @@ function zoleaClub(): RentalUnit[] {
         dailyPrice: price,
         isBlocked: blocked.includes(n),
         resortId: 1,
+        retired: false,
       });
     }
   };
