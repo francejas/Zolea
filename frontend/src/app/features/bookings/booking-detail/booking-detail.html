@@ -86,6 +86,12 @@
 
           <!-- Al costado, lo que se hace ahora: pagar, entrar o nada, según el estado. -->
           <div class="booking__side">
+            @if (cancelNotice(); as notice) {
+              <div id="booking-cancel-notice" tabindex="-1">
+                <z-alert variant="success" [title]="notice.title" [text]="notice.text" />
+              </div>
+            }
+
             @if (actionError()) {
               <z-alert variant="danger" title="No se pudo hacer" [text]="actionError()" />
             }
@@ -102,27 +108,10 @@
                   Cancelar reserva
                 </z-btn>
               </div>
-
-              <dialog #cancelDialog class="z-modal" aria-labelledby="cancel-title">
-                <h2 id="cancel-title" class="z-modal__title">¿Cancelás la reserva?</h2>
-                <p class="z-modal__body">
-                  La {{ unit() }} queda libre para esos días. No se puede deshacer.
-                </p>
-                <div class="z-modal__actions">
-                  <z-btn variant="secondary" block [disabled]="canceling()" (click)="closeCancel()">
-                    Volver
-                  </z-btn>
-                  <z-btn variant="danger" block [loading]="canceling()" (click)="confirmCancel()">
-                    Cancelar reserva
-                  </z-btn>
-                </div>
-              </dialog>
             }
 
             @if (booking.status === 'CANCELED') {
-              <p class="booking__note" role="status">
-                Esta reserva está cancelada. La unidad quedó libre para esos días.
-              </p>
+              <p class="booking__note">{{ canceledText() }}</p>
             }
 
             @if (booking.status === 'CONFIRMED' && currentGuest(); as guest) {
@@ -158,6 +147,61 @@
                   }
                 </app-guest-qr>
               </section>
+            }
+
+            <!-- Una confirmada se cancela si el backend dice que hoy se puede; si no, dice por qué. -->
+            @if (booking.status === 'CONFIRMED' && terms(); as terms) {
+              <div class="booking__cancel">
+                @if (terms.canCancel) {
+                  <z-btn variant="secondary" (click)="askCancel()">Cancelar reserva</z-btn>
+                } @else if (terms.reason) {
+                  <p class="booking__note">{{ terms.reason }}</p>
+                }
+              </div>
+            }
+
+            <!-- Solo existe si se puede cancelar: si no, su botón quedaría en la página. -->
+            @if (booking.status === 'PENDING' || terms()?.canCancel) {
+              <dialog
+                #cancelDialog
+                class="z-modal"
+                aria-labelledby="cancel-title"
+                aria-describedby="cancel-refund"
+              >
+                <h2 id="cancel-title" class="z-modal__title">¿Cancelás la reserva?</h2>
+                <!-- Las condiciones se vuelven a pedir al abrir: mientras llegan, no se promete nada. -->
+                @if (checking()) {
+                  <p class="booking__hint" role="status">Revisando cuánto se devuelve…</p>
+                } @else if (quoteError(); as message) {
+                  <z-alert variant="danger" [text]="message" />
+                } @else if (quote(); as quote) {
+                  @if (quote.canCancel) {
+                    <p id="cancel-refund" class="booking__refund">{{ refundText() }}</p>
+                    <p class="z-modal__body">
+                      La {{ unit() }} queda libre para esos días. No se puede deshacer.
+                    </p>
+                  } @else {
+                    <z-alert
+                      variant="warning"
+                      [text]="quote.reason || 'Esta reserva ya no se puede cancelar.'"
+                    />
+                  }
+                }
+                <div class="z-modal__actions">
+                  <z-btn variant="secondary" block [disabled]="canceling()" (click)="closeCancel()">
+                    Volver
+                  </z-btn>
+                  <z-btn
+                    variant="danger"
+                    block
+                    [disabled]="checking() || !quote()?.canCancel"
+                    [loading]="canceling()"
+                    (click)="confirmCancel()"
+                  >
+                    Cancelar reserva
+                  </z-btn>
+                </div>
+              </dialog>
             }
           </div>
         </div>
