@@ -117,7 +117,7 @@ public class ResortController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Actualizar mi balneario (Admin)")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "El balneario como quedó. Lo que no venga en el pedido no se toca, y el email del administrador no se cambia por esta vía"),
+            @ApiResponse(responseCode = "200", description = "El balneario como quedó. La descripción y la foto se reemplazan siempre: vacías o sin mandar, se borran. El nombre, la ubicación y los servicios, si no vienen, no se tocan. El email del administrador no se cambia por esta vía"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "El administrador no tiene balneario asignado", content = @Content)

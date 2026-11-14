@@ -177,6 +177,11 @@ public class ResortService {
         return "%" + escaped + "%";
     }
 
+    /** Un texto vacío o con solo espacios es «sin texto»: null, como si nunca se hubiera cargado. */
+    private static String blankToNull(String text) {
+        return text == null || text.isBlank() ? null : text.trim();
+    }
+
     /**
      * El promedio y la cantidad de reseñas de esos balnearios, en una sola consulta para todo el
      * listado. Un balneario sin reseñas no queda en el mapa.
@@ -276,6 +281,11 @@ public class ResortService {
         String emailOriginal = resort.getAdminEmail();
         applyChanges(resort, request);
         resort.setAdminEmail(emailOriginal);
+
+        // Mi balneario manda siempre el formulario entero: una descripción o una foto vacías son las
+        // que el administrador borró, no las que faltan. El PUT con el id sigue conservándolas.
+        resort.setDescription(blankToNull(request.description()));
+        resort.setCoverPhotoUrl(blankToNull(request.coverPhotoUrl()));
 
         return mapToResponse(resortRepository.save(resort));
     }
