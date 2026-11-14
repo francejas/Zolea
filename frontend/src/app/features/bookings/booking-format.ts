@@ -1,4 +1,4 @@
-import { Booking, BookingStatus } from '../../core/api/booking.models';
+import { Booking, BookingStatus, CancellationResponse } from '../../core/api/booking.models';
 import { parseResortDateTime } from '../../shared/utils/days';
 import { money, unitLabel } from '../../shared/utils/format';
 
@@ -63,6 +63,49 @@ export function paymentExpired(
   now: number,
 ): boolean {
   return booking.status === 'PENDING' && now >= paymentDeadline(booking.createdAt);
+}
+
+/**
+ * Lo que dice la confirmación de cancelar: cuánto se devuelve. Una pendiente no tiene reintegro,
+ * y el 50 % es cuando falta un día para la entrada (14.3).
+ */
+export function refundOffer(
+  terms: Pick<CancellationResponse, 'refundAmount' | 'refundPercent'>,
+): string {
+  const { refundAmount: amount, refundPercent: percent } = terms;
+  if (!amount || !percent) return 'No pagaste nada todavía: no hay reintegro.';
+  if (percent === 100) return `Te devolvemos ${money(amount)}, el 100 % de lo que pagaste.`;
+  return `Te devolvemos ${money(amount)}, el ${percent} % de lo que pagaste, porque falta un día para la entrada.`;
+}
+
+/**
+ * Una cancelada, en una frase: quién, cuándo y cuánto se reintegró. `canceledAt` llega en hora del
+ * balneario: se lee tal cual, sin pasarlo por la zona de la computadora.
+ */
+export function cancellationSummary(
+  booking: Pick<Booking, 'canceledAt' | 'canceledBy' | 'refundAmount'>,
+): string {
+  const at = booking.canceledAt;
+  const when = at ? ` el ${shortDate(at.slice(0, 10))} a las ${at.slice(11, 16)}` : '';
+  const refund = booking.refundAmount ? ` Se reintegraron ${money(booking.refundAmount)}.` : '';
+  switch (booking.canceledBy) {
+    case 'CLIENT':
+      return `La cancelaste${when}.${refund}`;
+    case 'ADMIN':
+      return `La canceló el balneario${when}.${refund}`;
+    case 'SYSTEM':
+      return `Se canceló sola${when}, porque no se pagó a tiempo.${refund}`;
+    default:
+      return `Se canceló${when}.${refund}`;
+  }
+}
+
+/** El reintegro de una cancelada, para su tarjeta; null si no está cancelada. */
+export function refundLine(booking: Pick<Booking, 'status' | 'refundAmount'>): string | null {
+  if (booking.status !== 'CANCELED') return null;
+  return booking.refundAmount
+    ? `Se reintegraron ${money(booking.refundAmount)}.`
+    : 'Sin reintegro: no estaba paga.';
 }
 
 /** «#0047». */
