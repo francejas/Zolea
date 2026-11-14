@@ -1,9 +1,19 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, ElementRef, inject, signal, viewChildren } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  Injector,
+  signal,
+  viewChildren,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { LucideCalendarDays, LucideTent, LucideUmbrella } from '@lucide/angular';
+import { LucideCalendarDays, LucideStar, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { Booking } from '../../../core/api/booking.models';
 import { BookingsApi } from '../../../core/api/bookings.api';
+import { Review } from '../../../core/api/review.models';
 import { toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
 import { todayIso } from '../../../shared/utils/days';
@@ -20,6 +30,7 @@ import {
   shortDate,
   unitLabel,
 } from '../booking-format';
+import { ReviewDialog } from '../review-dialog/review-dialog';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -91,19 +102,26 @@ interface BookingCard {
   notice: PayNotice | null;
   /** Ya no se puede pagar: en lugar de «Pagar», «Volver a reservar». */
   rebook: boolean;
+  /** Pasada, confirmada y sin calificar: lleva «Calificar». */
+  canReview: boolean;
+  /** «Calificaste con 4 estrellas.», o null si no la calificó. */
+  reviewed: string | null;
 }
 
 /**
  * Mis reservas: las del cliente de la sesión, en tres pestañas. Una confirmada lleva a sus
- * entradas, una pendiente se paga desde acá y una cancelada no tiene acción.
+ * entradas, una pendiente se paga desde acá, una pasada se califica y una cancelada no tiene
+ * acción.
  */
 @Component({
   selector: 'app-my-bookings',
   imports: [
     RouterLink,
     LucideCalendarDays,
+    LucideStar,
     LucideTent,
     LucideUmbrella,
+    ReviewDialog,
     ZAlert,
     ZBtn,
     ZEmpty,
@@ -117,6 +135,8 @@ export class MyBookings {
   private readonly bookingsApi = inject(BookingsApi);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tabButtons = viewChildren<ElementRef<HTMLButtonElement>>('tabButton');
 
   protected readonly tabs = TABS;
@@ -137,6 +157,10 @@ export class MyBookings {
    * persona la estaba mirando, con el aviso, hasta que se vuelve a cargar.
    */
   private readonly placed = signal<Readonly<Record<number, BookingTab>>>({});
+  /** La reserva que se está calificando: mientras tanto, el diálogo está abierto. */
+  protected readonly reviewing = signal<Booking | null>(null);
+  /** Las estrellas que puso en cada reserva que calificó con la pantalla abierta. */
+  private readonly ratings = signal<Readonly<Record<number, number>>>({});
   /** La hora contra la que se mira si una pendiente venció: se toma al traer las reservas. */
   private readonly now = signal(Date.now());
 
@@ -239,12 +263,58 @@ export class MyBookings {
     });
   }
 
+  protected review(booking: Booking): void {
+    this.reviewing.set(booking);
+  }
+
+  /** Calificó: la tarjeta deja el botón y dice con cuántas estrellas. */
+  protected onReviewed(booking: Booking, review: Review): void {
+    this.ratings.update((ratings) => ({ ...ratings, [booking.id]: review.rating }));
+    this.bookings.update((list) =>
+      list.map((b) => (b.id === booking.id ? { ...b, reviewed: true } : b)),
+    );
+    this.reviewing.set(null);
+    this.focusReviewed(booking.id);
+  }
+
+  /** Se cerró sin calificar: si mientras tanto quedó calificada, el botón ya no está. */
+  protected onReviewClosed(booking: Booking): void {
+    this.reviewing.set(null);
+    this.focusReviewed(booking.id);
+  }
+
+  /** El backend no aceptó la reseña: la reserva como está ahora dice si ya se calificó. */
+  protected onReviewRejected(booking: Booking): void {
+    this.bookingsApi.get(booking.id).subscribe({
+      next: (current) => this.replace(booking, current),
+      // Sin la reserva, queda el motivo que el diálogo ya muestra.
+      error: () => undefined,
+    });
+  }
+
+  /**
+   * Si la tarjeta ya no tiene «Calificar», el foco pasa a lo que dice que se calificó: si no, al
+   * desaparecer el botón quedaría en ningún lado. Así también se lee el resultado.
+   */
+  private focusReviewed(id: number): void {
+    afterNextRender(
+      () =>
+        this.host.nativeElement.querySelector<HTMLElement>(`#my-bookings-reviewed-${id}`)?.focus(),
+      { injector: this.injector },
+    );
+  }
+
   /** La reserva como está ahora, en el mismo lugar de la lista. */
+  private replace(booking: Booking, current: Booking): void {
+    this.placed.update((placed) => ({ ...placed, [booking.id]: this.tabFor(booking) }));
+    this.bookings.update((list) => list.map((b) => (b.id === current.id ? current : b)));
+  }
+
+  /** Al pagar respondió 400: la reserva como está ahora dice si venció, se pagó o se canceló. */
   private refresh(booking: Booking, rejection: HttpErrorResponse): void {
     this.bookingsApi.get(booking.id).subscribe({
       next: (current) => {
-        this.placed.update((placed) => ({ ...placed, [booking.id]: this.tabFor(booking) }));
-        this.bookings.update((list) => list.map((b) => (b.id === current.id ? current : b)));
+        this.replace(booking, current);
         this.rejected.update((ids) => new Set(ids).add(booking.id));
         this.now.set(Date.now());
         this.paying.set(null);
@@ -294,6 +364,14 @@ export class MyBookings {
     window.location.assign(url);
   }
 
+  /** Con las estrellas si calificó recién; si fue antes, la API no las trae. */
+  private reviewedText(booking: Booking): string | null {
+    if (!booking.reviewed) return null;
+    const rating = this.ratings()[booking.id];
+    if (rating === undefined) return 'Ya calificaste esta estadía.';
+    return `Calificaste con ${rating} ${rating === 1 ? 'estrella' : 'estrellas'}.`;
+  }
+
   private toCard(booking: Booking): BookingCard {
     const count = dayCount(booking.startDate, booking.endDate);
     const range =
@@ -313,6 +391,11 @@ export class MyBookings {
         booking.endDate >= this.today,
       notice,
       rebook: notice !== null && notice !== PAID,
+      canReview:
+        booking.status === 'CONFIRMED' &&
+        !booking.reviewed &&
+        tabOf(booking, this.today) === 'past',
+      reviewed: this.reviewedText(booking),
     };
   }
 }

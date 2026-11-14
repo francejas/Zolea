@@ -13,8 +13,10 @@ import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { ZRating } from '../../../shared/z-rating/z-rating';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 import { amenityIcon } from '../../../shared/utils/amenity-icons';
+import { ResortReviews } from '../resort-reviews/resort-reviews';
 
 type Status = 'loading' | 'ready' | 'not-found' | 'error';
 
@@ -54,11 +56,13 @@ const pesosCents = new Intl.NumberFormat('es-AR', { style: 'currency', currency:
     LucideDynamicIcon,
     LucideMapPin,
     ResortPlan,
+    ResortReviews,
     RouterLink,
     ZAlert,
     ZDateRange,
     ZEmpty,
     ZProblem,
+    ZRating,
     ZSkeleton,
   ],
   styleUrl: './resort-detail.scss',

@@ -109,6 +109,18 @@
                       <z-alert variant="danger" title="No se pudo pagar" [text]="error" />
                     }
 
+                    @if (card.reviewed; as reviewed) {
+                      <!-- Recibe el foco cuando desaparece «Calificar»: así no se pierde. -->
+                      <p
+                        class="my-bookings__reviewed"
+                        tabindex="-1"
+                        [id]="'my-bookings-reviewed-' + card.booking.id"
+                      >
+                        <svg lucideStar class="z-icon z-icon--s" aria-hidden="true"></svg>
+                        {{ reviewed }}
+                      </p>
+                    }
+
                     <div class="z-booking-card__foot">
                       <div class="z-total">
                         <span>Total</span>
@@ -126,12 +138,17 @@
                       } @else {
                         @switch (card.booking.status) {
                           @case ('CONFIRMED') {
-                            <a
-                              class="z-btn z-btn--secondary"
-                              [routerLink]="['/bookings', card.booking.id]"
-                            >
-                              {{ tab() === 'upcoming' ? 'Ver entradas' : 'Ver reserva' }}
-                            </a>
+                            <div class="my-bookings__actions">
+                              <a
+                                class="z-btn z-btn--secondary"
+                                [routerLink]="['/bookings', card.booking.id]"
+                              >
+                                {{ tab() === 'upcoming' ? 'Ver entradas' : 'Ver reserva' }}
+                              </a>
+                              @if (card.canReview) {
+                                <z-btn (click)="review(card.booking)">Calificar</z-btn>
+                              }
+                            </div>
                           }
                           @case ('PENDING') {
                             <z-btn
@@ -153,5 +170,14 @@
         </div>
       }
     }
+  }
+
+  @if (reviewing(); as booking) {
+    <app-review-dialog
+      [booking]="booking"
+      (saved)="onReviewed(booking, $event)"
+      (closed)="onReviewClosed(booking)"
+      (rejected)="onReviewRejected(booking)"
+    />
   }
 </section>

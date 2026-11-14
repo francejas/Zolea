@@ -67,14 +67,6 @@ describe('ResortsApi', () => {
     expect(ids).toEqual([12, 15]);
   });
 
-  it('reviews hace GET /api/resorts/{id}/reviews', () => {
-    api.reviews(4).subscribe();
-
-    const req = http.expectOne(`${URL}/4/reviews`);
-    expect(req.request.method).toBe('GET');
-    req.flush([]);
-  });
-
   it('mine hace GET /api/resorts/my', () => {
     api.mine().subscribe();
 

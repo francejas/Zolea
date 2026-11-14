@@ -2,9 +2,12 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { provideRouter, Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { RentalUnit, Resort } from '../../../core/api/resort.models';
+import { Review } from '../../../core/api/review.models';
+import { ReviewsApi } from '../../../core/api/reviews.api';
 import { SessionService } from '../../../core/session/session.service';
 import { ResortDetail } from './resort-detail';
 
@@ -56,6 +59,8 @@ const text = (el: Element | null | undefined) =>
 
 describe('ResortDetail', () => {
   const loggedIn = signal(false);
+  // Las reseñas tienen sus propias pruebas (resort-reviews): acá alcanza con lo que devuelvan.
+  let reviews: Review[] = [];
   let fixture: ComponentFixture<ResortDetail>;
   let http: HttpTestingController;
   let router: Router;
@@ -63,6 +68,7 @@ describe('ResortDetail', () => {
 
   beforeEach(() => {
     loggedIn.set(false);
+    reviews = [];
     TestBed.configureTestingModule({
       imports: [ResortDetail],
       providers: [
@@ -70,6 +76,7 @@ describe('ResortDetail', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SessionService, useValue: { isLoggedIn: loggedIn } },
+        { provide: ReviewsApi, useValue: { listByResort: () => of(reviews) } },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -444,6 +451,39 @@ describe('ResortDetail', () => {
 
       expect(http.expectOne(`${API}/2`).request.method).toBe('GET');
       expect(fixture.componentInstance.selectedUnit()).toBeNull();
+    });
+  });
+  describe('las reseñas', () => {
+    it('arriba, el promedio con sus estrellas y la cantidad', async () => {
+      await respondWith(resort({ averageRating: 4.5, reviewCount: 12 }));
+
+      expect(text(page.querySelector('.detail__head z-rating'))).toBe(
+        '4,5 de 5 estrellas · 12 reseñas',
+      );
+    });
+
+    it('sin reseñas, arriba no dice nada y abajo lo cuenta', async () => {
+      await respondWith(resort({ averageRating: null, reviewCount: 0 }));
+
+      expect(page.querySelector('.detail__head z-rating')).toBeNull();
+      expect(text(page)).toContain('Todavía nadie calificó este balneario.');
+    });
+
+    it('abajo, la lista de comentarios', async () => {
+      reviews = [
+        {
+          author: 'Santiago R.',
+          rating: 5,
+          comment: 'Excelente.',
+          createdAt: '2026-01-12T18:30:00',
+        },
+      ];
+      await respondWith(resort({ averageRating: 5, reviewCount: 1 }));
+
+      expect(text(page.querySelector('.reviews__comment'))).toBe('Excelente.');
+      expect(text(page.querySelector('.reviews__byline'))).toBe(
+        'Santiago R. · 12 de enero de 2026',
+      );
     });
   });
 });

@@ -242,18 +242,6 @@ h1 {
   padding: var(--space-3) 0;
 }
 
-.panel__stars {
-  display: flex;
-  gap: 2px;
-  color: var(--color-line-strong);
-}
-
-/* Coral-texto: el coral de la marca no llega a 3:1 contra la espuma. */
-.panel__star--on {
-  color: var(--color-coral-text);
-  fill: var(--color-coral-text);
-}
-
 .panel__quote {
   margin: 0;
 }

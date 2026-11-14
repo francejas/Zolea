@@ -157,6 +157,19 @@ describe('ResortList', () => {
     expect(cards[1].querySelector('.z-price-from')).toBeNull();
   });
 
+  it('cada tarjeta con reseñas lleva el promedio y la cantidad; sin reseñas, nada', async () => {
+    await respondWith([
+      resort({ idResort: 1, name: 'Con reseñas', averageRating: 4.5, reviewCount: 12 }),
+      resort({ idResort: 2, name: 'Sin reseñas', averageRating: null, reviewCount: 0 }),
+    ]);
+
+    const cards = page.querySelectorAll('.z-resort-card');
+    expect(cards[0].querySelector('z-rating')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      '4,5 de 5 estrellas · 12 reseñas',
+    );
+    expect(cards[1].querySelector('z-rating')).toBeNull();
+  });
+
   it('anuncia la cantidad de resultados en un texto aparte, sin aria-live en la sección', async () => {
     await respondWith([arenaDorada, solYMar]);
 

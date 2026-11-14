@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ChartConfiguration } from 'chart.js';
 import { environment } from '../../../../environments/environment';
-import { Review } from '../../../core/api/resort.models';
+import { Review } from '../../../core/api/review.models';
 import { ResortStats } from '../../../core/api/stats.models';
 import { SessionService } from '../../../core/session/session.service';
 import { ZChart } from '../../../shared/chart/z-chart';
@@ -233,10 +233,10 @@ describe('Dashboard', () => {
 
     const reviews = page.querySelectorAll('.panel__review');
     expect(reviews.length).toBe(3);
-    expect(reviews[1].querySelector('.panel__stars')!.getAttribute('aria-label')).toBe(
+    expect(reviews[1].querySelector('z-rating')!.textContent!.replace(/\s+/g, ' ')).toContain(
       '4 de 5 estrellas',
     );
-    expect(reviews[1].querySelectorAll('.panel__star--on').length).toBe(4);
+    expect(reviews[1].querySelectorAll('.z-rating__star--on').length).toBe(4);
     expect(text()).not.toContain('Viejo V.');
     expect(text()).toContain('Ningún cliente canceló en los últimos 7 días.');
   });
