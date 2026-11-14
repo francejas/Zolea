@@ -1,0 +1,239 @@
+/* Mi balneario. Se diseña desde la computadora: a la izquierda la cuenta, los datos, los servicios y
+   la baja; a la derecha, fija mientras se baja, la tarjeta de la Portada armada con lo que hay
+   escrito. Debajo de 960 px va todo en una columna, con la tarjeta después del formulario. */
+
+:host {
+  display: block;
+}
+
+.my-resort {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 1040px;
+}
+
+.my-resort__head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.my-resort__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.my-resort__h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.my-resort__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.my-resort__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  /* En el celular, el formulario primero: la tarjeta ocupa casi una pantalla. */
+  grid-template-areas:
+    'account'
+    'form'
+    'preview'
+    'status';
+  gap: var(--space-6);
+}
+
+@media (min-width: 960px) {
+  .my-resort__layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-areas:
+      'account preview'
+      'form preview'
+      'status preview';
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--space-7);
+  }
+
+  .my-resort__preview {
+    position: sticky;
+    top: var(--space-6);
+    align-self: start;
+  }
+}
+
+.my-resort__account {
+  grid-area: account;
+}
+
+.my-resort__preview {
+  grid-area: preview;
+}
+
+.my-resort__form {
+  grid-area: form;
+  display: grid;
+  gap: var(--space-6);
+}
+
+.my-resort__status {
+  grid-area: status;
+  justify-items: start;
+  padding-top: var(--space-6);
+  border-top: var(--border);
+}
+
+.my-resort__section,
+.my-resort__account,
+.my-resort__preview {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  min-width: 0;
+}
+
+.my-resort__subtitle {
+  margin: 0;
+  padding: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.my-resort__hint {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.my-resort__hint--warning {
+  color: var(--color-warning-text);
+}
+
+/* La cuenta: dos datos en fila, para leer y no para editar. */
+.my-resort__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-7);
+  margin: 0;
+
+  dt {
+    font: 500 var(--text-label) / 1.2 var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    margin: var(--space-1) 0 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Arriba: la ayuda de la ubicación no tiene que bajar el campo del nombre. */
+.my-resort__pair {
+  display: grid;
+  align-items: start;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .my-resort__pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.my-resort__description {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+}
+
+.my-resort__amenities {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: var(--space-3);
+  }
+}
+
+.my-resort__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.my-resort__missing {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.my-resort__actions {
+  display: flex;
+}
+
+/* La tarjeta de la Portada, como la dibuja la lista de balnearios (resort-list.scss). */
+.my-resort__card {
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+  transition: opacity var(--duration) var(--ease);
+}
+
+/* Desactivado: en neutro, como lo bloqueado. */
+.my-resort__card--off {
+  opacity: 0.55;
+  filter: grayscale(1);
+}
+
+.my-resort__card-body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.my-resort__card-name {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.my-resort__card-price {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+
+  strong {
+    font-size: 16px;
+    color: var(--color-ink);
+  }
+}
+
+.my-resort__loading {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.my-resort__loading-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 960px) {
+  .my-resort__loading {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    column-gap: var(--space-7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-resort__card {
+    transition: none;
+  }
+}

@@ -1,0 +1,284 @@
+<section class="my-resort">
+  <header class="my-resort__head">
+    <div class="my-resort__title">
+      <h1 class="my-resort__h1">Mi balneario</h1>
+      @if (state() === 'ready' && resort(); as resort) {
+        @if (resort.active) {
+          <span class="z-status z-status--confirmed">Publicado</span>
+        } @else {
+          <span class="z-status z-status--neutral">Desactivado</span>
+        }
+      }
+    </div>
+    <p class="my-resort__lead">
+      Los datos y los servicios que los clientes ven en la Portada y en la Ficha de tu balneario.
+    </p>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="my-resort__loading" aria-busy="true" aria-label="Cargando tu balneario">
+        <div class="my-resort__loading-form">
+          @for (line of skeletonLines; track line) {
+            <z-skeleton height="56px" />
+          }
+        </div>
+        <z-skeleton class="my-resort__loading-card" height="320px" />
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem
+        title="No pudimos traer tu balneario"
+        text="Revisá tu conexión y probá de nuevo."
+        (retry)="load()"
+      />
+    }
+
+    @case ('no-resort') {
+      <z-empty
+        title="No tenés un balneario asignado"
+        text="Esta cuenta no administra ningún balneario, así que no hay datos para editar."
+      />
+    }
+
+    @case ('ready') {
+      @if (resort(); as resort) {
+        <div class="my-resort__layout">
+          @if (account(); as account) {
+            <section class="my-resort__account" aria-labelledby="my-resort-account">
+              <h2 id="my-resort-account" class="my-resort__subtitle">Tu cuenta</h2>
+              <dl class="my-resort__facts">
+                <div>
+                  <dt>Nombre</dt>
+                  <dd>{{ account.name }}</dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd>{{ account.email }}</dd>
+                </div>
+              </dl>
+              <p class="my-resort__hint">Con este email entrás al panel. No se cambia desde acá.</p>
+            </section>
+          }
+
+          <!-- La tarjeta de la Portada, armada con lo que hay escrito: se ve antes de guardar. -->
+          <aside class="my-resort__preview" aria-labelledby="my-resort-preview">
+            <p id="my-resort-preview" class="z-eyebrow">
+              {{ resort.active ? 'Así te ven en la Portada' : 'No aparece en la Portada' }}
+            </p>
+
+            @let card = preview();
+            <div class="my-resort__card" [class.my-resort__card--off]="!resort.active">
+              <div class="z-photo">
+                @if (card.photo; as photo) {
+                  <img [src]="photo" alt="" (error)="onPhotoError(photo)" />
+                }
+              </div>
+              <div class="my-resort__card-body">
+                <p class="my-resort__card-name">{{ card.name }}</p>
+                <p class="z-place">
+                  <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ card.location }}
+                </p>
+                @if (card.amenities.length > 0) {
+                  <div class="z-amenities">
+                    @for (amenity of card.amenities; track amenity.idAmenity) {
+                      <span class="z-amenity">
+                        <svg lucideCheck class="z-icon" aria-hidden="true"></svg>{{ amenity.name }}
+                      </span>
+                    }
+                    @if (card.moreAmenities > 0) {
+                      <span class="z-amenity z-amenity--more">
+                        +{{ card.moreAmenities
+                        }}<span class="z-visually-hidden"> servicios más</span>
+                      </span>
+                    }
+                  </div>
+                }
+                @if (card.price; as price) {
+                  <p class="my-resort__card-price">
+                    desde <strong class="z-money">{{ price }}</strong> por día
+                  </p>
+                }
+              </div>
+            </div>
+
+            @if (card.photoBroken) {
+              <p class="my-resort__hint my-resort__hint--warning">
+                No se pudo cargar la imagen de esa dirección: la Portada mostraría el dibujo de
+                cielo, mar y arena.
+              </p>
+            }
+            @if (!resort.active) {
+              <p class="my-resort__hint">
+                Mientras esté desactivado, los clientes no lo encuentran ni pueden reservar.
+              </p>
+            }
+          </aside>
+
+          <form class="my-resort__form" novalidate (submit)="onSubmit($event)">
+            <section class="my-resort__section" aria-labelledby="my-resort-data">
+              <h2 id="my-resort-data" class="my-resort__subtitle">Datos</h2>
+              <div class="my-resort__pair">
+                <z-field [field]="resortForm.name" inputId="resort-name" label="Nombre">
+                  <input
+                    class="z-input"
+                    type="text"
+                    id="resort-name"
+                    autocomplete="organization"
+                    [formField]="resortForm.name"
+                  />
+                </z-field>
+                <z-field
+                  [field]="resortForm.location"
+                  inputId="resort-location"
+                  label="Ubicación"
+                  help="La ciudad y la provincia, como la buscan los clientes."
+                >
+                  <input
+                    class="z-input"
+                    type="text"
+                    id="resort-location"
+                    autocomplete="off"
+                    [formField]="resortForm.location"
+                  />
+                </z-field>
+              </div>
+
+              <z-field
+                [field]="resortForm.description"
+                inputId="resort-description"
+                label="Descripción (opcional)"
+                help="Se lee en la Ficha: qué tiene el balneario y por qué elegirlo."
+              >
+                <textarea
+                  class="z-input my-resort__description"
+                  id="resort-description"
+                  rows="4"
+                  [formField]="resortForm.description"
+                ></textarea>
+              </z-field>
+
+              <z-field
+                [field]="resortForm.coverPhotoUrl"
+                inputId="resort-photo"
+                label="Foto de portada (opcional)"
+                help="La dirección de una imagen ya publicada, por ejemplo en tu web. Se ve en la tarjeta de la Portada."
+              >
+                <input
+                  class="z-input"
+                  type="url"
+                  id="resort-photo"
+                  inputmode="url"
+                  autocomplete="off"
+                  placeholder="https://"
+                  [formField]="resortForm.coverPhotoUrl"
+                />
+              </z-field>
+            </section>
+
+            <fieldset class="my-resort__section my-resort__amenities">
+              <legend class="my-resort__subtitle">Servicios que ofrece</legend>
+              <p class="my-resort__hint">
+                Marcá los que tiene tu balneario: los clientes buscan balnearios por estos
+                servicios.
+              </p>
+              <div class="my-resort__choices">
+                @for (amenity of catalog(); track amenity.idAmenity) {
+                  <label class="z-choice">
+                    <input
+                      type="checkbox"
+                      [checked]="isOffered(amenity.idAmenity)"
+                      (change)="toggleAmenity(amenity.idAmenity)"
+                    />
+                    <svg
+                      [lucideIcon]="amenityIcon(amenity.name)"
+                      class="z-icon z-icon--s z-choice__icon"
+                      aria-hidden="true"
+                    ></svg>
+                    <svg
+                      lucideCheck
+                      class="z-icon z-icon--s z-choice__check"
+                      aria-hidden="true"
+                    ></svg
+                    >{{ amenity.name }}
+                  </label>
+                }
+              </div>
+              <p class="my-resort__missing">¿Falta un servicio? Pedíselo a Zolea.</p>
+            </fieldset>
+
+            @if (formError(); as message) {
+              <z-alert variant="danger" title="No se pudo guardar" [text]="message" />
+            }
+            @if (saved() && !changed()) {
+              <z-alert
+                variant="success"
+                title="Guardamos los cambios"
+                [text]="
+                  resort.active
+                    ? 'Los clientes ya ven lo nuevo en la Portada y en la Ficha.'
+                    : 'Se van a ver cuando reactives el balneario.'
+                "
+              />
+            }
+
+            <div class="my-resort__actions">
+              <z-btn type="submit" [loading]="resortForm().submitting()">Guardar cambios</z-btn>
+            </div>
+          </form>
+
+          <section class="my-resort__section my-resort__status" aria-labelledby="my-resort-status">
+            @if (activeNotice(); as notice) {
+              <div id="my-resort-active-notice" tabindex="-1">
+                <z-alert variant="success" [title]="notice.title" [text]="notice.text" />
+              </div>
+            }
+            @if (activeError(); as message) {
+              <z-alert variant="danger" title="No se pudo hacer" [text]="message" />
+            }
+
+            @if (resort.active) {
+              <h2 id="my-resort-status" class="my-resort__subtitle">Desactivar el balneario</h2>
+              <p class="my-resort__hint">
+                Deja de aparecer en la Portada y no toma reservas nuevas. Las reservas que ya tiene
+                siguen valiendo, y lo podés reactivar cuando quieras.
+              </p>
+              <z-btn variant="secondary" (click)="askDeactivate()">Desactivar el balneario</z-btn>
+            } @else {
+              <h2 id="my-resort-status" class="my-resort__subtitle">
+                El balneario está desactivado
+              </h2>
+              <p class="my-resort__hint">
+                No aparece en la Portada y no toma reservas nuevas. Las que ya tenía siguen
+                valiendo.
+              </p>
+              <z-btn [loading]="toggling()" (click)="reactivate()">Reactivar</z-btn>
+            }
+          </section>
+        </div>
+
+        <dialog
+          #deactivateDialog
+          class="z-modal"
+          aria-labelledby="deactivate-title"
+          aria-describedby="deactivate-text"
+        >
+          <h2 id="deactivate-title" class="z-modal__title">¿Desactivás {{ resort.name }}?</h2>
+          <p id="deactivate-text" class="z-modal__body">
+            Deja de aparecer en la Portada y no toma reservas nuevas, pero las reservas que ya tiene
+            siguen valiendo.
+          </p>
+          <div class="z-modal__actions">
+            <z-btn variant="secondary" block [disabled]="toggling()" (click)="closeDeactivate()">
+              Volver
+            </z-btn>
+            <z-btn variant="danger" block [loading]="toggling()" (click)="confirmDeactivate()">
+              Desactivar
+            </z-btn>
+          </div>
+        </dialog>
+      }
+    }
+  }
+</section>
