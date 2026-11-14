@@ -706,11 +706,17 @@ UPDATE review SET created_at = created_at + INTERVAL 3 HOUR;
 -- semanas. Las fechas son relativas a @today y no pisan otra reserva de la misma
 -- unidad; ninguna usa la A-08, que está bloqueada. El total es el de siempre:
 -- los días con los dos extremos por el precio diario de la unidad.
+--
+-- Cada una se creó doce días antes de empezar, pero nunca después de ayer: sin
+-- ese tope, la 68, la 69 y la 70 quedaban creadas dentro de 3, 10 y 18 días, y
+-- su pago (sección 15) salía con fecha futura en el detalle del administrador.
 -- =============================================================================
 INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, id_client, id_rental_unit)
 SELECT d.id, @today + INTERVAL d.desde DAY, @today + INTERVAL (d.desde + d.dias - 1) DAY,
        d.dias * u.daily_price, 'CONFIRMED',
-       @today + INTERVAL (d.desde - 12) DAY + INTERVAL 14 HOUR, d.cliente, u.id_rental_unit
+       LEAST(@today + INTERVAL (d.desde - 12) DAY + INTERVAL 14 HOUR,
+             UTC_TIMESTAMP() - INTERVAL 1 DAY),
+       d.cliente, u.id_rental_unit
 FROM (
               SELECT 51 AS id, 1 AS unidad, -38 AS desde, 4 AS dias, 8 AS cliente
     UNION ALL SELECT 52,  2, -36, 3,  9
