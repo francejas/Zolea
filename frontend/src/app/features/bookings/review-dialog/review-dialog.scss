@@ -1,0 +1,91 @@
+/* Calificar: el modal global (styles/modal.scss) con las estrellas y el comentario adentro. */
+
+.review {
+  width: min(480px, calc(100% - 2 * var(--gutter)));
+}
+
+.review__form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.review__resort {
+  display: block;
+  color: var(--color-text);
+}
+
+.review__rating {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.review__legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.review__options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* Cada estrella es una opción del grupo: el blanco que se toca mide lo mismo que un botón. */
+.review__star {
+  display: grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border-radius: var(--radius-m);
+  color: var(--color-field-border);
+  cursor: pointer;
+  transition: color var(--duration) var(--ease);
+}
+
+.review__star:hover {
+  color: var(--color-ink);
+}
+
+.review__star:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.review__icon {
+  width: 32px;
+  height: 32px;
+}
+
+/* Coral-texto: el coral de la marca no llega a 3:1 contra la crema. */
+.review__star--on {
+  color: var(--color-coral-text);
+}
+
+.review__star--on .review__icon {
+  fill: var(--color-coral-text);
+}
+
+.review__value {
+  margin-left: var(--space-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.review__error {
+  margin: 0;
+}
+
+.review__comment {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+}
+
+.review__actions {
+  margin-top: 0;
+}

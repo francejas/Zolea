@@ -1,0 +1,63 @@
+<dialog #dialog class="z-modal review" aria-labelledby="review-title" (close)="onClose()">
+  <form class="review__form" novalidate (submit)="onSubmit($event)">
+    <div>
+      <h2 id="review-title" class="z-modal__title">Calificá tu estadía</h2>
+      <p class="z-modal__body">
+        <strong class="review__resort">{{ booking().resortName }}</strong>
+        {{ stay() }}
+      </p>
+    </div>
+
+    @if (formError(); as message) {
+      <z-alert variant="danger" [text]="message" />
+    }
+
+    <fieldset
+      class="review__rating"
+      [attr.aria-describedby]="ratingError() ? 'review-rating-error' : null"
+    >
+      <legend class="review__legend">¿Cuántas estrellas le das?</legend>
+      <div class="review__options">
+        @for (star of stars; track star) {
+          <label class="review__star" [class.review__star--on]="star <= rating()">
+            <input
+              class="z-visually-hidden"
+              type="radio"
+              [value]="'' + star"
+              [formField]="reviewForm.rating"
+            />
+            <svg lucideStar class="z-icon review__icon" aria-hidden="true"></svg>
+            <span class="z-visually-hidden">{{ starLabel(star) }}</span>
+          </label>
+        }
+        <span class="review__value" aria-hidden="true">
+          {{ rating() ? rating() + ' de 5' : 'Sin elegir' }}
+        </span>
+      </div>
+      @if (ratingError(); as message) {
+        <p class="z-field__error review__error" id="review-rating-error">{{ message }}</p>
+      }
+    </fieldset>
+
+    <z-field
+      [field]="reviewForm.comment"
+      inputId="review-comment"
+      label="Comentario (opcional)"
+      [help]="counter()"
+    >
+      <textarea
+        id="review-comment"
+        class="z-input review__comment"
+        rows="4"
+        [formField]="reviewForm.comment"
+      ></textarea>
+    </z-field>
+
+    <div class="z-modal__actions review__actions">
+      <z-btn variant="secondary" block [disabled]="reviewForm().submitting()" (click)="cancel()">
+        Ahora no
+      </z-btn>
+      <z-btn type="submit" block [loading]="reviewForm().submitting()">Calificar</z-btn>
+    </div>
+  </form>
+</dialog>
