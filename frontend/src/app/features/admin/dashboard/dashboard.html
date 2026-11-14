@@ -1,0 +1,228 @@
+<section class="panel">
+  <header>
+    <h1>Panel</h1>
+    <p class="panel__lead">Cómo viene tu balneario hoy y en las fechas que elijas.</p>
+  </header>
+
+  @switch (state()) {
+    @case ('forbidden') {
+      <z-alert
+        variant="forbidden"
+        title="Todavía no tenés un balneario"
+        text="El Panel muestra los números de tu balneario. Cuando Zolea te asigne uno, lo vas a ver acá."
+      />
+    }
+
+    @case ('error') {
+      <z-problem
+        title="No pudimos traer los números del balneario"
+        [text]="loadError()"
+        (retry)="retry()"
+      />
+    }
+
+    @case ('loading') {
+      <div class="panel__today" aria-busy="true" aria-label="Cargando las cifras de hoy">
+        <z-skeleton width="180px" height="13px" />
+        <div class="panel__figures">
+          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+            <div class="panel__figure">
+              <z-skeleton width="60%" height="15px" />
+              <z-skeleton width="40%" height="34px" />
+            </div>
+          }
+        </div>
+      </div>
+      <div class="panel__grid" aria-hidden="true">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="panel__card" [class.panel__card--wide]="i === 1">
+            <z-skeleton width="45%" height="24px" />
+            <z-skeleton width="80%" height="14px" />
+            <z-skeleton width="100%" height="220px" />
+          </div>
+        }
+      </div>
+    }
+
+    @case ('ready') {
+      <section class="panel__today" aria-labelledby="panel-today-title">
+        <h2 class="z-eyebrow" id="panel-today-title">Hoy · {{ todayText }}</h2>
+        <dl class="panel__figures">
+          @for (figure of figures(); track figure.label) {
+            <div class="panel__figure">
+              <dt>{{ figure.label }}</dt>
+              <dd class="panel__value">{{ figure.value }}</dd>
+              <dd class="panel__context">{{ figure.context }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      <section class="panel__season" aria-labelledby="panel-season-title">
+        <div class="panel__range">
+          <div>
+            <h2 class="panel__title" id="panel-season-title">La temporada en números</h2>
+            <p class="panel__lead">Solo cuentan las reservas confirmadas.</p>
+          </div>
+          <z-date-range
+            [(from)]="from"
+            [(to)]="to"
+            [min]="minDate"
+            [summary]="false"
+            [labels]="rangeLabels"
+          />
+        </div>
+
+        @if (rangeError(); as message) {
+          <z-alert variant="danger" title="No pudimos traer esas fechas" [text]="message" />
+        }
+
+        @if (charts(); as charts) {
+          <div
+            class="panel__grid"
+            [class.panel__grid--refreshing]="refreshing()"
+            [attr.aria-busy]="refreshing()"
+          >
+            <article class="panel__card panel__card--wide">
+              <h3 class="panel__title">Ocupación por día</h3>
+              <p class="panel__summary">{{ charts.occupancy.summary }}</p>
+              @if (charts.occupancy.empty) {
+                <p class="panel__none">No hay reservas confirmadas en estas fechas.</p>
+              } @else {
+                <z-chart
+                  class="panel__chart panel__chart--tall"
+                  [config]="charts.occupancy.config"
+                  label="Gráfico de barras de la ocupación por día"
+                />
+              }
+            </article>
+
+            <article class="panel__card">
+              <h3 class="panel__title">Ingresos por mes</h3>
+              <p class="panel__summary">{{ charts.income.summary }}</p>
+              @if (charts.income.empty) {
+                <p class="panel__none">Todavía no hay ingresos en estas fechas.</p>
+              } @else {
+                <z-chart
+                  class="panel__chart"
+                  [config]="charts.income.config"
+                  label="Gráfico de barras de los ingresos por mes"
+                />
+              }
+            </article>
+
+            <article class="panel__card">
+              <h3 class="panel__title">Unidades más reservadas</h3>
+              <p class="panel__summary">{{ charts.topUnits.summary }}</p>
+              @if (charts.topUnits.empty) {
+                <p class="panel__none">
+                  Ninguna unidad tiene reservas confirmadas en estas fechas.
+                </p>
+              } @else {
+                <z-chart
+                  class="panel__chart"
+                  [config]="charts.topUnits.config"
+                  label="Gráfico de barras de las cinco unidades más reservadas"
+                />
+              }
+            </article>
+          </div>
+        }
+      </section>
+    }
+  }
+
+  @if (state() !== 'forbidden') {
+    <div class="panel__feeds">
+      <section class="panel__card" aria-labelledby="panel-cancel-title">
+        <h2 class="panel__title" id="panel-cancel-title">Cancelaciones de la semana</h2>
+        @switch (noticesState()) {
+          @case ('loading') {
+            <div class="panel__lines" aria-busy="true" aria-label="Cargando las cancelaciones">
+              <z-skeleton width="100%" height="40px" />
+              <z-skeleton width="100%" height="40px" />
+            </div>
+          }
+          @case ('error') {
+            <z-alert
+              variant="danger"
+              text="No pudimos traer las cancelaciones."
+              actionLabel="Reintentar"
+              (action)="loadNotices()"
+            />
+          }
+          @case ('ready') {
+            @if (notices().length === 0) {
+              <p class="panel__none">Ningún cliente canceló en los últimos 7 días.</p>
+            } @else {
+              <ul class="panel__list">
+                @for (notice of notices(); track notice.id) {
+                  <li>
+                    <a class="panel__notice" [routerLink]="['/admin/bookings', notice.id]">
+                      <span class="panel__notice-text">{{ notice.text }}</span>
+                      <span class="panel__meta">{{ notice.when }}</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </section>
+
+      <section class="panel__card" aria-labelledby="panel-reviews-title">
+        <h2 class="panel__title" id="panel-reviews-title">Últimas reseñas</h2>
+        @switch (reviewsState()) {
+          @case ('loading') {
+            <div class="panel__lines" aria-busy="true" aria-label="Cargando las reseñas">
+              <z-skeleton width="100%" height="56px" />
+              <z-skeleton width="100%" height="56px" />
+            </div>
+          }
+          @case ('error') {
+            <z-alert
+              variant="danger"
+              text="No pudimos traer las reseñas."
+              actionLabel="Reintentar"
+              (action)="loadReviews()"
+            />
+          }
+          @case ('ready') {
+            @if (reviews().length === 0) {
+              <p class="panel__none">Todavía nadie calificó tu balneario.</p>
+            } @else {
+              <ul class="panel__list">
+                @for (review of reviews(); track $index) {
+                  <li class="panel__review">
+                    <span
+                      class="panel__stars"
+                      role="img"
+                      [attr.aria-label]="review.rating + ' de 5 estrellas'"
+                    >
+                      <!-- El ícono maneja su propio class: va fijo en cada rama. -->
+                      @for (on of stars(review.rating); track $index) {
+                        @if (on) {
+                          <svg
+                            lucideStar
+                            class="z-icon z-icon--s panel__star--on"
+                            aria-hidden="true"
+                          ></svg>
+                        } @else {
+                          <svg lucideStar class="z-icon z-icon--s" aria-hidden="true"></svg>
+                        }
+                      }
+                    </span>
+                    @if (review.comment) {
+                      <p class="panel__quote">{{ review.comment }}</p>
+                    }
+                    <p class="panel__meta">{{ author(review) }} · {{ reviewDate(review) }}</p>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </section>
+    </div>
+  }
+</section>

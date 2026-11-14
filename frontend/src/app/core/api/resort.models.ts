@@ -54,3 +54,15 @@ export interface ResortFilters {
   maxPrice?: number | null;
   amenityIds?: number[];
 }
+
+/** Una reseña de `GET /api/resorts/{id}/reviews`. */
+export interface Review {
+  /** «Santiago R.»: el nombre y la inicial del apellido. */
+  author: string | null;
+  /** De 1 a 5. */
+  rating: number;
+  /** Null si no dejó comentario. */
+  comment: string | null;
+  /** Cuándo se calificó, en hora del balneario y sin zona. */
+  createdAt: string;
+}

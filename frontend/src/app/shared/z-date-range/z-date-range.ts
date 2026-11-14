@@ -13,6 +13,14 @@ import { occupiedDays, parseIsoDate, toIsoDate, todayIso } from '../utils/days';
 
 type Field = 'from' | 'to';
 
+/** Los rótulos de los dos campos y lo que dice el calendario abierto a quien usa un lector. */
+export interface RangeLabels {
+  from: string;
+  to: string;
+  pickFrom: string;
+  pickTo: string;
+}
+
 interface CalendarDay {
   iso: string;
   day: number;
@@ -67,6 +75,13 @@ export class ZDateRange {
   min = input<string>(todayIso());
   /** Si muestra debajo cuántos días son y que se cobran los dos extremos. */
   summary = input(true);
+  /** Los rótulos de los dos campos: el Panel elige un rango, no una estadía. */
+  labels = input<RangeLabels>({
+    from: 'Entrada',
+    to: 'Salida',
+    pickFrom: 'Elegí la entrada',
+    pickTo: 'Elegí la salida',
+  });
 
   protected readonly id = `z-range-${nextId++}`;
   protected readonly weekdays = WEEKDAYS;
