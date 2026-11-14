@@ -20,5 +20,5 @@ export const adminRoutes: Routes = [
       import('./bookings/booking-detail/booking-detail').then((m) => m.AdminBookingDetail),
   },
   { path: 'clients', component: PlaceholderPage, data: { title: 'Mis clientes' } },
-  { path: 'walkin', component: PlaceholderPage, data: { title: 'Reserva en mostrador' } },
+  { path: 'walkin', loadComponent: () => import('./walkin/walkin').then((m) => m.WalkIn) },
 ];

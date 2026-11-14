@@ -74,4 +74,12 @@ describe('ResortsApi', () => {
     expect(req.request.method).toBe('GET');
     req.flush([]);
   });
+
+  it('mine hace GET /api/resorts/my', () => {
+    api.mine().subscribe();
+
+    const req = http.expectOne(`${URL}/my`);
+    expect(req.request.method).toBe('GET');
+    req.flush({});
+  });
 });
