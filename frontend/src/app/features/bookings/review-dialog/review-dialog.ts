@@ -47,6 +47,11 @@ export class ReviewDialog {
   readonly saved = output<Review>();
   /** Se cerró sin calificar. */
   readonly closed = output<void>();
+  /**
+   * El backend respondió 400 sin errores de campo: ya estaba calificada o la estadía no terminó.
+   * La reserva pudo cambiar desde que se cargó la pantalla, y quien abrió el diálogo la vuelve a traer.
+   */
+  readonly rejected = output<void>();
 
   protected readonly stars = STAR_COUNT;
   protected readonly maxComment = MAX_COMMENT;
@@ -146,6 +151,8 @@ export class ReviewDialog {
         const fieldErrors = toFieldErrors(this.reviewForm, err);
         if (fieldErrors.length > 0) return fieldErrors;
         this.formError.set(toUserMessage(err));
+        // Se mira el código, no el texto, igual que al pagar.
+        if (err.status === 400) this.rejected.emit();
       }
       return;
     });

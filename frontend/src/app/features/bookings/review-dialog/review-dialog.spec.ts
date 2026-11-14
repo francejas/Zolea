@@ -153,6 +153,30 @@ describe('ReviewDialog', () => {
     expect(saved).toEqual([]);
   });
 
+  it('con un 400 que no es de un campo, avisa que la reserva pudo cambiar', async () => {
+    let rejected = 0;
+    fixture.componentInstance.rejected.subscribe(() => rejected++);
+    await pick(4);
+    await send();
+    http
+      .expectOne(URL)
+      .flush({ error: 'Ya calificaste esta reserva.' }, { status: 400, statusText: 'Bad Request' });
+    await settle();
+
+    expect(rejected).toBe(1);
+  });
+
+  it('un error de conexión no dice que la reserva cambió', async () => {
+    let rejected = 0;
+    fixture.componentInstance.rejected.subscribe(() => rejected++);
+    await pick(4);
+    await send();
+    http.expectOne(URL).flush({ error: 'x' }, { status: 500, statusText: 'Error' });
+    await settle();
+
+    expect(rejected).toBe(0);
+  });
+
   it('un error de un campo va debajo de ese campo', async () => {
     await pick(4);
     await type('Muy lindo.');

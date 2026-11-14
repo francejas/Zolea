@@ -1,5 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, ElementRef, inject, signal, viewChildren } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  Injector,
+  signal,
+  viewChildren,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LucideCalendarDays, LucideStar, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { Booking } from '../../../core/api/booking.models';
@@ -126,6 +135,8 @@ export class MyBookings {
   private readonly bookingsApi = inject(BookingsApi);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tabButtons = viewChildren<ElementRef<HTMLButtonElement>>('tabButton');
 
   protected readonly tabs = TABS;
@@ -263,14 +274,47 @@ export class MyBookings {
       list.map((b) => (b.id === booking.id ? { ...b, reviewed: true } : b)),
     );
     this.reviewing.set(null);
+    this.focusReviewed(booking.id);
+  }
+
+  /** Se cerró sin calificar: si mientras tanto quedó calificada, el botón ya no está. */
+  protected onReviewClosed(booking: Booking): void {
+    this.reviewing.set(null);
+    this.focusReviewed(booking.id);
+  }
+
+  /** El backend no aceptó la reseña: la reserva como está ahora dice si ya se calificó. */
+  protected onReviewRejected(booking: Booking): void {
+    this.bookingsApi.get(booking.id).subscribe({
+      next: (current) => this.replace(booking, current),
+      // Sin la reserva, queda el motivo que el diálogo ya muestra.
+      error: () => undefined,
+    });
+  }
+
+  /**
+   * Si la tarjeta ya no tiene «Calificar», el foco pasa a lo que dice que se calificó: si no, al
+   * desaparecer el botón quedaría en ningún lado. Así también se lee el resultado.
+   */
+  private focusReviewed(id: number): void {
+    afterNextRender(
+      () =>
+        this.host.nativeElement.querySelector<HTMLElement>(`#my-bookings-reviewed-${id}`)?.focus(),
+      { injector: this.injector },
+    );
   }
 
   /** La reserva como está ahora, en el mismo lugar de la lista. */
+  private replace(booking: Booking, current: Booking): void {
+    this.placed.update((placed) => ({ ...placed, [booking.id]: this.tabFor(booking) }));
+    this.bookings.update((list) => list.map((b) => (b.id === current.id ? current : b)));
+  }
+
+  /** Al pagar respondió 400: la reserva como está ahora dice si venció, se pagó o se canceló. */
   private refresh(booking: Booking, rejection: HttpErrorResponse): void {
     this.bookingsApi.get(booking.id).subscribe({
       next: (current) => {
-        this.placed.update((placed) => ({ ...placed, [booking.id]: this.tabFor(booking) }));
-        this.bookings.update((list) => list.map((b) => (b.id === current.id ? current : b)));
+        this.replace(booking, current);
         this.rejected.update((ids) => new Set(ids).add(booking.id));
         this.now.set(Date.now());
         this.paying.set(null);

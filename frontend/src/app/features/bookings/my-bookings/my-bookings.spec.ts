@@ -401,6 +401,38 @@ describe('MyBookings', () => {
       expect(page.querySelector('dialog')).toBeNull();
       expect(button('Calificar')).toBeUndefined();
       expect(page.textContent).toContain('Calificaste con 4 estrellas.');
+      // El botón ya no está: el foco pasa al resultado, que así también se lee.
+      expect(document.activeElement?.textContent).toContain('Calificaste con 4 estrellas.');
+    });
+
+    it('si ya estaba calificada, vuelve a traer la reserva y la tarjeta deja el botón', async () => {
+      await respondWith([past]);
+      await open('Pasadas');
+
+      button('Calificar')!.click();
+      await fixture.whenStable();
+      const dialog = page.querySelector('dialog')!;
+      dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[3].click();
+      await fixture.whenStable();
+      dialog.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+      http
+        .expectOne(`${API}/21/review`)
+        .flush({ error: 'otro texto cualquiera' }, { status: 400, statusText: 'Bad Request' });
+      await settle();
+      http.expectOne(`${API}/21`).flush({ ...past, reviewed: true });
+      await settle();
+
+      // El aviso sigue en el diálogo; la tarjeta de atrás ya se actualizó.
+      expect(dialog.textContent).toContain('otro texto cualquiera');
+      expect(page.textContent).toContain('Ya calificaste esta estadía.');
+
+      button('Ahora no')!.click();
+      await settle();
+
+      expect(page.querySelector('dialog')).toBeNull();
+      expect(button('Calificar')).toBeUndefined();
+      expect(document.activeElement?.textContent).toContain('Ya calificaste esta estadía.');
     });
 
     it('cerrar el diálogo sin calificar deja el botón', async () => {
