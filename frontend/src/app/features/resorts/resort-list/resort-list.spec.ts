@@ -158,6 +158,28 @@ describe('ResortList', () => {
     expect(cards[1].querySelector('.z-price-from')).toBeNull();
   });
 
+  it('los servicios de la tarjeta van por id: los tres primeros y «+N»', async () => {
+    const amenity = (idAmenity: number, name: string) => ({ idAmenity, name });
+    await respondWith([
+      resort({
+        idResort: 1,
+        name: 'Con servicios',
+        // El backend no garantiza el orden.
+        amenities: [
+          amenity(9, 'Spa'),
+          amenity(2, 'Estacionamiento'),
+          amenity(5, 'Guardavidas'),
+          amenity(1, 'WiFi'),
+        ],
+      }),
+    ]);
+
+    const chips = Array.from(page.querySelectorAll('.z-resort-card .z-amenity')).map((chip) =>
+      chip.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(chips).toEqual(['WiFi', 'Estacionamiento', 'Guardavidas', '+1 servicios más']);
+  });
+
   it('cada tarjeta con reseñas lleva el promedio y la cantidad; sin reseñas, nada', async () => {
     await respondWith([
       resort({ idResort: 1, name: 'Con reseñas', averageRating: 4.5, reviewCount: 12 }),

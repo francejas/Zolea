@@ -50,6 +50,26 @@ export interface Resort {
 }
 
 /**
+ * El pedido de `PUT /api/resorts/my`. Va siempre completo: el backend conserva lo que llegue vacío
+ * (una descripción o una foto en blanco no borran la que había), y el email del administrador no
+ * se cambia por esta vía, así que no viaja.
+ */
+export interface ResortRequest {
+  name: string;
+  location: string;
+  description: string;
+  coverPhotoUrl: string;
+  /** Los servicios que ofrece. Una lista vacía los saca todos. */
+  amenityIds: number[];
+}
+
+/** Lo que responden editar, activar y desactivar: un mensaje y el balneario como quedó. */
+export interface ResortActionResponse {
+  message: string;
+  resort: Resort;
+}
+
+/**
  * Los filtros opcionales de `GET /api/resorts`. Las fechas van las dos o ninguna, `YYYY-MM-DD`;
  * `maxPrice` incluye ese valor y `amenityIds` pide que estén todos.
  */

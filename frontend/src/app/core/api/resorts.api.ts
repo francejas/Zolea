@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
-import { Resort, ResortFilters } from './resort.models';
+import { Resort, ResortActionResponse, ResortFilters, ResortRequest } from './resort.models';
 
 @Injectable({
   providedIn: 'root',
@@ -29,6 +29,24 @@ export class ResortsApi {
    */
   mine(): Observable<Resort> {
     return this.http.get<Resort>(`${this.apiUrl}/my`);
+  }
+
+  /** Guarda los datos y los servicios del balneario del administrador de la sesión. */
+  updateMine(request: ResortRequest): Observable<ResortActionResponse> {
+    return this.http.put<ResortActionResponse>(`${this.apiUrl}/my`, request);
+  }
+
+  /**
+   * La baja del balneario: deja de aparecer en la Portada y no toma reservas nuevas; las que ya
+   * tiene siguen valiendo. Solo el administrador de ese balneario.
+   */
+  deactivate(id: number): Observable<ResortActionResponse> {
+    return this.http.put<ResortActionResponse>(`${this.apiUrl}/${id}/inactive`, {});
+  }
+
+  /** Lo vuelve a publicar en la Portada. */
+  activate(id: number): Observable<ResortActionResponse> {
+    return this.http.put<ResortActionResponse>(`${this.apiUrl}/${id}/active`, {});
   }
 
   /** Los `idRentalUnit` reservados en esas fechas, contando los dos extremos. */

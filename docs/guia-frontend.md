@@ -147,6 +147,9 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
   de un balneario recibe `403` con el motivo «Los servicios los carga Zolea. Elegí los tuyos en Mi
   balneario.», y elige los que ofrece en `PUT /api/resorts/my`, con `amenityIds`. Listar el
   catálogo sigue siendo público.
+- **Mi balneario** (`PUT /api/resorts/my`) manda el formulario entero: la descripción y la foto se
+  reemplazan siempre, y vacías se borran. `PUT /api/resorts/{id}` es parcial: lo que llega vacío
+  o no viene se conserva.
 - **Dar de alta un balneario** (`POST /api/resorts`) también es solo de la cuenta de Zolea, y solo
   por la API: no tiene pantalla. El administrador de un balneario recibe `403` con el motivo «Los
   balnearios los da de alta Zolea.». Esa cuenta carga el catálogo y da de alta balnearios, y nada

@@ -22,7 +22,7 @@ import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AmenitiesApi } from '../../../core/api/amenities.api';
 import { Amenity, Resort, UnitType } from '../../../core/api/resort.models';
 import { ResortsApi } from '../../../core/api/resorts.api';
-import { amenityIcon } from '../../../shared/utils/amenity-icons';
+import { amenityIcon, byAmenityId } from '../../../shared/utils/amenity-icons';
 import { validRange } from '../../../shared/utils/days';
 import { ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
@@ -316,7 +316,8 @@ export class ResortList {
   }
 
   getTopAmenities(resort: Resort): Amenity[] {
-    return (resort.amenities ?? []).slice(0, VISIBLE_AMENITIES);
+    // Por id, como la vista previa de Mi balneario: el backend no garantiza el orden.
+    return [...(resort.amenities ?? [])].sort(byAmenityId).slice(0, VISIBLE_AMENITIES);
   }
 }
 
