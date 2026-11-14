@@ -13,6 +13,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import {
   LucideCalendarDays,
   LucideChevronLeft,
@@ -105,6 +106,8 @@ export class BookingDetail {
   protected checking = signal(false);
   protected quoteError = signal('');
   protected cancelNotice = signal<CancelNotice | null>(null);
+  /** El pedido de las condiciones al abrir: si se cierra antes de que lleguen, se corta. */
+  private quoteRequest: Subscription | null = null;
 
   protected status = computed(() => {
     const booking = this.booking();
@@ -209,7 +212,7 @@ export class BookingDetail {
     this.checking.set(true);
     this.cancelDialog()?.nativeElement.showModal();
 
-    this.bookingsApi.cancellation(booking.id).subscribe({
+    this.quoteRequest = this.bookingsApi.cancellation(booking.id).subscribe({
       next: (quote) => {
         this.quote.set(quote);
         this.checking.set(false);
@@ -221,11 +224,25 @@ export class BookingDetail {
     });
   }
 
+  /**
+   * Cierra la confirmación: con «Volver», después de cancelar o con Esc, que el navegador cierra
+   * solo y llega como `close`. Por eso puede correr dos veces, y la segunda ya no hace nada.
+   */
   protected closeCancel(): void {
-    this.cancelDialog()?.nativeElement.close();
-    // Si al abrir cambió algo (ya no se puede, otro porcentaje), la pantalla se queda con eso.
+    const dialog = this.cancelDialog()?.nativeElement;
+    if (dialog?.open) dialog.close();
+    // Cerrado antes de que lleguen las condiciones: ya no hay a quién mostrárselas.
+    this.quoteRequest?.unsubscribe();
+    this.quoteRequest = null;
+    this.checking.set(false);
     const quote = this.quote();
-    if (quote) this.terms.set(quote);
+    const booking = this.booking();
+    if (!quote || !booking) return;
+    this.quote.set(null);
+    // Si al abrir cambió algo, la pantalla se queda con eso: otro porcentaje, o ya no se puede.
+    // Si ya no se puede, la reserva pudo cambiar (la cancelaron en otro lado): se vuelve a traer.
+    if (quote.canCancel) this.terms.set(quote);
+    else this.refresh(booking.id, quote.reason || 'Esta reserva ya no se puede cancelar.');
   }
 
   protected confirmCancel(): void {
@@ -251,11 +268,7 @@ export class BookingDetail {
               },
         );
         // El botón de cancelar ya no está: el foco pasa al cartel, que así también se lee.
-        afterNextRender(
-          () =>
-            this.host.nativeElement.querySelector<HTMLElement>('#booking-cancel-notice')?.focus(),
-          { injector: this.injector },
-        );
+        this.focusAfterRender('#booking-cancel-notice');
       },
       error: (error: HttpErrorResponse) => {
         this.canceling.set(false);
@@ -270,7 +283,8 @@ export class BookingDetail {
 
   /**
    * La reserva como está ahora, sin pasar por el esqueleto, y el motivo arriba de las acciones.
-   * `load()` no sirve: borra el mensaje.
+   * `load()` no sirve: borra el mensaje. El botón que se tocó puede no estar más: el foco pasa al
+   * motivo, como al cartel verde después de cancelar.
    */
   private refresh(id: number, message: string): void {
     this.bookingsApi.get(id).subscribe({
@@ -279,9 +293,20 @@ export class BookingDetail {
         this.ticketIndex.set(0);
         this.terms.set(null);
         if (current.status !== 'CANCELED') this.loadTerms(current.id);
-        this.actionError.set(message);
+        this.showActionError(message);
       },
-      error: () => this.actionError.set(message),
+      error: () => this.showActionError(message),
+    });
+  }
+
+  private showActionError(message: string): void {
+    this.actionError.set(message);
+    this.focusAfterRender('#booking-action-error');
+  }
+
+  private focusAfterRender(selector: string): void {
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), {
+      injector: this.injector,
     });
   }
 

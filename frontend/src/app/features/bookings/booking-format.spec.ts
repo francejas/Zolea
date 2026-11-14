@@ -76,6 +76,10 @@ describe('cancelar', () => {
     expect(plain(refundOffer({ refundAmount: 12750, refundPercent: 50 }))).toBe(
       'Te devolvemos $ 12.750,00, el 50 % de lo que pagaste, porque falta un día para la entrada.',
     );
+    // El motivo es el de la regla del 50 %: con otro porcentaje, solo cuánto.
+    expect(plain(refundOffer({ refundAmount: 19125, refundPercent: 75 }))).toBe(
+      'Te devolvemos $ 19.125,00, el 75 % de lo que pagaste.',
+    );
   });
 
   it('si estaba pendiente, no hay nada que devolver', () => {

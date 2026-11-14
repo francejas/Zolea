@@ -63,8 +63,9 @@ export function refundOffer(
 ): string {
   const { refundAmount: amount, refundPercent: percent } = terms;
   if (!amount || !percent) return 'No pagaste nada todavía: no hay reintegro.';
-  if (percent === 100) return `Te devolvemos ${money(amount)}, el 100 % de lo que pagaste.`;
-  return `Te devolvemos ${money(amount)}, el ${percent} % de lo que pagaste, porque falta un día para la entrada.`;
+  const offer = `Te devolvemos ${money(amount)}, el ${percent} % de lo que pagaste`;
+  // El 50 % es el del día anterior a la entrada; si la regla cambia, otro porcentaje no se explica.
+  return percent === 50 ? `${offer}, porque falta un día para la entrada.` : `${offer}.`;
 }
 
 /**

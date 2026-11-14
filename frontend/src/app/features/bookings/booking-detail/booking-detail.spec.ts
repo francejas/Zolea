@@ -227,8 +227,12 @@ describe('BookingDetail', () => {
       button('Cancelar reserva')!.click();
       await fixture.whenStable();
       // Mientras llegan, no promete nada ni deja confirmar.
-      expect(plain(page.querySelector('dialog'))).not.toContain('Te devolvemos');
+      const dialog = page.querySelector('dialog')!;
+      expect(plain(dialog)).not.toContain('Te devolvemos');
       expect(confirmButton().disabled).toBe(true);
+      // Lo que lo describe existe también mientras tanto: el lector de pantalla lee el «Revisando…».
+      const description = dialog.querySelector(`#${dialog.getAttribute('aria-describedby')}`);
+      expect(plain(description)).toContain('Revisando cuánto se devuelve');
 
       // Ahora falta un día: el backend aplica el 50 %, y eso es lo que dice.
       http
@@ -236,9 +240,23 @@ describe('BookingDetail', () => {
         .flush({ ...full, refundAmount: 18000, refundPercent: 50 });
       await fixture.whenStable();
 
-      expect(plain(page.querySelector('dialog'))).toContain('el 50 % de lo que pagaste');
-      expect(plain(page.querySelector('dialog'))).not.toContain('el 100 %');
+      expect(plain(description)).toContain('el 50 % de lo que pagaste');
+      expect(plain(dialog)).not.toContain('el 100 %');
       expect(confirmButton().disabled).toBe(false);
+    });
+
+    it('si se cierra mientras llegan las condiciones, deja de esperarlas', async () => {
+      await respondWith(aBooking(), full);
+
+      button('Cancelar reserva')!.click();
+      await fixture.whenStable();
+      const dialog = page.querySelector('dialog')!;
+      dialog.removeAttribute('open');
+      dialog.dispatchEvent(new Event('close'));
+      await fixture.whenStable();
+
+      expect(http.expectOne(`${API}/47/cancellation`).cancelled).toBe(true);
+      expect(button('Cancelar reserva')).toBeDefined();
     });
 
     it('si al abrir ya no se puede cancelar, lo dice y no deja confirmar', async () => {
@@ -254,6 +272,54 @@ describe('BookingDetail', () => {
       expect(plain(dialog)).toContain('Tu estadía ya empezó: no se puede cancelar.');
       expect(plain(dialog)).not.toContain('Te devolvemos');
       expect(confirmButton().disabled).toBe(true);
+    });
+
+    describe('si al abrir ya estaba cancelada en otro lado', () => {
+      const alreadyCanceled: CancellationResponse = {
+        canCancel: false,
+        refundAmount: null,
+        refundPercent: null,
+        reason: 'La reserva ya está cancelada.',
+      };
+
+      /** El balneario la canceló mientras la pantalla estaba abierta. */
+      async function respondWithCanceled(): Promise<void> {
+        http.expectOne(`${API}/47`).flush(canceled(36000, { canceledBy: 'ADMIN' }));
+        await fixture.whenStable();
+      }
+
+      function expectCanceled(): void {
+        expect(page.querySelector('.z-status')!.textContent).toContain('Cancelada');
+        expect(ticketNames()).toEqual([]);
+        expect(button('Cancelar reserva')).toBeUndefined();
+        expect(plain(page.querySelector('.booking__note'))).toContain('La canceló el balneario');
+        const alert = page.querySelector('.z-alert--danger');
+        expect(plain(alert)).toContain('La reserva ya está cancelada.');
+        expect(document.activeElement?.contains(alert)).toBe(true);
+      }
+
+      it('al volver, trae la reserva como está: sin entradas ni botón para cancelar', async () => {
+        await respondWith(aBooking(), full);
+
+        await openCancel(alreadyCanceled);
+        page.querySelector<HTMLButtonElement>('dialog z-btn[variant="secondary"] button')!.click();
+        await fixture.whenStable();
+        await respondWithCanceled();
+
+        expectCanceled();
+      });
+
+      it('con Esc pasa lo mismo: el navegador cierra el diálogo sin pasar por «Volver»', async () => {
+        await respondWith(aBooking(), full);
+
+        const dialog = await openCancel(alreadyCanceled);
+        dialog.removeAttribute('open');
+        dialog.dispatchEvent(new Event('close'));
+        await fixture.whenStable();
+        await respondWithCanceled();
+
+        expectCanceled();
+      });
     });
 
     it('una confirmada que ya empezó no tiene el botón y dice por qué', async () => {
@@ -301,9 +367,10 @@ describe('BookingDetail', () => {
       expect(ticketNames()).toEqual([]);
       expect(button('Cancelar reserva')).toBeUndefined();
       expect(plain(page.querySelector('.booking__note'))).toContain('La canceló el balneario');
-      expect(plain(page.querySelector('.z-alert--danger'))).toContain(
-        'La reserva ya está cancelada',
-      );
+      const alert = page.querySelector('.z-alert--danger');
+      expect(plain(alert)).toContain('La reserva ya está cancelada');
+      // El botón que se tocó ya no está: el foco pasa a la alerta, que así también se lee.
+      expect(document.activeElement?.contains(alert)).toBe(true);
     });
   });
 
