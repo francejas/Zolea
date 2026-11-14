@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { QRCodeComponent } from 'angularx-qrcode';
-import { aBooking, aGuest } from '../booking.fixtures';
+import { aBooking, aGuest } from '../../features/bookings/booking.fixtures';
 import { GuestQr } from './guest-qr';
 
 describe('GuestQr', () => {
