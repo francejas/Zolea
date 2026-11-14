@@ -18,6 +18,7 @@ import { SessionService } from '../../../core/session/session.service';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZField } from '../../../shared/z-field/z-field';
+import { homeFor } from '../login/login';
 
 /**
  * Crear cuenta (9.2). El alta de un cliente: `ClientsApi.register()` y, si se crea, entra
@@ -116,8 +117,8 @@ export class Register {
         return;
       }
 
-      // El botón sigue en «cargando» hasta llegar.
-      await this.router.navigateByUrl('/');
+      // Al Inicio, como al ingresar. El botón sigue en «cargando» hasta llegar.
+      await this.router.navigateByUrl(homeFor('USER'));
       return;
     });
 

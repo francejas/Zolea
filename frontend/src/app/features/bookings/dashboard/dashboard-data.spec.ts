@@ -84,4 +84,15 @@ describe('las cifras', () => {
       ]),
     ).toEqual({ total: 4, confirmed: 2, pending: 1 });
   });
+
+  it('las pendientes que la pantalla muestra vencidas no cuentan como pendientes de pago', () => {
+    const expired = aBooking({ id: 14, status: 'PENDING' });
+    const fresh = aBooking({ id: 15, status: 'PENDING' });
+
+    expect(bookingFigures([expired, fresh], (booking) => booking.id === 14)).toEqual({
+      total: 2,
+      confirmed: 0,
+      pending: 1,
+    });
+  });
 });

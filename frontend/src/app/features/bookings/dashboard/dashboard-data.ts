@@ -43,11 +43,17 @@ export interface BookingFigures {
   pending: number;
 }
 
-/** Todas las reservas, las confirmadas y las pendientes de pago. */
-export function bookingFigures(bookings: Booking[]): BookingFigures {
+/**
+ * Todas las reservas, las confirmadas y las pendientes de pago. Una pendiente que la pantalla ya
+ * muestra vencida (`expired`) no cuenta como pendiente de pago: no se puede pagar.
+ */
+export function bookingFigures(
+  bookings: Booking[],
+  expired: (booking: Booking) => boolean = () => false,
+): BookingFigures {
   return {
     total: bookings.length,
     confirmed: bookings.filter((booking) => booking.status === 'CONFIRMED').length,
-    pending: bookings.filter((booking) => booking.status === 'PENDING').length,
+    pending: bookings.filter((booking) => booking.status === 'PENDING' && !expired(booking)).length,
   };
 }

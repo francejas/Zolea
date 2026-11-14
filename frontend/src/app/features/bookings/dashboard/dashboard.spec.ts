@@ -133,6 +133,17 @@ describe('ClientDashboard', () => {
     expect(figures).toEqual(['Reservas: 4', 'Confirmadas: 2', 'Pendientes de pago: 1']);
   });
 
+  it('«Pendientes de pago» no cuenta la que la pantalla muestra vencida', async () => {
+    // Hecha ayer: pasó la hora para pagarla, aunque la limpieza todavía no la canceló.
+    await respondWith([pending, { ...pending, id: 15, createdAt: '2026-01-09T20:00:00' }]);
+
+    const pendingFigure = Array.from(page.querySelectorAll('.home__figure')).find((f) =>
+      text(f.querySelector('dt')).startsWith('Pendientes'),
+    );
+    expect(text(pendingFigure!.querySelector('dd'))).toBe('1');
+    expect(page.textContent).toContain('La reserva venció');
+  });
+
   it('lleva a buscar balnearios', async () => {
     await respondWith([past]);
 
@@ -233,6 +244,25 @@ describe('ClientDashboard', () => {
       await fixture.whenStable();
 
       expect(text(page.querySelector('.home__section z-alert'))).toContain('La reserva se canceló');
+    });
+
+    it('si la reserva no vuelve en la lista, deja el motivo del 400', async () => {
+      await respondWith([pending, today]);
+      spyRedirect();
+
+      button('Pagar')!.click();
+      http
+        .expectOne(`${API}/14/pay`)
+        .flush(
+          { error: 'La reserva no está pendiente de pago.' },
+          { status: 400, statusText: 'x' },
+        );
+      http.expectOne(`${API}/client/16`).flush([today]);
+      await fixture.whenStable();
+
+      expect(text(page.querySelector('.z-alert--danger'))).toContain(
+        'La reserva no está pendiente de pago.',
+      );
     });
 
     it('si no puede volver a traer la lista, deja el motivo del 400', async () => {

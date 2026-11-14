@@ -117,7 +117,9 @@ export class ClientDashboard {
       this.toCard(booking),
     ),
   );
-  protected readonly figures = computed(() => bookingFigures(this.bookings()));
+  protected readonly figures = computed(() =>
+    bookingFigures(this.bookings(), (booking) => this.isExpired(booking)),
+  );
 
   constructor() {
     this.load();
@@ -220,7 +222,9 @@ export class ClientDashboard {
         }
         this.show(bookings);
         this.paying.set(null);
+        // Si no vuelve en la lista (no debería), al menos el motivo del 400.
         if (current) this.payNotice.set(noticeFor(current));
+        else this.payError.set(rejection);
       },
       error: () => {
         this.paying.set(null);
@@ -251,10 +255,16 @@ export class ClientDashboard {
       unit: unitLabel(booking.rentalUnitType, booking.rentalUnitIdentifier),
       days: this.days(booking),
       total: money(booking.totalPrice),
-      expired:
-        booking.status === 'PENDING' &&
-        (this.rejected().has(booking.id) || paymentExpired(booking, this.now())),
+      expired: this.isExpired(booking),
     };
+  }
+
+  /** Pendiente y pasada la hora, o el backend dijo que ya no se paga: se muestra vencida. */
+  private isExpired(booking: Booking): boolean {
+    return (
+      booking.status === 'PENDING' &&
+      (this.rejected().has(booking.id) || paymentExpired(booking, this.now()))
+    );
   }
 }
 
