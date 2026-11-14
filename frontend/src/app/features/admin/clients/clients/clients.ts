@@ -3,6 +3,8 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   inject,
   signal,
@@ -16,7 +18,7 @@ import { ZSkeleton } from '../../../../shared/z-skeleton/z-skeleton';
 import { ClientsApi } from '../../../../core/api/clients.api';
 import { ResortClient } from '../../../../core/api/resort-client.models';
 import { filterClients } from '../client-filters';
-import { money } from '../../../../shared/utils/format';
+import { bookingNumber, money } from '../../../../shared/utils/format';
 import { BOOKING_STATUS } from '../../../bookings/booking-format';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toUserMessage } from '../../../../core/errors/error-message';
@@ -28,6 +30,7 @@ import { toUserMessage } from '../../../../core/errors/error-message';
   styleUrl: './clients.scss',
 })
 export class Clients {
+  private readonly injector = inject(Injector);
   private readonly api = inject(ClientsApi);
   private readonly destroyRef = inject(DestroyRef);
   private readonly historyDialog = viewChild<ElementRef<HTMLDialogElement>>('historyDialog');
@@ -38,8 +41,18 @@ export class Clients {
   protected readonly error = signal('');
   protected readonly selected = signal<ResortClient | null>(null);
 
-  protected readonly visibleClients = computed(() => filterClients(this.clients(), this.query()));
+  protected readonly visibleClients = computed(() =>
+    filterClients(this.clients(), this.query()),
+  );
 
+  /** Más recientes primero, sin modificar las reservas recibidas del backend. */
+  protected readonly history = computed(() =>
+    [...(this.selected()?.bookings ?? [])].sort(
+      (a, b) => b.startDate.localeCompare(a.startDate) || b.idBooking - a.idBooking,
+    ),
+  );
+
+  protected readonly bookingNumber = bookingNumber;
   protected readonly money = money;
   protected readonly statuses = BOOKING_STATUS;
 
@@ -73,7 +86,20 @@ export class Clients {
 
   protected showHistory(client: ResortClient): void {
     this.selected.set(client);
-    this.historyDialog()?.nativeElement.showModal();
+
+    // El título y los controles deben existir antes de abrir el diálogo.
+    afterNextRender(
+      () => {
+        if (this.selected() !== client) return;
+
+        const dialog = this.historyDialog()?.nativeElement;
+
+        if (dialog && !dialog.open) {
+          dialog.showModal();
+        }
+      },
+      { injector: this.injector },
+    );
   }
 
   protected closeHistory(): void {

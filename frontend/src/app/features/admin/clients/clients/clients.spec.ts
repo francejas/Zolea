@@ -254,4 +254,81 @@ describe('Clients', () => {
 
     expect(page.querySelector('dialog')!.textContent).toContain('No hay reservas para mostrar.');
   });
+
+    it('ordena el historial por inicio descendente sin cambiar la respuesta', async () => {
+    const original = registered.bookings[0];
+
+    const bookings = [
+      { ...original, idBooking: 82, startDate: '2025-12-20' },
+      { ...original, idBooking: 83, startDate: '2027-01-02' },
+      { ...original, idBooking: 81, startDate: '2026-11-15' },
+    ];
+
+    await respond([{ ...registered, bookings }]);
+
+    rows()[0].querySelector<HTMLButtonElement>('button')!.click();
+    await fixture.whenStable();
+
+    const links = Array.from(page.querySelectorAll('dialog tbody a'));
+
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/admin/bookings/83',
+      '/admin/bookings/81',
+      '/admin/bookings/82',
+    ]);
+
+    expect(links[1].textContent).toContain('#0081');
+
+    expect(bookings.map((booking) => booking.idBooking)).toEqual([82, 83, 81]);
+
+    expect(page.querySelectorAll('dialog tbody .z-money')).toHaveLength(3);
+
+    expect(page.querySelector('dialog z-btn button')!.classList).toContain(
+      'z-btn--block',
+    );
+  });
+
+  it('abre el diálogo después de renderizar el título y los controles', async () => {
+    await respond();
+
+    const dialog = page.querySelector<HTMLDialogElement>('dialog')!;
+
+    const open = vi.spyOn(dialog, 'showModal').mockImplementation(() => {
+      expect(dialog.querySelector('#client-history-title')!.textContent).toContain(
+        'Ángela Pérez',
+      );
+
+      expect(dialog.querySelector('button')).not.toBeNull();
+
+      dialog.setAttribute('open', '');
+    });
+
+    rows()[0].querySelector<HTMLButtonElement>('button')!.click();
+
+    expect(open).not.toHaveBeenCalled();
+
+    await fixture.whenStable();
+
+    expect(open).toHaveBeenCalledTimes(1);
+
+    open.mockRestore();
+  });
+
+  it('tocar la fila o el contacto no abre el historial; el botón sí', async () => {
+    await respond();
+
+    const dialog = page.querySelector<HTMLDialogElement>('dialog')!;
+
+    (rows()[0] as HTMLElement).click();
+    rows()[0].querySelector<HTMLElement>('.clients__contact span')!.click();
+
+    await fixture.whenStable();
+
+    expect(dialog.open).toBe(false);
+
+    rows()[0].querySelector<HTMLButtonElement>('button')!.click();
+    await fixture.whenStable();
+
+    expect(dialog.open).toBe(true);
+  });
 });
