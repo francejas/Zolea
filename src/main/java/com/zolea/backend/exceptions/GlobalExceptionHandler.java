@@ -16,6 +16,7 @@ import com.zolea.backend.exceptions.guest.GuestNotFoundException;
 import com.zolea.backend.exceptions.booking.BookingStateException;
 import com.zolea.backend.exceptions.booking.InvalidBookingRangeException;
 import com.zolea.backend.exceptions.booking.WalkInWithClientException;
+import com.zolea.backend.exceptions.booking.WebBookingWithWalkInException;
 import com.zolea.backend.exceptions.payment.PaymentGatewayException;
 import com.zolea.backend.exceptions.rentalunit.DuplicateIdentifierException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException;
@@ -94,7 +95,8 @@ public class GlobalExceptionHandler {
             InvalidBookingRangeException.class,
             BookingStateException.class,
             RentalUnitRetiredException.class,
-            WalkInWithClientException.class
+            WalkInWithClientException.class,
+            WebBookingWithWalkInException.class
     })
     public ResponseEntity<Map<String, String>> handleBadRequest(RuntimeException ex) {
         return respuesta(HttpStatus.BAD_REQUEST, ex.getMessage());
