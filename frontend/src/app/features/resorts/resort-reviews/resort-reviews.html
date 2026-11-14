@@ -1,0 +1,35 @@
+@switch (state()) {
+  @case ('loading') {
+    <div class="reviews__loading" aria-busy="true" aria-label="Cargando las reseñas">
+      <z-skeleton width="100%" height="72px" />
+      <z-skeleton width="100%" height="72px" />
+    </div>
+  }
+
+  @case ('error') {
+    <z-alert
+      variant="danger"
+      text="No pudimos traer las reseñas."
+      actionLabel="Reintentar"
+      (action)="retry()"
+    />
+  }
+
+  @case ('ready') {
+    @if (reviews().length === 0) {
+      <p class="reviews__none">Todavía nadie calificó este balneario.</p>
+    } @else {
+      <ul class="reviews__list">
+        @for (review of reviews(); track $index) {
+          <li class="reviews__item">
+            <z-rating [value]="review.rating" />
+            @if (review.comment) {
+              <p class="reviews__comment">{{ review.comment }}</p>
+            }
+            <p class="reviews__byline">{{ author(review) }} · {{ date(review) }}</p>
+          </li>
+        }
+      </ul>
+    }
+  }
+}
