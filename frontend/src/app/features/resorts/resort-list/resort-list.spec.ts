@@ -142,6 +142,7 @@ describe('ResortList', () => {
       dailyPrice,
       isBlocked,
       resortId: 1,
+      retired: false,
     });
     await respondWith([
       resort({

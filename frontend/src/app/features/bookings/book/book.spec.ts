@@ -36,6 +36,7 @@ const unit = (
   dailyPrice: price,
   isBlocked: blocked,
   resortId: 1,
+  retired: false,
 });
 
 function resort(overrides: Partial<Resort> = {}): Resort {
