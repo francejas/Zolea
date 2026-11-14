@@ -6,7 +6,8 @@ import { Amenity, AmenityRequest } from './resort.models';
 
 /**
  * El catálogo de servicios (Wi-Fi, duchas, estacionamiento…). Es uno solo para todos los
- * balnearios: listarlo es público, y crear, renombrar y borrar es del administrador. Borrar es el
+ * balnearios: listarlo es público, y crear, renombrar y borrar es solo de la cuenta de Zolea (el
+ * administrador sin balneario; el de un balneario recibe 403). Borrar es el
  * único borrado real de la API: el servicio desaparece y se desvincula de los balnearios que lo
  * ofrecían.
  */

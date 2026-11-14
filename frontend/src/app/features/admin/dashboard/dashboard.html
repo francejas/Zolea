@@ -194,24 +194,7 @@
               <ul class="panel__list">
                 @for (review of reviews(); track $index) {
                   <li class="panel__review">
-                    <span
-                      class="panel__stars"
-                      role="img"
-                      [attr.aria-label]="review.rating + ' de 5 estrellas'"
-                    >
-                      <!-- El ícono maneja su propio class: va fijo en cada rama. -->
-                      @for (on of stars(review.rating); track $index) {
-                        @if (on) {
-                          <svg
-                            lucideStar
-                            class="z-icon z-icon--s panel__star--on"
-                            aria-hidden="true"
-                          ></svg>
-                        } @else {
-                          <svg lucideStar class="z-icon z-icon--s" aria-hidden="true"></svg>
-                        }
-                      }
-                    </span>
+                    <z-rating [value]="review.rating" />
                     @if (review.comment) {
                       <p class="panel__quote">{{ review.comment }}</p>
                     }

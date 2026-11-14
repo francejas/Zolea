@@ -65,6 +65,26 @@ export interface BookingRequest {
   guests: GuestRequest[];
 }
 
+/**
+ * El pedido de `POST /api/bookings/walkin`, la reserva en mostrador: va sin `clientId` (con uno, el
+ * backend responde 400) y con el nombre y el DNI de quien está en el mostrador, que no tiene cuenta.
+ * El titular no va en `guests`: el backend le arma su entrada con `walkInName` y `walkInDni`.
+ */
+export interface WalkInBookingRequest {
+  startDate: string;
+  endDate: string;
+  rentalUnitId: number;
+  walkInName: string;
+  walkInDni: string;
+  guests: GuestRequest[];
+}
+
+/** Lo que devuelve la reserva en mostrador: ya confirmada, con la entrada de cada persona. */
+export interface WalkInBookingResponse {
+  message: string;
+  booking: Booking;
+}
+
 /** Lo que devuelve crear una reserva: la reserva pendiente y adónde mandar a pagar. */
 export interface BookingCheckout {
   booking: Booking;

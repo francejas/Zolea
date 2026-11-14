@@ -21,7 +21,7 @@ import {
 } from '@lucide/angular';
 import { clearPendingBooking } from '../pending-booking';
 import { BookingsApi } from '../../../core/api/bookings.api';
-import { GuestQr } from '../../bookings/guest-qr/guest-qr';
+import { GuestQr } from '../../../shared/guest-qr/guest-qr';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZProblem } from '../../../shared/z-problem/z-problem';

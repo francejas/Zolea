@@ -201,7 +201,7 @@ http://localhost:8080/swagger-ui/index.html
 | `GET` | `/api/resorts/{id}/occupied-units` | — | Unidades ocupadas entre `from` y `to` |
 | `GET` | `/api/resorts/my` | ADMIN | Mi balneario |
 | `PUT` | `/api/resorts/my` | ADMIN | Actualizar datos del balneario |
-| `POST` | `/api/resorts` | ADMIN | Crear balneario |
+| `POST` | `/api/resorts` | Cuenta de Zolea | Dar de alta un balneario. El administrador de un balneario recibe `403` |
 | `PUT` | `/api/resorts/{id}` | ADMIN del balneario | Actualizar balneario por ID |
 | `PUT` | `/api/resorts/{id}/inactive` | ADMIN del balneario | Desactivar balneario |
 | `PUT` | `/api/resorts/{id}/active` | ADMIN del balneario | Activar balneario |
@@ -224,7 +224,7 @@ http://localhost:8080/swagger-ui/index.html
 | `POST` | `/api/guests/validate/{token}` | — | Validar QR |
 | `POST` | `/api/guests/validate/dni/{dni}` | — | Validar por DNI |
 | `GET` | `/api/amenities`, `/api/amenities/{id}` | — | Servicios del balneario |
-| `POST`, `PUT`, `DELETE` | `/api/amenities` | ADMIN | Administrar servicios |
+| `POST`, `PUT`, `DELETE` | `/api/amenities` | Cuenta de Zolea | Administrar el catálogo de servicios. El administrador de un balneario recibe `403`: elige los suyos en `PUT /api/resorts/my` |
 
 **DUEÑO o ADMIN** quiere decir que el recurso solo lo ve quien es su titular, o el administrador
 del balneario de la reserva; el de otro balneario recibe `403` (RNF03). **DUEÑO** es solo el
@@ -385,7 +385,7 @@ Zolea/
 │   ├── application.properties            # común + perfil por defecto (dev)
 │   ├── application-dev.properties
 │   ├── application-demo.properties
-│   └── data-demo.sql         # Seed de dev y demo: 5 balnearios, 25 clientes,
+│   └── data-demo.sql         # Seed de dev y demo: 5 balnearios, 26 clientes,
 │                             # 100 unidades, 74 reservas
 │
 ├── src/test/                 # 127 pruebas + IntegrationTest (base y fixtures)
@@ -411,6 +411,21 @@ Zolea/
 
 Un admin solo puede gestionar **su propio balneario** (el asignado en la base de datos).
 
+El catálogo de servicios (WiFi, Estacionamiento, Pileta…) es uno solo para todos los balnearios y
+lo administra **la cuenta de Zolea**: un `ADMIN` sin balneario asignado. Esa cuenta carga el
+catálogo de servicios y da de alta balnearios (solo por la API), y nada más: no ve reservas,
+clientes ni balnearios. Cada balneario elige cuáles servicios ofrece en Mi balneario.
+
+### Cuentas de demostración
+
+Todas con contraseña `admin123`:
+
+| Cuenta | Rol | Para qué |
+|---|---|---|
+| `santi.rodriguez@gmail.com` (y los demás `@gmail.com`) | `USER` | El recorrido de un cliente |
+| `admin.mdp@zolea.com`, `admin.pinamar@zolea.com`, `admin.gesell@zolea.com`, `admin.miramar@zolea.com`, `admin.necochea@zolea.com` | `ADMIN` | El panel de cada balneario |
+| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: el catálogo de servicios y el alta de balnearios |
+
 ---
 
 ## ⚙️ Variables de entorno — referencia
@@ -429,7 +444,7 @@ Un admin solo puede gestionar **su propio balneario** (el asignado en la base de
 | Documento | Qué contiene |
 |---|---|
 | [docs/modelo-de-datos.md](docs/modelo-de-datos.md) | Diagrama de clases, DER y las restricciones de unicidad de la base |
-| [docs/decisiones.md](docs/decisiones.md) | Las trece decisiones de arquitectura, con el problema que resolvían y lo que se paga por cada una |
+| [docs/decisiones.md](docs/decisiones.md) | Las dieciocho decisiones de arquitectura, con el problema que resolvían y lo que se paga por cada una |
 | [docs/flujo-de-pago.md](docs/flujo-de-pago.md) | El cobro paso a paso y por qué hay dos caminos de confirmación |
 | [docs/guia-frontend.md](docs/guia-frontend.md) | Para el equipo de frontend: sesión, errores, permisos y cómo generar el cliente de TypeScript |
 

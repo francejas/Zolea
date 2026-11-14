@@ -2,11 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { LucideStar } from '@lucide/angular';
 import { catchError, filter, map, of, switchMap, tap } from 'rxjs';
 import { BookingsApi } from '../../../core/api/bookings.api';
-import { Review } from '../../../core/api/resort.models';
-import { ResortsApi } from '../../../core/api/resorts.api';
+import { Review } from '../../../core/api/review.models';
+import { ReviewsApi } from '../../../core/api/reviews.api';
 import { StatsApi } from '../../../core/api/stats.api';
 import { ResortStats } from '../../../core/api/stats.models';
 import { toUserMessage } from '../../../core/errors/error-message';
@@ -17,6 +16,7 @@ import { parseIsoDate, todayIso } from '../../../shared/utils/days';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { RangeLabels, ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { ZRating } from '../../../shared/z-rating/z-rating';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 import {
   CancellationNotice,
@@ -52,14 +52,14 @@ const todayLabel = new Intl.DateTimeFormat('es-AR', {
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, LucideStar, ZAlert, ZChart, ZDateRange, ZProblem, ZSkeleton],
+  imports: [RouterLink, ZAlert, ZChart, ZDateRange, ZProblem, ZRating, ZSkeleton],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class Dashboard {
   private readonly statsApi = inject(StatsApi);
   private readonly bookingsApi = inject(BookingsApi);
-  private readonly resortsApi = inject(ResortsApi);
+  private readonly reviewsApi = inject(ReviewsApi);
   private readonly session = inject(SessionService);
 
   /** Hoy, una sola vez: es la fecha del resumen y del rango inicial. */
@@ -164,7 +164,7 @@ export class Dashboard {
 
   protected loadReviews(): void {
     this.reviewsState.set('loading');
-    this.resortsApi.reviews(this.resortId!).subscribe({
+    this.reviewsApi.listByResort(this.resortId!).subscribe({
       next: (reviews) => {
         this.reviews.set(reviews.slice(0, 3));
         this.reviewsState.set('ready');
@@ -176,10 +176,6 @@ export class Dashboard {
   /** «Santiago R.», o sin nombre si la reseña no lo trae. */
   protected author(review: Review): string {
     return review.author ?? 'Un cliente';
-  }
-
-  protected stars(rating: number): boolean[] {
-    return [1, 2, 3, 4, 5].map((star) => star <= rating);
   }
 
   protected reviewDate(review: Review): string {

@@ -57,6 +57,7 @@
 }
 
 .my-bookings__list .z-booking-card__foot {
+  flex-wrap: wrap;
   margin-top: auto;
 }
 
@@ -65,6 +66,27 @@
   margin: 0;
   font-size: var(--text-small);
   color: var(--color-text-muted);
+}
+
+/* Ver la reserva y calificarla: si no entran al lado del total, bajan juntas. */
+.my-bookings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.my-bookings__reviewed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.my-bookings__reviewed .z-icon {
+  color: var(--color-coral-text);
+  fill: var(--color-coral-text);
 }
 
 .my-bookings__name {

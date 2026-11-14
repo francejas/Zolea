@@ -192,6 +192,15 @@
                 <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
               </p>
 
+              @if (resort.averageRating != null && resort.reviewCount) {
+                <z-rating
+                  class="z-resort-card__rating"
+                  [value]="resort.averageRating"
+                  [count]="resort.reviewCount"
+                  compact
+                />
+              }
+
               @if (freeUnitsLabel(resort); as free) {
                 <p class="z-resort-card__free">{{ free }}</p>
               }

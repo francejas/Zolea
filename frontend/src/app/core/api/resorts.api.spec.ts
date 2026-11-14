@@ -67,11 +67,11 @@ describe('ResortsApi', () => {
     expect(ids).toEqual([12, 15]);
   });
 
-  it('reviews hace GET /api/resorts/{id}/reviews', () => {
-    api.reviews(4).subscribe();
+  it('mine hace GET /api/resorts/my', () => {
+    api.mine().subscribe();
 
-    const req = http.expectOne(`${URL}/4/reviews`);
+    const req = http.expectOne(`${URL}/my`);
     expect(req.request.method).toBe('GET');
-    req.flush([]);
+    req.flush({});
   });
 });

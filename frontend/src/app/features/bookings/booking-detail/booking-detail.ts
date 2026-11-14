@@ -39,7 +39,7 @@ import {
   refundOffer,
   unitLabel,
 } from '../booking-format';
-import { GuestQr } from '../guest-qr/guest-qr';
+import { GuestQr } from '../../../shared/guest-qr/guest-qr';
 
 type LoadState = 'loading' | 'ready' | 'forbidden' | 'not-found' | 'error';
 

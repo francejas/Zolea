@@ -1,0 +1,196 @@
+/* Reserva en mostrador. Se diseña desde la computadora: los pasos a la izquierda y lo que hay que
+   cobrar fijo a la derecha; si no entran, una sola columna con el resumen al final. Los cortes miran
+   el ancho de la pantalla y no el de la ventana, porque la barra lateral se come una parte. Los
+   bloques son los de Reservar y los de shared/. Lo que sale al imprimir está en styles/print.scss. */
+
+:host {
+  display: block;
+}
+
+.walkin {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 1120px;
+  container: walkin / inline-size;
+}
+
+.walkin__head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.walkin__h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.walkin__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.walkin__loading {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.walkin__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.walkin__steps {
+  display: grid;
+  gap: var(--space-7);
+  min-width: 0;
+  container: walkin-steps / inline-size;
+}
+
+.walkin__section {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.walkin__subtitle {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.walkin__hint {
+  margin: 0;
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+
+/* Nombre y DNI del titular: lado a lado desde 768 px. */
+.walkin__pair {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.walkin__guest {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.walkin__guest-title {
+  margin: 0;
+  font: 600 var(--text-small) / var(--leading-ui) var(--font-body);
+}
+
+.walkin__remove {
+  justify-self: start;
+}
+
+.walkin__summary {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  padding: var(--space-5);
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.walkin__lines {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  dt {
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.walkin__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--space-4);
+  border-top: var(--border);
+
+  span {
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+
+  strong {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Confirmada: el aviso con lo que hay que cobrar, las dos acciones y las entradas. */
+.walkin__done {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.walkin__done-head {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.walkin__done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.walkin__tickets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@container walkin-steps (min-width: 520px) {
+  .walkin__pair {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 220px);
+    align-items: start;
+  }
+
+  .walkin__guest {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 200px) auto;
+    align-items: start;
+  }
+
+  .walkin__guest-title {
+    grid-column: 1 / -1;
+  }
+
+  .walkin__remove {
+    margin-top: 28px;
+  }
+}
+
+@container walkin (min-width: 880px) {
+  .walkin__layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .walkin__summary {
+    position: sticky;
+    top: var(--space-5);
+  }
+}

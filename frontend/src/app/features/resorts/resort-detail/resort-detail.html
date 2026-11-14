@@ -41,6 +41,9 @@
       <p class="z-place">
         <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
       </p>
+      @if (resort.averageRating != null && resort.reviewCount) {
+        <z-rating [value]="resort.averageRating" [count]="resort.reviewCount" />
+      }
     </header>
 
     <div class="z-photo detail__photo">
@@ -111,6 +114,11 @@
             />
           </section>
         }
+
+        <section class="detail__section" aria-labelledby="detail-reviews-title">
+          <h2 id="detail-reviews-title">Reseñas</h2>
+          <app-resort-reviews [resortId]="resort.idResort" />
+        </section>
       </div>
 
       @if (resort.active) {

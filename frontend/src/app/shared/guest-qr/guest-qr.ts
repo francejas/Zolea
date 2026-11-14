@@ -1,9 +1,9 @@
 import { Component, computed, ElementRef, inject, input, ViewEncapsulation } from '@angular/core';
 import { LucideDownload } from '@lucide/angular';
 import { QRCodeComponent } from 'angularx-qrcode';
-import { Booking, GuestSummary } from '../../../core/api/booking.models';
-import { ZBtn } from '../../../shared/z-btn/z-btn';
-import { bookingNumber, dayRange, formatDni, unitLabel } from '../booking-format';
+import { Booking, GuestSummary } from '../../core/api/booking.models';
+import { ZBtn } from '../z-btn/z-btn';
+import { bookingNumber, dayRange, formatDni, unitLabel } from '../utils/format';
 
 /**
  * La entrada de una persona: el QR que se muestra en la puerta, con su nombre, la unidad y los días.
