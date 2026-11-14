@@ -27,6 +27,7 @@ import {
   dayCount,
   money,
   paymentExpired,
+  refundLine,
   shortDate,
   unitLabel,
 } from '../booking-format';
@@ -106,6 +107,8 @@ interface BookingCard {
   canReview: boolean;
   /** «Calificaste con 4 estrellas.», o null si no la calificó. */
   reviewed: string | null;
+  /** Si está cancelada, cuánto se reintegró (14.4); si no, null. */
+  refund: string | null;
 }
 
 /**
@@ -396,6 +399,7 @@ export class MyBookings {
         !booking.reviewed &&
         tabOf(booking, this.today) === 'past',
       reviewed: this.reviewedText(booking),
+      refund: refundLine(booking),
     };
   }
 }

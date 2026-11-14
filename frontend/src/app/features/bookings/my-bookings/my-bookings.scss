@@ -61,6 +61,13 @@
   margin-top: auto;
 }
 
+/* El reintegro de una cancelada: dato, no aviso, así que sin bandera. */
+.my-bookings__refund {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
 /* Ver la reserva y calificarla: si no entran al lado del total, bajan juntas. */
 .my-bookings__actions {
   display: flex;

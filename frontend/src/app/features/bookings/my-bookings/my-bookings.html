@@ -109,6 +109,10 @@
                       <z-alert variant="danger" title="No se pudo pagar" [text]="error" />
                     }
 
+                    @if (card.refund; as refund) {
+                      <p class="my-bookings__refund">{{ refund }}</p>
+                    }
+
                     @if (card.reviewed; as reviewed) {
                       <!-- Recibe el foco cuando desaparece «Calificar»: así no se pierde. -->
                       <p
