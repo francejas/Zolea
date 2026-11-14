@@ -109,6 +109,10 @@
                       <z-alert variant="danger" title="No se pudo pagar" [text]="error" />
                     }
 
+                    @if (card.refund; as refund) {
+                      <p class="my-bookings__refund">{{ refund }}</p>
+                    }
+
                     <div class="z-booking-card__foot">
                       <div class="z-total">
                         <span>Total</span>

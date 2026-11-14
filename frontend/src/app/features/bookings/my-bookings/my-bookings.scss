@@ -60,6 +60,13 @@
   margin-top: auto;
 }
 
+/* El reintegro de una cancelada: dato, no aviso, así que sin bandera. */
+.my-bookings__refund {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
 .my-bookings__name {
   display: grid;
   gap: var(--space-1);

@@ -192,6 +192,25 @@ describe('MyBookings', () => {
       const foot = page.querySelector('.z-booking-card__foot')!;
       expect(foot.querySelector('a, button')).toBeNull();
     });
+
+    it('cancelada: muestra el reintegro, o que no había nada que devolver', async () => {
+      await respondWith([
+        aBooking({ id: 31, status: 'CANCELED', refundAmount: 25500, endDate: '2026-03-02' }),
+        aBooking({ id: 32, status: 'CANCELED', refundAmount: null, endDate: '2026-03-01' }),
+      ]);
+      await open('Canceladas');
+
+      const refunds = Array.from(page.querySelectorAll('.my-bookings__refund')).map((p) =>
+        p.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+      expect(refunds).toEqual(['Se reintegraron $ 25.500,00.', 'Sin reintegro: no estaba paga.']);
+    });
+
+    it('una que no está cancelada no habla de reintegro', async () => {
+      await respondWith([aBooking()]);
+
+      expect(page.querySelector('.my-bookings__refund')).toBeNull();
+    });
   });
 
   describe('pagar una pendiente', () => {

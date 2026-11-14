@@ -17,6 +17,7 @@ import {
   dayCount,
   money,
   paymentExpired,
+  refundLine,
   shortDate,
   unitLabel,
 } from '../booking-format';
@@ -91,6 +92,8 @@ interface BookingCard {
   notice: PayNotice | null;
   /** Ya no se puede pagar: en lugar de «Pagar», «Volver a reservar». */
   rebook: boolean;
+  /** Si está cancelada, cuánto se reintegró (14.4); si no, null. */
+  refund: string | null;
 }
 
 /**
@@ -313,6 +316,7 @@ export class MyBookings {
         booking.endDate >= this.today,
       notice,
       rebook: notice !== null && notice !== PAID,
+      refund: refundLine(booking),
     };
   }
 }
