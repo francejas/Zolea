@@ -48,6 +48,7 @@ describe('Register', () => {
           [
             { path: 'register', component: Register },
             { path: 'login', component: Destination },
+            { path: 'dashboard', component: Destination },
             { path: '', pathMatch: 'full', component: Destination },
           ],
           withComponentInputBinding(),
@@ -231,7 +232,7 @@ describe('Register', () => {
   });
 
   describe('crear la cuenta', () => {
-    it('crea la cuenta, entra directo y va a /', async () => {
+    it('crea la cuenta, entra directo y va a su Inicio, como al ingresar', async () => {
       await fill();
       await submit();
 
@@ -249,7 +250,7 @@ describe('Register', () => {
       await flushMicrotasks();
       await harness.fixture.whenStable();
 
-      expect(router.url).toBe('/');
+      expect(router.url).toBe('/dashboard');
       expect(session.isLoggedIn()).toBe(true);
       expect(session.user()!.firstName).toBe('Lucía');
     });

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideChevronDown,
+  LucideHouse,
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMenu,
@@ -26,6 +27,7 @@ import { SessionService } from '../../core/session/session.service';
     RouterLinkActive,
     RouterOutlet,
     LucideChevronDown,
+    LucideHouse,
     LucideLayoutDashboard,
     LucideLogOut,
     LucideMenu,

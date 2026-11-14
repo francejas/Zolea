@@ -18,9 +18,12 @@ import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZField } from '../../../shared/z-field/z-field';
 
-/** El inicio de cada rol: adonde se va después de ingresar si no hay un `volver` válido. */
+/**
+ * El inicio de cada rol: adonde se va después de ingresar si no hay un `volver` válido. El cliente
+ * va a su Inicio (11.5), con lo que tiene hoy y lo que le viene; no a la Portada.
+ */
 export function homeFor(role: Role): string {
-  return role === 'ADMIN' ? '/admin' : '/';
+  return role === 'ADMIN' ? '/admin' : '/dashboard';
 }
 
 /**

@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '../../core/auth/auth.guard';
 import { roleGuard } from '../../core/auth/role.guard';
-import { PlaceholderPage } from '../../core/placeholder-page';
 
 /** Todo lo de esta feature es del cliente */
 export const bookingsRoutes: Routes = [
@@ -9,7 +8,10 @@ export const bookingsRoutes: Routes = [
     path: '',
     canActivate: [authGuard, roleGuard('USER')],
     children: [
-      { path: 'dashboard', component: PlaceholderPage, data: { title: 'Inicio' } },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./dashboard/dashboard').then((m) => m.ClientDashboard),
+      },
       { path: 'book/:resortId', loadComponent: () => import('./book/book').then((m) => m.Book) },
       {
         path: 'my-bookings',
