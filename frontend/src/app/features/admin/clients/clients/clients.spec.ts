@@ -255,7 +255,7 @@ describe('Clients', () => {
     expect(page.querySelector('dialog')!.textContent).toContain('No hay reservas para mostrar.');
   });
 
-    it('ordena el historial por inicio descendente sin cambiar la respuesta', async () => {
+  it('ordena el historial por inicio descendente sin cambiar la respuesta', async () => {
     const original = registered.bookings[0];
 
     const bookings = [
@@ -283,9 +283,7 @@ describe('Clients', () => {
 
     expect(page.querySelectorAll('dialog tbody .z-money')).toHaveLength(3);
 
-    expect(page.querySelector('dialog z-btn button')!.classList).toContain(
-      'z-btn--block',
-    );
+    expect(page.querySelector('dialog z-btn button')!.classList).toContain('z-btn--block');
   });
 
   it('abre el diálogo después de renderizar el título y los controles', async () => {
@@ -294,9 +292,7 @@ describe('Clients', () => {
     const dialog = page.querySelector<HTMLDialogElement>('dialog')!;
 
     const open = vi.spyOn(dialog, 'showModal').mockImplementation(() => {
-      expect(dialog.querySelector('#client-history-title')!.textContent).toContain(
-        'Ángela Pérez',
-      );
+      expect(dialog.querySelector('#client-history-title')!.textContent).toContain('Ángela Pérez');
 
       expect(dialog.querySelector('button')).not.toBeNull();
 

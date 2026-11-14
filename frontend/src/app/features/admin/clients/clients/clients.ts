@@ -41,9 +41,7 @@ export class Clients {
   protected readonly error = signal('');
   protected readonly selected = signal<ResortClient | null>(null);
 
-  protected readonly visibleClients = computed(() =>
-    filterClients(this.clients(), this.query()),
-  );
+  protected readonly visibleClients = computed(() => filterClients(this.clients(), this.query()));
 
   /** Más recientes primero, sin modificar las reservas recibidas del backend. */
   protected readonly history = computed(() =>

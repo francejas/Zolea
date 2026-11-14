@@ -6,12 +6,7 @@
 
   @switch (state()) {
     @case ('loading') {
-      <div
-        class="clients__loading"
-        role="status"
-        aria-label="Cargando clientes"
-        aria-busy="true"
-      >
+      <div class="clients__loading" role="status" aria-label="Cargando clientes" aria-busy="true">
         @for (row of [1, 2, 3, 4]; track row) {
           <z-skeleton width="100%" height="48px" />
         }
@@ -19,11 +14,7 @@
     }
 
     @case ('error') {
-      <z-problem
-        title="No pudimos traer tus clientes"
-        [text]="error()"
-        (retry)="load()"
-      />
+      <z-problem title="No pudimos traer tus clientes" [text]="error()" (retry)="load()" />
     }
 
     @case ('ready') {
@@ -133,9 +124,7 @@
     (close)="selected.set(null)"
   >
     @if (selected(); as client) {
-      <h2 id="client-history-title" class="z-modal__title">
-        Historial de {{ client.fullName }}
-      </h2>
+      <h2 id="client-history-title" class="z-modal__title">Historial de {{ client.fullName }}</h2>
 
       <p class="z-modal__body">
         Reservas en tu balneario · Total gastado: {{ money(client.totalSpent) }}
@@ -153,7 +142,10 @@
         <div class="z-table-wrap">
           <table class="z-table">
             <caption class="z-visually-hidden">
-              Reservas de {{ client.fullName }}
+              Reservas de
+              {{
+                client.fullName
+              }}
             </caption>
 
             <thead>
@@ -207,9 +199,7 @@
       }
 
       <div class="z-modal__actions">
-        <z-btn variant="secondary" block (click)="closeHistory()">
-          Cerrar historial
-        </z-btn>
+        <z-btn variant="secondary" block (click)="closeHistory()"> Cerrar historial </z-btn>
       </div>
     }
   </dialog>
