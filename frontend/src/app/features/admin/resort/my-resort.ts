@@ -26,7 +26,7 @@ import { Amenity, Resort, ResortRequest } from '../../../core/api/resort.models'
 import { ResortsApi } from '../../../core/api/resorts.api';
 import { toFieldErrors, toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
-import { amenityIcon } from '../../../shared/utils/amenity-icons';
+import { amenityIcon, byAmenityId } from '../../../shared/utils/amenity-icons';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
@@ -146,7 +146,7 @@ export class MyResort {
   private readonly model = signal<ResortModel>(emptyModel());
   protected readonly resortForm = form(this.model, (path) => {
     requiredText(path.name, 'Escribí el nombre del balneario.');
-    requiredText(path.location, 'Escribí dónde está: la ciudad y la provincia.');
+    requiredText(path.location, 'Escribí la dirección del balneario.');
     maxLength(path.coverPhotoUrl, MAX_TEXT, { message: `Hasta ${MAX_TEXT} caracteres.` });
     pattern(path.coverPhotoUrl, PHOTO_URL, {
       message: 'Pegá la dirección completa de la imagen, la que empieza con https://.',
@@ -160,7 +160,8 @@ export class MyResort {
 
   protected readonly toggling = signal(false);
   protected readonly activeNotice = signal<ActiveNotice | null>(null);
-  protected readonly activeError = signal('');
+  /** El error de desactivar o reactivar: el título dice cuál de los dos falló. */
+  protected readonly activeError = signal<ActiveNotice | null>(null);
 
   /** La dirección de la foto que no se pudo cargar: la tarjeta vuelve al dibujo de cielo y mar. */
   private readonly brokenPhoto = signal<string | null>(null);
@@ -189,15 +190,17 @@ export class MyResort {
   protected readonly preview = computed(() => {
     const value = this.model();
     const photo = value.coverPhotoUrl.trim();
-    const offered = this.catalog().filter((amenity) =>
-      value.amenityIds.includes(amenity.idAmenity),
-    );
+    // Por id, como la Portada: el catálogo y el backend no garantizan el orden.
+    const offered = this.catalog()
+      .filter((amenity) => value.amenityIds.includes(amenity.idAmenity))
+      .sort(byAmenityId);
+    // Como la Portada: sin las bloqueadas ni las dadas de baja, que la Portada no recibe.
     const prices = (this.resort()?.rentalUnits ?? [])
-      .filter((unit) => !unit.isBlocked)
+      .filter((unit) => !unit.isBlocked && !unit.retired)
       .map((unit) => unit.dailyPrice);
     return {
       name: value.name.trim() || 'Nombre del balneario',
-      location: value.location.trim() || 'Ciudad, provincia',
+      location: value.location.trim() || 'Dirección del balneario',
       photo: photo && PHOTO_URL.test(photo) && photo !== this.brokenPhoto() ? photo : null,
       photoBroken: photo !== '' && photo === this.brokenPhoto(),
       amenities: offered.slice(0, VISIBLE_AMENITIES),
@@ -294,7 +297,7 @@ export class MyResort {
   }
 
   protected askDeactivate(): void {
-    this.activeError.set('');
+    this.activeError.set(null);
     this.activeNotice.set(null);
     this.deactivateDialog()?.nativeElement.showModal();
   }
@@ -309,7 +312,7 @@ export class MyResort {
   }
 
   protected reactivate(): void {
-    this.activeError.set('');
+    this.activeError.set(null);
     this.activeNotice.set(null);
     this.setActive(true);
   }
@@ -351,7 +354,10 @@ export class MyResort {
       error: (error: HttpErrorResponse) => {
         this.closeDeactivate();
         this.toggling.set(false);
-        this.activeError.set(toUserMessage(error));
+        this.activeError.set({
+          title: active ? 'No se pudo reactivar' : 'No se pudo desactivar',
+          text: toUserMessage(error),
+        });
       },
     });
   }

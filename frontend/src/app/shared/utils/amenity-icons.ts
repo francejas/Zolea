@@ -53,6 +53,14 @@ export function amenityKey(name: string): string {
     .trim();
 }
 
+/**
+ * El orden en que se muestran los servicios de un balneario: por id, el orden en que se cargaron.
+ * El backend no lo garantiza, y la Portada y la vista previa de Mi balneario tienen que coincidir.
+ */
+export function byAmenityId(a: { idAmenity: number }, b: { idAmenity: number }): number {
+  return a.idAmenity - b.idAmenity;
+}
+
 /** El ícono del servicio, sin importar mayúsculas ni tildes; uno genérico si no está en el mapa. */
 export function amenityIcon(name: string): LucideIcon {
   return AMENITY_ICONS[amenityKey(name)] ?? GENERIC_ICON;

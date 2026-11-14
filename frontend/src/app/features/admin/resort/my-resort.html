@@ -132,8 +132,8 @@
                 <z-field
                   [field]="resortForm.location"
                   inputId="resort-location"
-                  label="Ubicación"
-                  help="La ciudad y la provincia, como la buscan los clientes."
+                  label="Dirección"
+                  help="Calle y número, ciudad y provincia, como la buscarías en un mapa."
                 >
                   <input
                     class="z-input"
@@ -234,8 +234,8 @@
                 <z-alert variant="success" [title]="notice.title" [text]="notice.text" />
               </div>
             }
-            @if (activeError(); as message) {
-              <z-alert variant="danger" title="No se pudo hacer" [text]="message" />
+            @if (activeError(); as error) {
+              <z-alert variant="danger" [title]="error.title" [text]="error.text" />
             }
 
             @if (resort.active) {

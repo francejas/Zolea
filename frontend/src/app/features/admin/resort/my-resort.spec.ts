@@ -18,12 +18,13 @@ const catalog: Amenity[] = [
   { idAmenity: 5, name: 'Snack bar' },
 ];
 
-const unit = (id: number, price: number, blocked = false): RentalUnit => ({
+const unit = (id: number, price: number, blocked = false, retired = false): RentalUnit => ({
   idRentalUnit: id,
   type: 'UMBRELLA',
   identifier: `A-0${id}`,
   dailyPrice: price,
   isBlocked: blocked,
+  retired,
   resortId: 1,
 });
 
@@ -35,7 +36,7 @@ const myResort: Resort = {
   description: 'Carpas y sombrillas frente al mar.',
   active: true,
   amenities: [catalog[0], catalog[2]],
-  rentalUnits: [unit(1, 8500), unit(2, 6000, true), unit(3, 9000)],
+  rentalUnits: [unit(1, 8500), unit(2, 6000, true), unit(3, 9000), unit(4, 5000, false, true)],
 };
 
 /** Los espacios de «$ 8.500» son no separables: se comparan como espacios comunes. */
@@ -180,6 +181,48 @@ describe('MyResort', () => {
     expect(text(page.querySelector('.z-alert--success'))).toContain('Guardamos los cambios');
   });
 
+  it('vaciar la descripción y la foto las borra: el pedido las manda vacías', async () => {
+    await open();
+
+    await type('#resort-description', '');
+    await type('#resort-photo', '');
+    await save();
+
+    const put = http.expectOne(`${RESORTS}/my`);
+    expect(put.request.body.description).toBe('');
+    expect(put.request.body.coverPhotoUrl).toBe('');
+    put.flush({
+      message: 'ok',
+      resort: { ...myResort, description: null, coverPhotoUrl: null },
+    });
+    await settle();
+
+    expect(page.querySelector<HTMLTextAreaElement>('#resort-description')!.value).toBe('');
+    expect(page.querySelector<HTMLInputElement>('#resort-photo')!.value).toBe('');
+    // Sin foto, la tarjeta queda con el dibujo de cielo, mar y arena, como en la Portada.
+    expect(page.querySelector('.my-resort__preview img')).toBeNull();
+    expect(text(page.querySelector('.z-alert--success'))).toContain('Guardamos los cambios');
+  });
+
+  it('el campo de ubicación es la dirección, como la buscarías en un mapa', async () => {
+    await open();
+
+    const field = page.querySelector('#resort-location')!.closest('z-field')!;
+    expect(text(field.querySelector('label'))).toBe('Dirección');
+    expect(text(field)).toContain(
+      'Calle y número, ciudad y provincia, como la buscarías en un mapa.',
+    );
+
+    await type('#resort-location', '');
+    await save();
+
+    http.expectNone(`${RESORTS}/my`);
+    expect(text(field)).toContain('Escribí la dirección del balneario.');
+    expect(text(page.querySelector('.my-resort__preview .z-place'))).toBe(
+      'Dirección del balneario',
+    );
+  });
+
   it('con el nombre vacío no manda el pedido y el error queda debajo del campo', async () => {
     await open();
 
@@ -218,7 +261,8 @@ describe('MyResort', () => {
     expect(preview.querySelector('img')!.getAttribute('src')).toBe(
       'https://ejemplo.com/portada.jpg',
     );
-    // El precio más bajo de las que se pueden reservar: la de $ 6.000 está bloqueada.
+    // El precio más bajo de las que se pueden reservar: la de $ 6.000 está bloqueada y la de
+    // $ 5.000, dada de baja (la Portada no la recibe).
     expect(text(preview)).toContain('desde $ 8.500 por día');
 
     await type('#resort-name', 'Zolea Playa Norte');
@@ -231,6 +275,26 @@ describe('MyResort', () => {
       'Guardavidas',
       'Snack bar',
     ]);
+  });
+
+  it('la vista previa ordena los servicios por id, como la Portada', async () => {
+    fixture = TestBed.createComponent(MyResort);
+    page = fixture.nativeElement;
+    fixture.detectChanges();
+    http
+      .expectOne(`${RESORTS}/my`)
+      .flush({ ...myResort, amenities: [catalog[4], catalog[2], catalog[0], catalog[3]] });
+    // El catálogo puede llegar en cualquier orden.
+    http.expectOne(AMENITIES).flush([...catalog].reverse());
+    await settle();
+
+    const preview = page.querySelector('.my-resort__preview')!;
+    expect(
+      Array.from(preview.querySelectorAll('.z-amenity:not(.z-amenity--more)')).map((chip) =>
+        text(chip),
+      ),
+    ).toEqual(['Wi-Fi', 'Guardavidas', 'Spa']);
+    expect(text(preview.querySelector('.z-amenity--more'))).toBe('+1 servicios más');
   });
 
   describe('desactivar', () => {
@@ -320,10 +384,23 @@ describe('MyResort', () => {
         .flush({ error: 'Sin conexión' }, { status: 500, statusText: 'Error' });
       await settle();
 
-      expect(page.querySelector('.z-alert--danger')).not.toBeNull();
+      expect(text(page.querySelector('.z-alert--danger'))).toContain('No se pudo desactivar');
       expect(text(page.querySelector('.my-resort__head .z-status'))).toBe('Publicado');
       expect(button('Desactivar el balneario')).toBeDefined();
     });
+  });
+
+  it('si falla reactivar, el error lo dice', async () => {
+    await open({ ...myResort, active: false });
+
+    button('Reactivar')!.click();
+    http
+      .expectOne(`${RESORTS}/1/active`)
+      .flush({ error: 'Sin conexión' }, { status: 500, statusText: 'Error' });
+    await settle();
+
+    expect(text(page.querySelector('.z-alert--danger'))).toContain('No se pudo reactivar');
+    expect(text(page.querySelector('.my-resort__head .z-status'))).toBe('Desactivado');
   });
 
   it('sin balneario asignado, lo dice', async () => {
