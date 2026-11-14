@@ -27,7 +27,7 @@
 -- no cambia la hora en verano, así que restar 3 horas alcanza. La variable vale
 -- en todo el archivo porque Spring corre el script entero en una sola conexión.
 --
--- Las horas (created_at, canceled_at) van en UTC, que es como las guarda la
+-- Las horas (created_at, canceled_at, last_entry_at, paid_at) van en UTC, que es como las guarda la
 -- aplicación: la conexión lleva serverTimezone=UTC y la aplicación fija su zona
 -- en la del balneario al arrancar (BackendApplication), así que la base queda en
 -- UTC en cualquier máquina y en Compose. Por eso salen de UTC_TIMESTAMP() y no
@@ -401,9 +401,10 @@ INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, 
 
 -- =============================================================================
 -- 7. HUÉSPEDES
---    Solo para reservas CONFIRMED. last_entry_at (cuándo entró por última vez,
---    en hora de Buenos Aires) arranca en NULL: se completa más abajo, cuando las
---    fechas de las reservas ya quedaron corridas a hoy.
+--    Para las reservas CONFIRMED; el titular de las pendientes y las canceladas
+--    se carga al final (sección 14). last_entry_at (cuándo entró por última
+--    vez, en UTC como todas las horas) arranca en NULL: se completa más abajo,
+--    cuando las fechas de las reservas ya quedaron corridas a hoy.
 --    Tokens: formato tok-{bookingId:05d}-{seq}-{chars}
 -- =============================================================================
 INSERT INTO guest (id_guest, full_name, qr_token, last_entry_at, id_booking) VALUES
@@ -595,10 +596,11 @@ SET end_date   = @today + INTERVAL (30 + (id MOD 20)) DAY
 WHERE status = 'PENDING';
 
 -- Las personas de las reservas confirmadas que ya terminaron entraron por última
--- vez el último día, a las 11. Las de las vigentes y las que vienen, todavía no:
--- desde la 15.6 el QR sirve toda la estadía, así que escanearlas pasa en verde.
+-- vez el último día, a las 11 de Buenos Aires, que son las 14 en UTC. Las de las
+-- vigentes y las que vienen, todavía no: desde la 15.6 el QR sirve toda la
+-- estadía, así que escanearlas pasa en verde.
 UPDATE guest g JOIN booking b ON b.id = g.id_booking
-SET g.last_entry_at = TIMESTAMP(b.end_date) + INTERVAL 11 HOUR
+SET g.last_entry_at = TIMESTAMP(b.end_date) + INTERVAL 14 HOUR
 WHERE b.status = 'CONFIRMED' AND b.end_date < @today;
 
 -- Recalcular total_price de TODAS las reservas contra el precio de su unidad.
@@ -710,11 +712,17 @@ UPDATE review SET created_at = created_at + INTERVAL 3 HOUR;
 -- semanas. Las fechas son relativas a @today y no pisan otra reserva de la misma
 -- unidad; ninguna usa la A-08, que está bloqueada. El total es el de siempre:
 -- los días con los dos extremos por el precio diario de la unidad.
+--
+-- Cada una se creó doce días antes de empezar, pero nunca después de ayer: sin
+-- ese tope, la 68, la 69 y la 70 quedaban creadas dentro de 3, 10 y 18 días, y
+-- su pago (sección 15) salía con fecha futura en el detalle del administrador.
 -- =============================================================================
 INSERT INTO booking (id, start_date, end_date, total_price, status, created_at, id_client, id_rental_unit)
 SELECT d.id, @today + INTERVAL d.desde DAY, @today + INTERVAL (d.desde + d.dias - 1) DAY,
        d.dias * u.daily_price, 'CONFIRMED',
-       @today + INTERVAL (d.desde - 12) DAY + INTERVAL 14 HOUR, d.cliente, u.id_rental_unit
+       LEAST(@today + INTERVAL (d.desde - 12) DAY + INTERVAL 14 HOUR,
+             UTC_TIMESTAMP() - INTERVAL 1 DAY),
+       d.cliente, u.id_rental_unit
 FROM (
               SELECT 51 AS id, 1 AS unidad, -38 AS desde, 4 AS dias, 8 AS cliente
     UNION ALL SELECT 52,  2, -36, 3,  9
@@ -746,15 +754,19 @@ JOIN rental_unit u ON u.id_rental_unit = d.unidad;
 INSERT INTO guest (full_name, dni, qr_token, last_entry_at, id_booking)
 SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
        CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-PNL'),
-       IF(b.end_date < @today, TIMESTAMP(b.end_date) + INTERVAL 11 HOUR, NULL), b.id
+       IF(b.end_date < @today, TIMESTAMP(b.end_date) + INTERVAL 14 HOUR, NULL), b.id
 FROM booking b JOIN client c ON c.id_client = b.id_client
 WHERE b.id BETWEEN 51 AND 70;
 
 -- Las que incluyen hoy: en la 62, la 63 y la 65 el titular ya entró hoy, hace
 -- una hora (o a la medianoche, si la demostración arranca antes de la una); en
 -- la 64, que empieza hoy, todavía no. Con los acompañantes, hoy hay gente
--- adentro y gente por llegar. La hora es la de Buenos Aires, como @today.
-SET @entered_today = GREATEST(TIMESTAMP(@today), UTC_TIMESTAMP() - INTERVAL 4 HOUR);
+-- adentro y gente por llegar. La hora va en UTC: la medianoche de @today en
+-- Buenos Aires son las 3 en UTC. Antes se cargaba en hora de Buenos Aires y la
+-- aplicación la leía tres horas antes: entre las 0 y las 4 nadie había entrado
+-- hoy, y a cualquier otra hora el ingreso salía de hace cuatro horas.
+SET @entered_today = GREATEST(TIMESTAMP(@today) + INTERVAL 3 HOUR,
+                              UTC_TIMESTAMP() - INTERVAL 1 HOUR);
 UPDATE guest SET last_entry_at = @entered_today WHERE id_booking IN (62, 63, 65);
 
 -- Del titular de la 63 (que empezó antes de hoy) también se ve que ya había
@@ -766,7 +778,7 @@ INSERT INTO guest (full_name, qr_token, last_entry_at, id_booking) VALUES
 ('Paula Ruiz',      'tok-00064-A2-PNL', NULL,                             64);
 
 -- =============================================================================
--- 12. UNIDAD DADA DE BAJA Y PAGOS REGISTRADOS (TFI, 15.4)
+-- 12. UNIDAD DADA DE BAJA (TFI, 15.4)
 --
 -- En Zolea Club de Playa (balneario 1), la D-01 (unidad 23) está dada de baja:
 -- tiene dos reservas pasadas —la 13, de mostrador, y la 71— y ninguna por
@@ -780,20 +792,10 @@ FROM rental_unit u WHERE u.id_rental_unit = 23;
 
 INSERT INTO guest (full_name, dni, qr_token, last_entry_at, id_booking)
 SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni, 'tok-00071-A1-BAJ',
-       TIMESTAMP(@today - INTERVAL 18 DAY) + INTERVAL 11 HOUR, 71
+       TIMESTAMP(@today - INTERVAL 18 DAY) + INTERVAL 14 HOUR, 71
 FROM client c WHERE c.id_client = 11;
 
 UPDATE rental_unit SET retired = true WHERE id_rental_unit = 23;
-
--- Pagos aprobados de algunas reservas confirmadas del balneario 1, así el
--- detalle de la reserva los muestra: las cuatro que incluyen hoy (62 a 65), dos
--- de las que vienen (66 y 67) y la 71. Cada uno por el total de su reserva, diez
--- minutos después de crearla. Las horas van en UTC, como created_at.
-INSERT INTO payment (gateway_payment_id, status, amount, paid_at, recorded_at, id_booking)
-SELECT CONCAT('demo-mp-', LPAD(b.id, 5, '0')), 'approved', b.total_price,
-       b.created_at + INTERVAL 10 MINUTE, b.created_at + INTERVAL 11 MINUTE, b.id
-FROM booking b
-WHERE b.id IN (62, 63, 64, 65, 66, 67, 71);
 
 -- =============================================================================
 -- 13. MIS RESERVAS DE SANTI (11.4)
@@ -816,9 +818,51 @@ FROM (
 ) d
 JOIN rental_unit u ON u.id_rental_unit = d.unidad;
 
--- El titular de cada una, con su DNI y su QR sin usar.
-INSERT INTO guest (full_name, dni, qr_token, is_entry_validated, id_booking)
+-- El titular de cada una, con su DNI y su QR sin usar (last_entry_at en NULL).
+-- Hasta acá se cargaba is_entry_validated, la columna de antes de la 15.6: en una
+-- base nueva ya no existe y el script se cortaba.
+INSERT INTO guest (full_name, dni, qr_token, id_booking)
 SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
-       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-SAN'), false, b.id
+       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-SAN'), b.id
 FROM booking b JOIN client c ON c.id_client = b.id_client
 WHERE b.id BETWEEN 72 AND 74;
+
+-- =============================================================================
+-- 14. TITULAR DE LAS PENDIENTES Y CANCELADAS
+--
+-- Una reserva hecha desde la aplicación siempre tiene al titular como primera
+-- persona, pero la sección 7 carga personas solo para las confirmadas: las
+-- pendientes (14 a 16 en Mar del Plata) y las canceladas (8, 11 y 48 a 50)
+-- quedaban vacías. Reservas del balneario las mostraba «Sin titular» y el Panel
+-- avisaba «Un cliente canceló…» sin decir quién. Acá cada reserva web que
+-- todavía no tiene a nadie recibe al titular: el cliente, con su nombre y DNI, y
+-- sin haber entrado. Las de mostrador no entran: tienen walk_in_name.
+-- =============================================================================
+INSERT INTO guest (full_name, dni, qr_token, id_booking)
+SELECT CONCAT(c.first_name, ' ', c.last_name), c.dni,
+       CONCAT('tok-', LPAD(b.id, 5, '0'), '-A1-TIT'), b.id
+FROM booking b JOIN client c ON c.id_client = b.id_client
+WHERE b.walk_in_name IS NULL AND c.id_client <> 1
+  AND NOT EXISTS (SELECT 1 FROM guest g WHERE g.id_booking = b.id);
+
+-- =============================================================================
+-- 15. PAGOS (TFI, 15.4)
+--
+-- Una reserva web se confirma recién cuando llega el pago, así que cada
+-- confirmada de la demo hecha desde la aplicación tiene su pago aprobado, y
+-- también las canceladas que se habían pagado: las que tienen reintegro (48 a
+-- 50). Sin esto, el detalle del administrador decía «Todavía no se pagó» en una
+-- confirmada, y en una cancelada pedía reintegrar plata que nunca había entrado.
+-- Las de mostrador (13 y 25, del cliente 1) no llevan pago: se cobran en el
+-- balneario. Las pendientes, tampoco.
+--
+-- Cada pago es por el total de su reserva, diez minutos después de crearla, y
+-- va al final, cuando ya están todas las reservas y sus totales recalculados.
+-- Las horas van en UTC, como created_at.
+-- =============================================================================
+INSERT INTO payment (gateway_payment_id, status, amount, paid_at, recorded_at, id_booking)
+SELECT CONCAT('demo-mp-', LPAD(b.id, 5, '0')), 'approved', b.total_price,
+       b.created_at + INTERVAL 10 MINUTE, b.created_at + INTERVAL 11 MINUTE, b.id
+FROM booking b
+WHERE b.walk_in_name IS NULL AND b.id_client IS NOT NULL AND b.id_client <> 1
+  AND (b.status = 'CONFIRMED' OR (b.status = 'CANCELED' AND b.refund_amount > 0));
