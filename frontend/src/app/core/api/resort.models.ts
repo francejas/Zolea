@@ -41,6 +41,10 @@ export interface Resort {
   rentalUnits: RentalUnit[];
   /** Cuántas unidades cumplen la búsqueda: solo viene cuando se buscó con fechas; si no, null. */
   availableUnits?: number | null;
+  /** El promedio de las reseñas, con un decimal; null si todavía no tiene ninguna. */
+  averageRating?: number | null;
+  /** Cuántas reseñas tiene. */
+  reviewCount?: number;
 }
 
 /**
@@ -53,16 +57,4 @@ export interface ResortFilters {
   type?: UnitType | null;
   maxPrice?: number | null;
   amenityIds?: number[];
-}
-
-/** Una reseña de `GET /api/resorts/{id}/reviews`. */
-export interface Review {
-  /** «Santiago R.»: el nombre y la inicial del apellido. */
-  author: string | null;
-  /** De 1 a 5. */
-  rating: number;
-  /** Null si no dejó comentario. */
-  comment: string | null;
-  /** Cuándo se calificó, en hora del balneario y sin zona. */
-  createdAt: string;
 }
