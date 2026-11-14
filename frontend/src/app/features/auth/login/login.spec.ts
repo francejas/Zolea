@@ -49,6 +49,7 @@ describe('Login', () => {
             { path: 'login', component: Login },
             { path: '', pathMatch: 'full', component: Destination },
             { path: 'admin', component: Destination },
+            { path: 'dashboard', component: Destination },
             { path: 'my-bookings', component: Destination },
             { path: 'bookings/:id', component: Destination },
           ],
@@ -238,13 +239,13 @@ describe('Login', () => {
   });
 
   describe('ingresar', () => {
-    it('el cliente, sin volver, va a /', async () => {
+    it('el cliente, sin volver, va a su Inicio', async () => {
       await open();
       await fillAndSubmit('santi.rodriguez@gmail.com', 'admin123');
       const body = await succeedAs(clientMe);
 
       expect(body).toEqual({ email: 'santi.rodriguez@gmail.com', password: 'admin123' });
-      expect(router.url).toBe('/');
+      expect(router.url).toBe('/dashboard');
       expect(session.isLoggedIn()).toBe(true);
       expect(session.token()).toBe('jwt-de-prueba');
     });
@@ -288,7 +289,7 @@ describe('Login', () => {
         await fillAndSubmit('santi.rodriguez@gmail.com', 'admin123');
         await succeedAs(clientMe);
 
-        expect(router.url).toBe('/');
+        expect(router.url).toBe('/dashboard');
       });
     }
 
@@ -431,7 +432,7 @@ describe('Login', () => {
       expect(alerts()).toHaveLength(0);
 
       await succeedAs(clientMe);
-      expect(router.url).toBe('/');
+      expect(router.url).toBe('/dashboard');
     });
 
     it('si falla `/me` después de guardar el token, la sesión queda limpia', async () => {
@@ -476,9 +477,9 @@ describe('Login', () => {
 });
 
 describe('homeFor', () => {
-  it('el administrador va a /admin y el cliente a /', () => {
+  it('el administrador va a /admin y el cliente a su Inicio', () => {
     expect(homeFor('ADMIN')).toBe('/admin');
-    expect(homeFor('USER')).toBe('/');
+    expect(homeFor('USER')).toBe('/dashboard');
   });
 });
 
