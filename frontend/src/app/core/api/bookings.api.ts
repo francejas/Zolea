@@ -22,11 +22,6 @@ export class BookingsApi {
     return this.http.get<Booking>(`${this.apiUrl}/${id}`);
   }
 
-  /** Las reservas de un cliente. Tiene que ser el de la sesión: las de otro responden 403. */
-  byClient(clientId: number): Observable<Booking[]> {
-    return this.http.get<Booking[]>(`${this.apiUrl}/client/${clientId}`);
-  }
-
   /** Crea la reserva (queda pendiente) y trae la dirección de MercadoPago para pagarla. */
   create(request: BookingRequest): Observable<BookingCheckout> {
     return this.http.post<BookingCheckout>(this.apiUrl, request);

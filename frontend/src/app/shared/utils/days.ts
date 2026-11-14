@@ -55,21 +55,6 @@ export function validRange(
   return { from, to };
 }
 
-/** Buenos Aires está tres horas detrás de UTC todo el año. */
-const RESORT_HOURS_BEHIND_UTC = 3;
-
-/**
- * Un momento que manda la API, en milisegundos. Llega sin zona («2026-01-10T11:00:00.123456») y es
- * la hora del balneario (decisión 17), no la de la computadora: por eso se arma en UTC y no con
- * `new Date(texto)`, que lo tomaría en la zona de quien mira.
- */
-export function parseResortDateTime(text: string): number {
-  const [date, time = '00:00'] = text.split('T');
-  const [year, month, day] = date.split('-').map(Number);
-  const [hour, minute, second = 0] = time.split(':').map(Number);
-  return Date.UTC(year, month - 1, day, hour + RESORT_HOURS_BEHIND_UTC, minute, Math.floor(second));
-}
-
 function toUtc(iso: string): number {
   const [year, month, day] = iso.split('-').map(Number);
   return Date.UTC(year, month - 1, day);

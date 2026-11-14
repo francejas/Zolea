@@ -66,12 +66,4 @@ describe('ResortsApi', () => {
     req.flush([12, 15]);
     expect(ids).toEqual([12, 15]);
   });
-
-  it('reviews hace GET /api/resorts/{id}/reviews', () => {
-    api.reviews(4).subscribe();
-
-    const req = http.expectOne(`${URL}/4/reviews`);
-    expect(req.request.method).toBe('GET');
-    req.flush([]);
-  });
 });

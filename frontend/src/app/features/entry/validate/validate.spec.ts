@@ -38,6 +38,7 @@ const units: RentalUnit[] = [
     identifier: 'A-03',
     dailyPrice: 8500,
     isBlocked: false,
+    retired: false,
     resortId: 1,
   },
   {
@@ -46,6 +47,7 @@ const units: RentalUnit[] = [
     identifier: 'C-01',
     dailyPrice: 15000,
     isBlocked: false,
+    retired: false,
     resortId: 1,
   },
 ];

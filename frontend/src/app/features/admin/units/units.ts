@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
+  DestroyRef,
   computed,
   effect,
   ElementRef,
@@ -9,6 +10,7 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   form,
   FormField,
@@ -24,43 +26,36 @@ import { RentalUnit, RentalUnitRequest, UnitType } from '../../../core/api/resor
 import { UnitsApi } from '../../../core/api/units.api';
 import { toFieldErrors, toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
+import { money, UNIT_TYPE_LABEL, unitLabel } from '../../../shared/utils/format';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
-import { money, UNIT_TYPE_LABEL, unitLabel } from '../../../shared/utils/format';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { filterUnits, UnitStateFilter } from './unit-filters';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Lo que se escribe en el formulario de alta. Los campos se llaman igual que en el pedido. */
 interface UnitDraft {
   type: UnitType;
   identifier: string;
   dailyPrice: number | null;
 }
 
-/** El precio nuevo de la fila que se está editando. */
 interface PriceDraft {
   newPrice: number | null;
 }
 
-const EMPTY_DRAFT: UnitDraft = { type: 'UMBRELLA', identifier: '', dailyPrice: null };
+const EMPTY_DRAFT: UnitDraft = {
+  type: 'UMBRELLA',
+  identifier: '',
+  dailyPrice: null,
+};
 
-/** El precio tiene que ser mayor que cero; con centavos, el mínimo es un centavo. */
 const MIN_PRICE = 0.01;
 const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
 
-/**
- * Las unidades del balneario (12.1): las carpas y las sombrillas del administrador. Se listan, se
- * crean, se les cambia el precio desde la fila y se bloquean o desbloquean. Una unidad no se borra:
- * bloquearla es darla de baja, y se puede deshacer.
- *
- * Los errores del backend se pegan en su campo. El precio que no es mayor que cero llega en `campos`
- * y va por `toFieldErrors`. El identificador repetido llega como mensaje general (400, y 409 si dos
- * pedidos se cruzan), así que se lleva al campo del identificador a mano.
- */
 @Component({
   selector: 'app-units',
   imports: [
@@ -80,6 +75,7 @@ const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
   styleUrl: './units.scss',
 })
 export class Units {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly unitsApi = inject(UnitsApi);
   private readonly session = inject(SessionService);
 
@@ -87,9 +83,7 @@ export class Units {
   protected readonly units = signal<RentalUnit[]>([]);
   protected readonly loadError = signal('');
 
-  /** El resultado de la última acción, para el lector de pantalla y para quien mira la tabla. */
   protected readonly notice = signal('');
-  /** El error de bloquear o desbloquear: va arriba de la tabla. */
   protected readonly actionError = signal('');
 
   protected readonly typeOptions: { value: UnitType; label: string }[] = [
@@ -97,62 +91,83 @@ export class Units {
     { value: 'TENT', label: UNIT_TYPE_LABEL.TENT },
   ];
 
+  protected readonly typeFilter = signal<UnitType | ''>('');
+  protected readonly stateFilter = signal<UnitStateFilter>('ACTIVE');
+
+  protected readonly filteredUnits = computed(() =>
+    filterUnits(this.units(), this.typeFilter(), this.stateFilter()),
+  );
+
   protected readonly summary = computed(() => {
-    const all = this.units();
-    const blocked = all.filter((unit) => unit.isBlocked).length;
+    const all = this.filteredUnits();
+    const blocked = all.filter((unit) => !unit.retired && unit.isBlocked).length;
     const total = `${all.length} ${all.length === 1 ? 'unidad' : 'unidades'}`;
+
     if (blocked === 0) return total;
+
     return `${total} · ${blocked} ${blocked === 1 ? 'bloqueada' : 'bloqueadas'}`;
   });
-
-  // --- Alta -------------------------------------------------------------------------------
 
   protected readonly creating = signal(false);
   protected readonly formError = signal('');
   private readonly draft = signal<UnitDraft>({ ...EMPTY_DRAFT });
 
   protected readonly createForm = form(this.draft, (path) => {
-    required(path.identifier, { message: 'Escribí el identificador de la unidad.' });
-    required(path.dailyPrice, { message: 'Escribí el precio por día.' });
-    min(path.dailyPrice, MIN_PRICE, { message: PRICE_MESSAGE });
+    required(path.identifier, {
+      message: 'Escribí el identificador de la unidad.',
+    });
+    required(path.dailyPrice, {
+      message: 'Escribí el precio por día.',
+    });
+    min(path.dailyPrice, MIN_PRICE, {
+      message: PRICE_MESSAGE,
+    });
   });
 
-  /** Los controles en el orden en que se ven: el foco va al primero con error. */
   private readonly controls = viewChildren<ElementRef<HTMLElement>>('control');
-
-  // --- Precio de una fila -----------------------------------------------------------------
 
   protected readonly editingId = signal<number | null>(null);
   private readonly priceDraft = signal<PriceDraft>({ newPrice: null });
 
   protected readonly priceForm = form(this.priceDraft, (path) => {
-    required(path.newPrice, { message: 'Escribí el precio por día.' });
-    min(path.newPrice, MIN_PRICE, { message: PRICE_MESSAGE });
+    required(path.newPrice, {
+      message: 'Escribí el precio por día.',
+    });
+    min(path.newPrice, MIN_PRICE, {
+      message: PRICE_MESSAGE,
+    });
   });
 
   private readonly priceInput = viewChild<ElementRef<HTMLInputElement>>('priceInput');
 
-  // --- Bloquear y desbloquear -------------------------------------------------------------
+  protected readonly pendingBlock = signal<{
+    unit: RentalUnit;
+    block: boolean;
+  } | null>(null);
 
-  /** La unidad que espera confirmación y lo que se le va a hacer. */
-  protected readonly pendingBlock = signal<{ unit: RentalUnit; block: boolean } | null>(null);
   protected readonly blocking = signal(false);
   private readonly blockDialog = viewChild<ElementRef<HTMLDialogElement>>('blockDialog');
+
+  protected readonly pendingRetire = signal<RentalUnit | null>(null);
+  protected readonly retiring = signal(false);
+  protected readonly retireError = signal('');
+  private readonly retireDialog = viewChild<ElementRef<HTMLDialogElement>>('retireDialog');
 
   constructor() {
     this.load();
 
-    // Al abrir la edición del precio, el foco va al campo con el valor elegido.
     effect(() => {
       const input = this.priceInput()?.nativeElement;
       if (!input) return;
+
       input.focus();
       input.select();
     });
 
-    // Al abrir el formulario de alta, el foco va al primer control.
     effect(() => {
-      if (this.creating()) this.controls()[0]?.nativeElement.focus();
+      if (this.creating()) {
+        this.controls()[0]?.nativeElement.focus();
+      }
     });
   }
 
@@ -183,19 +198,35 @@ export class Units {
     return money(amount);
   }
 
-  /** El campo mostró su error: se marca también para el lector de pantalla. */
   protected hasError(field: ReadonlyFieldTree<unknown>): boolean {
     const state = field();
     return state.touched() && state.errors().length > 0;
   }
 
-  // --- Alta -------------------------------------------------------------------------------
+  protected setTypeFilter(value: string): void {
+    if (value === '' || value === 'TENT' || value === 'UMBRELLA') {
+      this.cancelPrice();
+      this.typeFilter.set(value);
+    }
+  }
+
+  protected setStateFilter(value: string): void {
+    if (value === 'ACTIVE' || value === 'AVAILABLE' || value === 'BLOCKED' || value === 'RETIRED') {
+      this.cancelPrice();
+      this.stateFilter.set(value);
+    }
+  }
+
+  protected resetFilters(): void {
+    this.cancelPrice();
+    this.typeFilter.set('');
+    this.stateFilter.set('ACTIVE');
+  }
 
   protected openCreate(): void {
     this.notice.set('');
     this.formError.set('');
     this.creating.set(true);
-    // Con el formulario ya abierto, el efecto no vuelve a correr: el foco va a mano.
     this.controls()[0]?.nativeElement.focus();
   }
 
@@ -212,19 +243,21 @@ export class Units {
   }
 
   private async create(): Promise<void> {
-    // Mientras el pedido está en curso no se manda otro: el botón también queda deshabilitado.
     if (this.createForm().submitting()) return;
+
     this.formError.set('');
     this.notice.set('');
 
     await submit(this.createForm, async () => {
       const resortId = this.session.user()?.idManagedResort;
+
       if (resortId == null) {
         this.formError.set('Tu cuenta no tiene un balneario asignado.');
         return;
       }
 
       const draft = this.createForm().value();
+
       const request: RentalUnitRequest = {
         type: draft.type,
         identifier: draft.identifier.trim(),
@@ -235,21 +268,34 @@ export class Units {
 
       try {
         const created = await firstValueFrom(this.unitsApi.create(request));
+
         this.units.update((units) => sortUnits([...units, created]));
         this.notice.set(`Creamos la ${this.label(created)}.`);
-        // El formulario queda abierto para cargar la siguiente, del mismo tipo.
-        this.draft.set({ ...EMPTY_DRAFT, type: created.type });
+
+        this.draft.set({
+          ...EMPTY_DRAFT,
+          type: created.type,
+        });
+
         this.createForm().reset();
         this.controls()[1]?.nativeElement.focus();
         return;
       } catch (error) {
         const err = error as HttpErrorResponse;
         const fieldErrors = toFieldErrors(this.createForm, err);
+
         if (fieldErrors.length > 0) return fieldErrors;
 
         const duplicated = duplicatedIdentifier(err);
+
         if (duplicated) {
-          return [{ fieldTree: this.createForm.identifier, kind: 'server', message: duplicated }];
+          return [
+            {
+              fieldTree: this.createForm.identifier,
+              kind: 'server',
+              message: duplicated,
+            },
+          ];
         }
 
         this.formError.set(toUserMessage(err));
@@ -260,17 +306,19 @@ export class Units {
     this.focusFirstInvalid();
   }
 
-  /** Al enviar con errores, el foco va al primer campo con error (sistema de diseño, «Campo»). */
   private focusFirstInvalid(): void {
     const fields = this.createForm;
     const ordered = [fields.type, fields.identifier, fields.dailyPrice];
     const index = ordered.findIndex((field) => this.hasError(field));
-    if (index >= 0) this.controls()[index]?.nativeElement.focus();
+
+    if (index >= 0) {
+      this.controls()[index]?.nativeElement.focus();
+    }
   }
 
-  // --- Precio de una fila -----------------------------------------------------------------
-
   protected editPrice(unit: RentalUnit): void {
+    if (unit.retired) return;
+
     this.notice.set('');
     this.actionError.set('');
     this.priceDraft.set({ newPrice: unit.dailyPrice });
@@ -289,6 +337,7 @@ export class Units {
 
   protected async savePrice(): Promise<void> {
     const id = this.editingId();
+
     if (id === null || this.priceForm().submitting()) return;
 
     await submit(this.priceForm, async () => {
@@ -296,14 +345,15 @@ export class Units {
 
       try {
         const updated = await firstValueFrom(this.unitsApi.updatePrice(id, newPrice));
+
         this.replace(updated);
         this.editingId.set(null);
         this.notice.set(
           `La ${this.label(updated)} ahora sale ${money(updated.dailyPrice)} por día.`,
         );
+
         return;
       } catch (error) {
-        // El precio inválido llega como mensaje general, sin `campos`: va debajo del campo.
         const errors: ValidationError.WithOptionalFieldTree[] = [
           {
             fieldTree: this.priceForm.newPrice,
@@ -311,18 +361,21 @@ export class Units {
             message: toUserMessage(error as HttpErrorResponse),
           },
         ];
+
         return errors;
       }
     });
   }
 
-  // --- Bloquear y desbloquear -------------------------------------------------------------
-
-  /** Pide confirmación: bloquea si está disponible y desbloquea si está bloqueada. */
   protected askBlock(unit: RentalUnit): void {
+    if (unit.retired) return;
+
     this.notice.set('');
     this.actionError.set('');
-    this.pendingBlock.set({ unit, block: !unit.isBlocked });
+    this.pendingBlock.set({
+      unit,
+      block: !unit.isBlocked,
+    });
     this.blockDialog()?.nativeElement.showModal();
   }
 
@@ -333,7 +386,9 @@ export class Units {
 
   protected confirmBlock(): void {
     const pending = this.pendingBlock();
+
     if (!pending) return;
+
     this.blocking.set(true);
 
     this.unitsApi.setBlocked(pending.unit.idRentalUnit, pending.block).subscribe({
@@ -355,6 +410,62 @@ export class Units {
     });
   }
 
+  protected askRetire(unit: RentalUnit): void {
+    if (unit.retired || this.retiring() || this.blocking() || this.priceForm().submitting()) {
+      return;
+    }
+
+    this.cancelPrice();
+    this.notice.set('');
+    this.retireError.set('');
+    this.pendingRetire.set(unit);
+    this.retireDialog()?.nativeElement.showModal();
+  }
+
+  protected closeRetire(): void {
+    if (this.retiring()) return;
+
+    this.retireDialog()?.nativeElement.close();
+    this.pendingRetire.set(null);
+  }
+
+  protected onRetireCancel(event: Event): void {
+    event.preventDefault();
+    this.closeRetire();
+  }
+
+  protected confirmRetire(): void {
+    const unit = this.pendingRetire();
+
+    if (!unit || unit.retired || this.retiring()) return;
+
+    this.retiring.set(true);
+    this.retireError.set('');
+
+    this.unitsApi
+      .retire(unit.idRentalUnit)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.replace(updated);
+          this.retiring.set(false);
+          this.closeRetire();
+
+          // Permite ver la fila recién dada de baja.
+          this.stateFilter.set('RETIRED');
+          this.notice.set(
+            `La ${this.label(updated)} fue dada de baja. Su historial se conserva. Mostrando las unidades dadas de baja.`,
+          );
+        },
+        error: (error: HttpErrorResponse) => {
+          this.retiring.set(false);
+
+          // El motivo queda dentro del diálogo, incluido el 400 por reservas.
+          this.retireError.set(toUserMessage(error));
+        },
+      });
+  }
+
   private replace(updated: RentalUnit): void {
     this.units.update((units) =>
       units.map((unit) => (unit.idRentalUnit === updated.idRentalUnit ? updated : unit)),
@@ -362,19 +473,21 @@ export class Units {
   }
 }
 
-/** Por identificador, con los números en orden: C-2 antes que C-10. */
 function sortUnits(units: RentalUnit[]): RentalUnit[] {
   return [...units].sort((a, b) =>
-    a.identifier.localeCompare(b.identifier, 'es', { numeric: true, sensitivity: 'base' }),
+    a.identifier.localeCompare(b.identifier, 'es', {
+      numeric: true,
+      sensitivity: 'base',
+    }),
   );
 }
 
-/**
- * El mensaje del identificador repetido, o `null` si el error es otro. El backend lo contesta como
- * 400 con «Ya existe una unidad con el identificador …» y, si dos pedidos se cruzan, como 409.
- */
 function duplicatedIdentifier(err: HttpErrorResponse): string | null {
-  if (err.status === 409) return 'Ya existe una unidad con ese identificador en tu balneario.';
+  if (err.status === 409) {
+    return 'Ya existe una unidad con ese identificador en tu balneario.';
+  }
+
   const message = (err.error as { error?: string } | null)?.error;
+
   return err.status === 400 && message?.startsWith('Ya existe una unidad') ? message : null;
 }

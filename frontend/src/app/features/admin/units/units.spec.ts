@@ -26,6 +26,7 @@ function unit(overrides: Partial<RentalUnit> = {}): RentalUnit {
     identifier: 'A-01',
     dailyPrice: 8500,
     isBlocked: false,
+    retired: false,
     resortId: 7,
     ...overrides,
   };

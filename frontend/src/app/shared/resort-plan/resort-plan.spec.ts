@@ -13,6 +13,7 @@ function zoleaClub(): RentalUnit[] {
         identifier: `${prefix}-${String(n).padStart(2, '0')}`,
         dailyPrice: price,
         isBlocked: blocked.includes(n),
+        retired: false,
         resortId: 1,
       });
     }

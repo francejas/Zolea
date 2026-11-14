@@ -9,10 +9,7 @@ export interface GuestSummary {
   idGuest: number;
   fullName: string;
   dni: string | null;
-  /** Si entró hoy. El código sirve para entrar todas las veces que haga falta durante la estadía. */
   isEntryValidated: boolean;
-  /** Cuándo entró por última vez (`YYYY-MM-DDTHH:mm:ss`, hora de Buenos Aires); `null` si nunca entró. */
-  lastEntryAt: string | null;
   qrToken: string;
 }
 

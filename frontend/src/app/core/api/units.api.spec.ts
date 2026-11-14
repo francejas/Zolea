@@ -13,6 +13,7 @@ const unit: RentalUnit = {
   identifier: 'C-07',
   dailyPrice: 14500,
   isBlocked: false,
+  retired: false,
   resortId: 1,
 };
 

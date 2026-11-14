@@ -8,8 +8,7 @@
       [attr.aria-controls]="id + '-calendario'"
       (click)="toggle('from')"
     >
-      <span>{{ labels().from }}</span
-      ><strong>{{ fromLabel() }}</strong>
+      <span>Entrada</span><strong>{{ fromLabel() }}</strong>
     </button>
     <button
       #toButton
@@ -19,8 +18,7 @@
       [attr.aria-controls]="id + '-calendario'"
       (click)="toggle('to')"
     >
-      <span>{{ labels().to }}</span
-      ><strong>{{ toLabel() }}</strong>
+      <span>Salida</span><strong>{{ toLabel() }}</strong>
     </button>
   </div>
 
@@ -29,7 +27,7 @@
       class="z-cal"
       role="group"
       [id]="id + '-calendario'"
-      [attr.aria-label]="open() === 'from' ? labels().pickFrom : labels().pickTo"
+      [attr.aria-label]="open() === 'from' ? 'Elegí la entrada' : 'Elegí la salida'"
     >
       <div class="z-cal__head">
         <button

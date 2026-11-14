@@ -4,10 +4,6 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { RentalUnit, RentalUnitRequest } from './resort.models';
 
-/**
- * Las carpas y sombrillas del balneario. Las usa el panel del administrador: al admin, el listado
- * le devuelve solo las unidades de su balneario. No hay borrado: una unidad se bloquea.
- */
 @Injectable({
   providedIn: 'root',
 })
@@ -23,15 +19,25 @@ export class UnitsApi {
     return this.http.post<RentalUnit>(this.apiUrl, request);
   }
 
-  /** Devuelve la unidad con el precio nuevo. El precio viaja en la dirección, no en el cuerpo. */
   updatePrice(id: number, newPrice: number): Observable<RentalUnit> {
     const params = new HttpParams().set('newPrice', newPrice);
-    return this.http.patch<RentalUnit>(`${this.apiUrl}/${id}/price`, null, { params });
+
+    return this.http.patch<RentalUnit>(`${this.apiUrl}/${id}/price`, null, {
+      params,
+    });
   }
 
-  /** Bloquea (`true`) o desbloquea (`false`). Una unidad bloqueada no se puede reservar. */
+  /** Baja definitiva. El servidor rechaza unidades con reservas vigentes o futuras. */
+  retire(id: number): Observable<RentalUnit> {
+    return this.http.patch<RentalUnit>(`${this.apiUrl}/${id}/retire`, null);
+  }
+
+  /** El bloqueo es temporal y se puede deshacer. */
   setBlocked(id: number, isBlocked: boolean): Observable<RentalUnit> {
     const params = new HttpParams().set('isBlocked', isBlocked);
-    return this.http.patch<RentalUnit>(`${this.apiUrl}/${id}/block`, null, { params });
+
+    return this.http.patch<RentalUnit>(`${this.apiUrl}/${id}/block`, null, {
+      params,
+    });
   }
 }

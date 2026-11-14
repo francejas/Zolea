@@ -1,5 +1,3 @@
-/** Los balnearios, como los devuelve `/api/resorts`. Escritos a mano contra `/v3/api-docs`. */
-
 export type UnitType = 'TENT' | 'UMBRELLA';
 
 export interface Amenity {
@@ -7,7 +5,6 @@ export interface Amenity {
   name: string;
 }
 
-/** El pedido de `POST /api/amenities` y de `PUT /api/amenities/{id}`: solo el nombre. */
 export interface AmenityRequest {
   name: string;
 }
@@ -18,10 +15,10 @@ export interface RentalUnit {
   identifier: string;
   dailyPrice: number;
   isBlocked: boolean;
+  retired: boolean;
   resortId: number;
 }
 
-/** El pedido de `POST /api/rental-units`. `resortId` es el `idManagedResort` de la sesión. */
 export interface RentalUnitRequest {
   type: UnitType;
   identifier: string;
@@ -39,30 +36,13 @@ export interface Resort {
   active: boolean;
   amenities: Amenity[];
   rentalUnits: RentalUnit[];
-  /** Cuántas unidades cumplen la búsqueda: solo viene cuando se buscó con fechas; si no, null. */
   availableUnits?: number | null;
 }
 
-/**
- * Los filtros opcionales de `GET /api/resorts`. Las fechas van las dos o ninguna, `YYYY-MM-DD`;
- * `maxPrice` incluye ese valor y `amenityIds` pide que estén todos.
- */
 export interface ResortFilters {
   from?: string | null;
   to?: string | null;
   type?: UnitType | null;
   maxPrice?: number | null;
   amenityIds?: number[];
-}
-
-/** Una reseña de `GET /api/resorts/{id}/reviews`. */
-export interface Review {
-  /** «Santiago R.»: el nombre y la inicial del apellido. */
-  author: string | null;
-  /** De 1 a 5. */
-  rating: number;
-  /** Null si no dejó comentario. */
-  comment: string | null;
-  /** Cuándo se calificó, en hora del balneario y sin zona. */
-  createdAt: string;
 }

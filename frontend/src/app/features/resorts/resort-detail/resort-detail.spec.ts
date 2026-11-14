@@ -22,6 +22,7 @@ const unit = (
   identifier,
   dailyPrice: price,
   isBlocked: blocked,
+  retired: false,
   resortId: 1,
 });
 

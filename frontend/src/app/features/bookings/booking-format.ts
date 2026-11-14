@@ -1,5 +1,4 @@
-import { Booking, BookingStatus } from '../../core/api/booking.models';
-import { parseResortDateTime } from '../../shared/utils/days';
+import { BookingStatus } from '../../core/api/booking.models';
 import { money, unitLabel } from '../../shared/utils/format';
 
 /** Cómo se dice cada estado, y su variante de `z-status`: verde, amarilla o sin bandera. */
@@ -26,43 +25,10 @@ export function dayRange(start: string, end: string): string {
   return `${sameMonth ? from.getDate() : dayMonth.format(from)} → ${dayMonth.format(to)}`;
 }
 
-const weekdayDayMonth = new Intl.DateTimeFormat('es-AR', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
-
-/** «vie 15 ene»: sin la coma ni los puntos que agrega `Intl`. */
-export function shortDate(iso: string): string {
-  const parts = weekdayDayMonth.formatToParts(parseDate(iso));
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    (parts.find((p) => p.type === type)?.value ?? '').replace('.', '');
-  return `${part('weekday')} ${part('day')} ${part('month')}`;
-}
-
 /** Las dos fechas cuentan: del 15 al 17 son tres días. */
 export function dayCount(start: string, end: string): number {
   const days = (parseDate(end).getTime() - parseDate(start).getTime()) / 86_400_000;
   return Math.round(days) + 1;
-}
-
-/** Una pendiente se paga hasta una hora después de hecha, como `Booking.PAYMENT_WINDOW` en el backend. */
-const PAYMENT_WINDOW_MS = 3_600_000;
-
-/** Hasta cuándo se puede pagar una reserva, en milisegundos, desde su `createdAt`. */
-export function paymentDeadline(createdAt: string): number {
-  return parseResortDateTime(createdAt) + PAYMENT_WINDOW_MS;
-}
-
-/**
- * Pendiente y pasada la hora: ya no se paga, aunque siga pendiente hasta que la limpieza la cancele
- * (entre los 75 y los 80 minutos). A la hora justa ya venció, igual que en el backend.
- */
-export function paymentExpired(
-  booking: Pick<Booking, 'status' | 'createdAt'>,
-  now: number,
-): boolean {
-  return booking.status === 'PENDING' && now >= paymentDeadline(booking.createdAt);
 }
 
 /** «#0047». */

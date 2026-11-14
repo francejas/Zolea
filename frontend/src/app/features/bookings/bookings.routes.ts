@@ -11,10 +11,7 @@ export const bookingsRoutes: Routes = [
     children: [
       { path: 'dashboard', component: PlaceholderPage, data: { title: 'Inicio' } },
       { path: 'book/:resortId', loadComponent: () => import('./book/book').then((m) => m.Book) },
-      {
-        path: 'my-bookings',
-        loadComponent: () => import('./my-bookings/my-bookings').then((m) => m.MyBookings),
-      },
+      { path: 'my-bookings', component: PlaceholderPage, data: { title: 'Mis reservas' } },
       {
         path: 'bookings/:id',
         loadComponent: () => import('./booking-detail/booking-detail').then((m) => m.BookingDetail),
