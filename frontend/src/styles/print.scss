@@ -1,0 +1,34 @@
+/* La impresión del navegador. Cuando en la página hay una zona `.z-print-area` (las entradas de la
+   reserva en mostrador), se imprime solo esa: la barra lateral, la cabecera y los botones quedan
+   afuera. Sin esa zona, la página se imprime como siempre. */
+
+@media print {
+  body:has(.z-print-area) {
+    background: #fff;
+
+    * {
+      visibility: hidden;
+    }
+
+    .z-print-area,
+    .z-print-area * {
+      visibility: visible;
+    }
+
+    .z-print-area {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+    }
+  }
+
+  .z-no-print,
+  .z-print-area .z-ticket__foot {
+    display: none !important;
+  }
+
+  .z-print-area .z-ticket {
+    break-inside: avoid;
+  }
+}

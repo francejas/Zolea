@@ -3,7 +3,7 @@
 | Documento | Qué contiene |
 |---|---|
 | [modelo-de-datos.md](modelo-de-datos.md) | Diagrama de clases, diagrama entidad-relación y las restricciones de unicidad que hace cumplir la base |
-| [decisiones.md](decisiones.md) | Las trece decisiones de arquitectura, cada una con el problema que resolvía y lo que se paga por ella |
+| [decisiones.md](decisiones.md) | Las dieciocho decisiones de arquitectura, cada una con el problema que resolvía y lo que se paga por ella |
 | [flujo-de-pago.md](flujo-de-pago.md) | Cómo se cobra una reserva, los dos caminos de confirmación y por qué son dos |
 | [guia-frontend.md](guia-frontend.md) | Para quien consume la API: sesión, errores, permisos, los flujos completos y cómo generar el cliente de TypeScript |
 
