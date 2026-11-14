@@ -26,9 +26,11 @@ describe('ZRating', () => {
     expect(rating.hidden).toBe('true');
   });
 
-  it('un promedio va con una coma decimal y pinta las estrellas redondeando', () => {
-    expect(render({ value: 4.5 })).toMatchObject({ on: 5, text: '4,5 de 5 estrellas' });
-    expect(render({ value: 4.4 })).toMatchObject({ on: 4, text: '4,4 de 5 estrellas' });
+  it('un promedio va con una coma decimal y pinta solo las estrellas enteras', () => {
+    // Un 4,5 con cinco estrellas llenas al lado diría más de lo que dice el número.
+    expect(render({ value: 4.5 })).toMatchObject({ on: 4, text: '4,5 de 5 estrellas' });
+    expect(render({ value: 4.9 })).toMatchObject({ on: 4, text: '4,9 de 5 estrellas' });
+    expect(render({ value: 5 })).toMatchObject({ on: 5, text: '5 de 5 estrellas' });
   });
 
   it('suma cuántas reseñas son', () => {

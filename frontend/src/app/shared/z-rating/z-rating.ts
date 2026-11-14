@@ -77,9 +77,9 @@ export class ZRating {
   count = input<number | null>(null);
   compact = input(false, { transform: booleanAttribute });
 
-  /** Llenas hasta el número redondeado: 4,5 pinta cinco y 4,4 pinta cuatro. */
+  /** Llenas solo las enteras: 4,5 pinta cuatro, para no mostrar más de lo que dice el número. */
   protected readonly stars = computed(() =>
-    this.compact() ? [true] : [1, 2, 3, 4, 5].map((star) => star <= Math.round(this.value())),
+    this.compact() ? [true] : [1, 2, 3, 4, 5].map((star) => star <= Math.floor(this.value())),
   );
 
   protected readonly valueText = computed(() => decimal.format(this.value()));
