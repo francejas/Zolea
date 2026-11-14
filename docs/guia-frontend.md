@@ -16,7 +16,7 @@ docker compose up -d db     # MySQL en el puerto 3307
 ./mvnw spring-boot:run      # backend en el 8080, perfil dev
 ```
 
-Arranca con la base de demostración cargada: 5 balnearios, 100 unidades y 47 reservas, con las
+Arranca con la base de demostración cargada: 5 balnearios, 100 unidades y 74 reservas, con las
 fechas recalculadas relativas a hoy. **Se recarga en cada arranque**, así que lo que se ensucie
 probando se limpia solo al reiniciar.
 

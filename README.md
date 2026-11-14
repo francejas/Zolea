@@ -386,7 +386,7 @@ Zolea/
 │   ├── application-dev.properties
 │   ├── application-demo.properties
 │   └── data-demo.sql         # Seed de dev y demo: 5 balnearios, 25 clientes,
-│                             # 100 unidades, 47 reservas
+│                             # 100 unidades, 74 reservas
 │
 ├── src/test/                 # 127 pruebas + IntegrationTest (base y fixtures)
 ├── docs/                     # Modelo de datos, decisiones, flujo de pago y guía de frontend
