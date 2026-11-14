@@ -97,6 +97,13 @@ export class BookingDetail {
    * no se pudo traer: entonces una confirmada no ofrece cancelar.
    */
   protected terms = signal<CancellationResponse | null>(null);
+  /**
+   * Las condiciones al abrir la confirmación: se vuelven a pedir, porque la pantalla pudo quedar
+   * abierta de un día para otro y el porcentaje haber cambiado. Null mientras llegan.
+   */
+  protected quote = signal<CancellationResponse | null>(null);
+  protected checking = signal(false);
+  protected quoteError = signal('');
   protected cancelNotice = signal<CancelNotice | null>(null);
 
   protected status = computed(() => {
@@ -116,10 +123,11 @@ export class BookingDetail {
   protected total = computed(() => money(this.booking()?.totalPrice ?? 0));
   protected number = computed(() => bookingNumber(this.booking()?.id ?? 0));
   protected currentGuest = computed(() => this.booking()?.guests[this.ticketIndex()] ?? null);
-  /** Cuánto se devuelve, para la confirmación. Una pendiente sin condiciones no tiene reintegro. */
-  protected refundText = computed(() =>
-    refundOffer(this.terms() ?? { refundAmount: null, refundPercent: 0 }),
-  );
+  /** Cuánto se devuelve, con las condiciones de recién. */
+  protected refundText = computed(() => {
+    const quote = this.quote();
+    return quote ? refundOffer(quote) : '';
+  });
   protected canceledText = computed(() => {
     const booking = this.booking();
     return booking?.status === 'CANCELED' ? cancellationSummary(booking) : '';
@@ -193,17 +201,36 @@ export class BookingDetail {
   }
 
   protected askCancel(): void {
+    const booking = this.booking();
+    if (!booking) return;
     this.actionError.set('');
+    this.quote.set(null);
+    this.quoteError.set('');
+    this.checking.set(true);
     this.cancelDialog()?.nativeElement.showModal();
+
+    this.bookingsApi.cancellation(booking.id).subscribe({
+      next: (quote) => {
+        this.quote.set(quote);
+        this.checking.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.quoteError.set(toUserMessage(error));
+        this.checking.set(false);
+      },
+    });
   }
 
   protected closeCancel(): void {
     this.cancelDialog()?.nativeElement.close();
+    // Si al abrir cambió algo (ya no se puede, otro porcentaje), la pantalla se queda con eso.
+    const quote = this.quote();
+    if (quote) this.terms.set(quote);
   }
 
   protected confirmCancel(): void {
     const booking = this.booking();
-    if (!booking) return;
+    if (!booking || this.checking() || !this.quote()?.canCancel) return;
     this.canceling.set(true);
 
     this.bookingsApi.cancel(booking.id).subscribe({
@@ -233,8 +260,28 @@ export class BookingDetail {
       error: (error: HttpErrorResponse) => {
         this.canceling.set(false);
         this.closeCancel();
-        this.actionError.set(toUserMessage(error));
+        const message = toUserMessage(error);
+        // Un 400: la reserva cambió (ya estaba cancelada, ya empezó). Se mira el código, no el texto.
+        if (error.status === 400) this.refresh(booking.id, message);
+        else this.actionError.set(message);
       },
+    });
+  }
+
+  /**
+   * La reserva como está ahora, sin pasar por el esqueleto, y el motivo arriba de las acciones.
+   * `load()` no sirve: borra el mensaje.
+   */
+  private refresh(id: number, message: string): void {
+    this.bookingsApi.get(id).subscribe({
+      next: (current) => {
+        this.booking.set(current);
+        this.ticketIndex.set(0);
+        this.terms.set(null);
+        if (current.status !== 'CANCELED') this.loadTerms(current.id);
+        this.actionError.set(message);
+      },
+      error: () => this.actionError.set(message),
     });
   }
 

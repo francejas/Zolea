@@ -169,15 +169,35 @@
                 aria-describedby="cancel-refund"
               >
                 <h2 id="cancel-title" class="z-modal__title">¿Cancelás la reserva?</h2>
-                <p id="cancel-refund" class="booking__refund">{{ refundText() }}</p>
-                <p class="z-modal__body">
-                  La {{ unit() }} queda libre para esos días. No se puede deshacer.
-                </p>
+                <!-- Las condiciones se vuelven a pedir al abrir: mientras llegan, no se promete nada. -->
+                @if (checking()) {
+                  <p class="booking__hint" role="status">Revisando cuánto se devuelve…</p>
+                } @else if (quoteError(); as message) {
+                  <z-alert variant="danger" [text]="message" />
+                } @else if (quote(); as quote) {
+                  @if (quote.canCancel) {
+                    <p id="cancel-refund" class="booking__refund">{{ refundText() }}</p>
+                    <p class="z-modal__body">
+                      La {{ unit() }} queda libre para esos días. No se puede deshacer.
+                    </p>
+                  } @else {
+                    <z-alert
+                      variant="warning"
+                      [text]="quote.reason || 'Esta reserva ya no se puede cancelar.'"
+                    />
+                  }
+                }
                 <div class="z-modal__actions">
                   <z-btn variant="secondary" block [disabled]="canceling()" (click)="closeCancel()">
                     Volver
                   </z-btn>
-                  <z-btn variant="danger" block [loading]="canceling()" (click)="confirmCancel()">
+                  <z-btn
+                    variant="danger"
+                    block
+                    [disabled]="checking() || !quote()?.canCancel"
+                    [loading]="canceling()"
+                    (click)="confirmCancel()"
+                  >
                     Cancelar reserva
                   </z-btn>
                 </div>
