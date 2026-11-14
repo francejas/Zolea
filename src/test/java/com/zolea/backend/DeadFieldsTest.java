@@ -83,7 +83,7 @@ class DeadFieldsTest extends IntegrationTest {
         syncWithDatabase();
 
         mockMvc.perform(delete("/api/amenities/" + amenity.getIdAmenity())
-                        .header("Authorization", "Bearer " + tokenFor(anAdmin())))
+                        .header("Authorization", "Bearer " + tokenFor(theZoleaAccount())))
                 .andExpect(status().isNoContent());
 
         syncWithDatabase();

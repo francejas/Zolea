@@ -1,5 +1,6 @@
 package com.zolea.backend.exceptions;
 
+import com.zolea.backend.exceptions.amenity.AmenityCatalogForbiddenException;
 import com.zolea.backend.exceptions.amenity.AmenityNotFoundException;
 import com.zolea.backend.exceptions.amenity.InvalidAmenityException;
 import com.zolea.backend.exceptions.auth.InvalidCredentialsException;
@@ -99,8 +100,11 @@ public class GlobalExceptionHandler {
         return respuesta(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(BookingForbiddenException.class)
-    public ResponseEntity<Map<String, String>> handleForbidden(BookingForbiddenException ex) {
+    @ExceptionHandler({
+            BookingForbiddenException.class,
+            AmenityCatalogForbiddenException.class
+    })
+    public ResponseEntity<Map<String, String>> handleForbidden(RuntimeException ex) {
         return respuesta(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 

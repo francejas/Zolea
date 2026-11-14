@@ -63,6 +63,9 @@ SET FOREIGN_KEY_CHECKS = 1;
 --    ID 1   : mostrador (walk-in, USER)
 --    IDs 2-6: administradores de cada balneario (ADMIN)
 --    IDs 7-25: clientes regulares (USER)
+--    ID 26  : la cuenta de Zolea (ADMIN sin balneario): solo administra el
+--             catálogo de servicios (15.7). No tiene admin_email en ningún
+--             balneario, así que el UPDATE de la sección 8 no le asigna uno.
 -- =============================================================================
 INSERT INTO client (id_client, first_name, last_name, email, phone, password_hash, role) VALUES
 (1,  'Cliente',    'Mostrador',  'mostrador@zolea.com',         '0000000000', '$2b$10$2LXClizmmJnOUPX5KDuMbe8.Gwhz0Vx.XHArOa7EwQRDkyGyk.cuS', 'USER'),
@@ -93,7 +96,10 @@ INSERT INTO client (id_client, first_name, last_name, email, phone, password_has
 (22, 'Milagros',   'Jiménez',    'mili.jimenez@gmail.com',       '1155016016', '$2b$10$2LXClizmmJnOUPX5KDuMbe8.Gwhz0Vx.XHArOa7EwQRDkyGyk.cuS', 'USER'),
 (23, 'Nicolás',    'Acosta',     'nico.acosta@gmail.com',        '1155017017', '$2b$10$2LXClizmmJnOUPX5KDuMbe8.Gwhz0Vx.XHArOa7EwQRDkyGyk.cuS', 'USER'),
 (24, 'Rocío',      'Villalba',   'rocio.villalba@gmail.com',     '1155018018', '$2b$10$2LXClizmmJnOUPX5KDuMbe8.Gwhz0Vx.XHArOa7EwQRDkyGyk.cuS', 'USER'),
-(25, 'Sebastián',  'Medina',     'seba.medina@gmail.com',        '1155019019', '$2b$10$2LXClizmmJnOUPX5KDuMbe8.Gwhz0Vx.XHArOa7EwQRDkyGyk.cuS', 'USER');
+(25, 'Sebastián',  'Medina',     'seba.medina@gmail.com',        '1155019019', '$2b$10$2LXClizmmJnOUPX5KDuMbe8.Gwhz0Vx.XHArOa7EwQRDkyGyk.cuS', 'USER'),
+
+-- La cuenta de Zolea: administra el catálogo de servicios, no un balneario
+(26, 'Zolea',      'Catálogo',   'zolea@zolea.com',              '0000000026', '$2b$10$2LXClizmmJnOUPX5KDuMbe8.Gwhz0Vx.XHArOa7EwQRDkyGyk.cuS', 'ADMIN');
 
 -- =============================================================================
 -- 2. BALNEARIOS (RESORTS)

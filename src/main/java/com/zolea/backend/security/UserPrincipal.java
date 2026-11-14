@@ -1,5 +1,6 @@
 package com.zolea.backend.security;
 
+import com.zolea.backend.exceptions.amenity.AmenityCatalogForbiddenException;
 import com.zolea.backend.models.Client;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.GrantedAuthority;
@@ -89,6 +90,21 @@ public record UserPrincipal(
             throw new AccessDeniedException("El administrador no tiene un balneario asignado.");
         }
         return idManagedResort;
+    }
+
+    /**
+     * Exige que sea la cuenta de Zolea: un administrador sin balneario asignado (15.7).
+     *
+     * <p>Es lo único que esa cuenta puede hacer: administrar el catálogo de servicios, que es uno
+     * solo para todos los balnearios. No la vuelve «un administrador que ve todo»: el panel le sigue
+     * respondiendo 403 por {@link #requireManagedResort()}. El rol ADMIN lo exige antes el
+     * {@code @PreAuthorize} del endpoint, así que acá solo falta mirar el balneario.
+     */
+    public void requireZoleaAccount() {
+        if (idManagedResort != null) {
+            throw new AmenityCatalogForbiddenException(
+                    "Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.");
+        }
     }
 
     /** Si es administrador. El rol sale de la base en cada pedido, no del contenido del token. */
