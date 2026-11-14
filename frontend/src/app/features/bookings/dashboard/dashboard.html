@@ -1,0 +1,201 @@
+<section class="home">
+  <header>
+    <h1 class="home__title">Hola{{ firstName() ? ', ' + firstName() : '' }}</h1>
+    <p class="home__lead">Lo que tenés hoy y lo que te viene.</p>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="home__loading" aria-busy="true" aria-label="Cargando tus reservas">
+        <div class="z-booking-card">
+          <z-skeleton width="40%" height="13px" />
+          <z-skeleton width="70%" height="26px" />
+          <z-skeleton width="55%" height="15px" />
+        </div>
+        <div class="z-booking-card">
+          <z-skeleton width="65%" height="26px" />
+          <z-skeleton width="50%" height="15px" />
+          <z-skeleton width="35%" height="34px" />
+        </div>
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer tus reservas" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (bookings().length === 0) {
+        <z-empty
+          title="Todavía no reservaste"
+          text="Elegí un balneario y reservá una carpa o una sombrilla para los días que quieras."
+          actionLabel="Buscar balnearios"
+          (action)="goToResorts()"
+        />
+      } @else {
+        <!-- Hoy, arriba de todo: lo que se necesita parado en la puerta del balneario. -->
+        @if (current(); as booking) {
+          <section class="home__today" aria-labelledby="home-today-title">
+            <div class="home__today-head">
+              <p class="z-eyebrow">Hoy · {{ todayText }}</p>
+              <h2 id="home-today-title" class="home__resort">{{ booking.resortName }}</h2>
+              <p class="home__stay">{{ stay(booking) }}</p>
+            </div>
+
+            @if (currentGuest(); as guest) {
+              <app-guest-qr class="home__ticket" [guest]="guest" [booking]="booking">
+                @if (booking.guests.length > 1) {
+                  <div class="z-pager">
+                    <button
+                      class="z-icon-btn"
+                      type="button"
+                      aria-label="Entrada anterior"
+                      [disabled]="ticketIndex() === 0"
+                      (click)="showTicket(-1)"
+                    >
+                      <svg lucideChevronLeft class="z-icon" aria-hidden="true"></svg>
+                    </button>
+                    <span aria-live="polite"
+                      >{{ ticketIndex() + 1 }} de {{ booking.guests.length }}</span
+                    >
+                    <button
+                      class="z-icon-btn"
+                      type="button"
+                      aria-label="Entrada siguiente"
+                      [disabled]="ticketIndex() === booking.guests.length - 1"
+                      (click)="showTicket(1)"
+                    >
+                      <svg lucideChevronRight class="z-icon" aria-hidden="true"></svg>
+                    </button>
+                  </div>
+                }
+              </app-guest-qr>
+            }
+
+            <a class="z-btn z-btn--secondary" [routerLink]="['/bookings', booking.id]">
+              Ver la reserva
+            </a>
+          </section>
+        }
+
+        <!-- Lo demás, en su propio bloque: en la computadora va al costado de la de hoy. -->
+        <div class="home__rest">
+          <section class="home__section" aria-labelledby="home-upcoming-title">
+            <div class="home__section-head">
+              <h2 id="home-upcoming-title" class="home__subtitle">Próximas reservas</h2>
+              <a class="z-link" routerLink="/my-bookings">Ver todas</a>
+            </div>
+
+            @if (payError(); as message) {
+              <z-alert variant="danger" title="No se pudo pagar" [text]="message" />
+            }
+
+            @if (upcoming().length === 0) {
+              <p class="home__none">No tenés reservas por delante.</p>
+            } @else {
+              <ul class="home__list">
+                @for (card of upcoming(); track card.booking.id) {
+                  <li>
+                    <article class="z-booking-card">
+                      <div class="z-booking-card__head">
+                        <h3 class="z-booking-card__title">
+                          <a class="home__link" [routerLink]="['/bookings', card.booking.id]">{{
+                            card.booking.resortName
+                          }}</a>
+                        </h3>
+                        <span class="z-status z-status--{{ card.status.modifier }}">{{
+                          card.status.label
+                        }}</span>
+                      </div>
+
+                      <ul class="z-facts">
+                        <li>
+                          @if (card.booking.rentalUnitType === 'TENT') {
+                            <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+                          } @else {
+                            <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+                          }
+                          {{ card.unit }}
+                        </li>
+                        <li>
+                          <svg lucideCalendarDays class="z-icon" aria-hidden="true"></svg>
+                          {{ card.days }}
+                        </li>
+                      </ul>
+
+                      @if (card.expired) {
+                        <z-alert
+                          variant="warning"
+                          title="La reserva venció"
+                          text="Pasó la hora para pagarla y se cancela sola. Si todavía te sirve, reservala de nuevo."
+                        />
+                      }
+
+                      <div class="z-booking-card__foot">
+                        <div class="z-total">
+                          <span>Total</span>
+                          <strong class="z-money">{{ card.total }}</strong>
+                        </div>
+
+                        @if (card.expired) {
+                          <a
+                            class="z-btn z-btn--primary"
+                            [routerLink]="['/book', card.booking.resortId]"
+                            [queryParams]="rebookQuery(card.booking)"
+                          >
+                            Volver a reservar
+                          </a>
+                        } @else if (card.booking.status === 'PENDING') {
+                          <z-btn
+                            [loading]="paying() === card.booking.id"
+                            [disabled]="paying() !== null"
+                            (click)="pay(card.booking)"
+                          >
+                            Pagar
+                          </z-btn>
+                        } @else {
+                          <a
+                            class="z-btn z-btn--secondary"
+                            [routerLink]="['/bookings', card.booking.id]"
+                          >
+                            Ver entradas
+                          </a>
+                        }
+                      </div>
+                    </article>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
+          <section class="home__section" aria-labelledby="home-figures-title">
+            <h2 id="home-figures-title" class="home__subtitle">Tus reservas</h2>
+            <dl class="home__figures">
+              <div class="home__figure">
+                <dt>Reservas</dt>
+                <dd>{{ figures().total }}</dd>
+              </div>
+              <div class="home__figure">
+                <dt>Confirmadas</dt>
+                <dd>{{ figures().confirmed }}</dd>
+              </div>
+              <div class="home__figure">
+                <dt>Pendientes de pago</dt>
+                <dd>{{ figures().pending }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <a class="home__search" routerLink="/">
+            <svg lucideSearch class="z-icon" aria-hidden="true"></svg>
+            <span>
+              <strong>Buscar balnearios</strong>
+              <span class="home__search-text">Encontrá lugar para tus próximas fechas.</span>
+            </span>
+          </a>
+        </div>
+      }
+    }
+  }
+</section>
