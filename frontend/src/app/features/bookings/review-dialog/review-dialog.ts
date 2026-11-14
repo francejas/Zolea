@@ -101,9 +101,22 @@ export class ReviewDialog {
     this.closed.emit();
   }
 
+  /**
+   * Esc mientras se envía no cierra: si se cerrara, Mis reservas sacaría el diálogo y la respuesta
+   * ya no tendría a quién avisar, así que la tarjeta seguiría ofreciendo «Calificar».
+   */
+  protected onCancel(event: Event): void {
+    if (this.reviewForm().submitting()) event.preventDefault();
+  }
+
   /** El `close` del diálogo: solo avisa si se cerró con Esc, sin pasar por los botones. */
   protected onClose(): void {
     if (this.done) return;
+    // Un segundo Esc seguido el navegador no deja frenarlo: se vuelve a abrir hasta la respuesta.
+    if (this.reviewForm().submitting()) {
+      this.dialog().nativeElement.showModal();
+      return;
+    }
     this.done = true;
     this.closed.emit();
   }

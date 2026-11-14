@@ -176,4 +176,72 @@ describe('ReviewDialog', () => {
     expect(closed).toBe(1);
     expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(false);
   });
+
+  describe('Esc', () => {
+    /** Lo que hace el navegador con Esc: avisa con `cancel` y, si nadie lo frena, cierra. */
+    function pressEscape(): boolean {
+      const dialog = page.querySelector('dialog')!;
+      const cancel = new Event('cancel', { cancelable: true });
+      dialog.dispatchEvent(cancel);
+      if (!cancel.defaultPrevented) forceClose();
+      return cancel.defaultPrevented;
+    }
+
+    /** El navegador cierra igual: un segundo Esc seguido ya no se puede frenar. */
+    function forceClose(): void {
+      const dialog = page.querySelector('dialog')!;
+      dialog.close();
+      dialog.dispatchEvent(new Event('close'));
+    }
+
+    async function sendFour(): Promise<void> {
+      await pick(4);
+      await send();
+    }
+
+    const review: Review = {
+      author: 'Santiago R.',
+      rating: 4,
+      comment: null,
+      createdAt: '2026-01-20T10:00:00',
+    };
+
+    it('sin un envío en curso, cierra sin calificar', async () => {
+      expect(pressEscape()).toBe(false);
+      await fixture.whenStable();
+
+      expect(closed).toBe(1);
+      expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(false);
+    });
+
+    it('mientras se envía, no lo cierra, y al llegar la respuesta avisa con la reseña', async () => {
+      await sendFour();
+
+      expect(pressEscape()).toBe(true);
+      await fixture.whenStable();
+      expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(true);
+      expect(closed).toBe(0);
+
+      http.expectOne(URL).flush(review);
+      await settle();
+
+      expect(saved).toEqual([review]);
+      expect(closed).toBe(0);
+    });
+
+    it('si el navegador lo cierra igual mientras se envía, vuelve a abrirse', async () => {
+      await sendFour();
+
+      forceClose();
+      await fixture.whenStable();
+      expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(true);
+      expect(closed).toBe(0);
+
+      http.expectOne(URL).flush(review);
+      await settle();
+
+      expect(saved).toEqual([review]);
+      expect(closed).toBe(0);
+    });
+  });
 });

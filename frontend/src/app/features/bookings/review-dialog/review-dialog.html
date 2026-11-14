@@ -1,4 +1,10 @@
-<dialog #dialog class="z-modal review" aria-labelledby="review-title" (close)="onClose()">
+<dialog
+  #dialog
+  class="z-modal review"
+  aria-labelledby="review-title"
+  (cancel)="onCancel($event)"
+  (close)="onClose()"
+>
   <form class="review__form" novalidate (submit)="onSubmit($event)">
     <div>
       <h2 id="review-title" class="z-modal__title">Calificá tu estadía</h2>
