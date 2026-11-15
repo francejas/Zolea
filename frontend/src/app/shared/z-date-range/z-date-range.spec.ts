@@ -181,4 +181,104 @@ describe('ZDateRange', () => {
 
     expect(page.querySelector('.z-range__summary')).toBeNull();
   });
+
+  describe('sombreado mientras se elige la salida', () => {
+    async function hover(n: number) {
+      day(n).dispatchEvent(new MouseEvent('mouseenter'));
+      await fixture.whenStable();
+    }
+    const previewed = () =>
+      Array.from(page.querySelectorAll<HTMLButtonElement>('.z-cal__day.is-preview')).map((b) =>
+        Number(text(b)),
+      );
+    const previewEnd = () =>
+      Array.from(page.querySelectorAll<HTMLButtonElement>('.z-cal__day.is-preview-end')).map((b) =>
+        Number(text(b)),
+      );
+
+    it('con la entrada elegida, el día bajo el mouse marca el tramo y lleva el borde de la salida', async () => {
+      await open(0);
+      await pick(15);
+
+      await hover(20);
+      expect(previewed()).toEqual([16, 17, 18, 19]);
+      expect(previewEnd()).toEqual([20]);
+
+      await hover(18);
+      expect(previewed()).toEqual([16, 17]);
+      expect(previewEnd()).toEqual([18]);
+    });
+
+    it('no cambia la salida ni el resumen hasta tocar el día', async () => {
+      await open(0);
+      await pick(15);
+      await hover(20);
+
+      expect(fixture.componentInstance.to()).toBeNull();
+      expect(page.querySelector('.z-range__summary')).toBeNull();
+
+      await pick(18);
+      expect(fixture.componentInstance.to()).toBe('2027-01-18');
+      expect(text(page.querySelector('.z-range__summary strong'))).toBe('4 días');
+    });
+
+    it('un día anterior a la entrada, la propia entrada o un día pasado no marcan nada', async () => {
+      await open(0);
+      await pick(15);
+
+      await hover(12);
+      expect(previewed()).toEqual([]);
+      expect(previewEnd()).toEqual([]);
+
+      await hover(15);
+      expect(previewEnd()).toEqual([]);
+
+      await hover(9);
+      expect(previewEnd()).toEqual([]);
+    });
+
+    it('sin entrada no marca nada', async () => {
+      await open(0);
+      await hover(20);
+
+      expect(previewed()).toEqual([]);
+      expect(previewEnd()).toEqual([]);
+    });
+
+    it('con el rango completo no marca nada', async () => {
+      fixture.componentRef.setInput('from', '2027-01-15');
+      fixture.componentRef.setInput('to', '2027-01-17');
+      await open(1);
+      await hover(22);
+
+      expect(previewed()).toEqual([]);
+      expect(previewEnd()).toEqual([]);
+    });
+
+    it('al sacar el mouse del calendario vuelve a como estaba', async () => {
+      await open(0);
+      await pick(15);
+      await hover(20);
+
+      page.querySelector('.z-cal__grid')!.dispatchEvent(new MouseEvent('mouseleave'));
+      await fixture.whenStable();
+
+      expect(previewed()).toEqual([]);
+      expect(previewEnd()).toEqual([]);
+    });
+
+    it('con el teclado, el día que tiene el foco hace de salida provisoria', async () => {
+      await open(0);
+      await pick(15);
+
+      day(19).dispatchEvent(new FocusEvent('focus'));
+      await fixture.whenStable();
+      expect(previewed()).toEqual([16, 17, 18]);
+      expect(previewEnd()).toEqual([19]);
+
+      day(19).dispatchEvent(new FocusEvent('blur'));
+      await fixture.whenStable();
+      expect(previewEnd()).toEqual([]);
+    });
+  });
 });

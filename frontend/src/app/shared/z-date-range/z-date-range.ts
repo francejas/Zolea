@@ -29,6 +29,10 @@ interface CalendarDay {
   start: boolean;
   end: boolean;
   inRange: boolean;
+  /** Entre la entrada y el día bajo el mouse, mientras todavía no se eligió la salida. */
+  preview: boolean;
+  /** El día bajo el mouse (o con el foco): hace de salida provisoria. */
+  previewEnd: boolean;
   /** «viernes 15 de enero de 2027», para el lector de pantalla. */
   label: string;
 }
@@ -87,6 +91,8 @@ export class ZDateRange {
   protected readonly weekdays = WEEKDAYS;
   protected readonly open = signal<Field | null>(null);
 
+  /** El día que está bajo el mouse o tiene el foco, o null. Solo cuenta mientras se elige la salida. */
+  private readonly hovered = signal<string | null>(null);
   private readonly view = signal<{ year: number; month: number } | null>(null);
   private readonly fromButton = viewChild<ElementRef<HTMLButtonElement>>('fromButton');
   private readonly toButton = viewChild<ElementRef<HTMLButtonElement>>('toButton');
@@ -112,10 +118,23 @@ export class ZDateRange {
     return Array.from({ length: (new Date(year, month, 1).getDay() + 6) % 7 });
   });
 
+  /**
+   * La salida provisoria: el día bajo el mouse (o con el foco) cuando hay entrada, todavía no hay
+   * salida y ese día es posterior a la entrada. Con el rango completo, o con un día anterior a la
+   * entrada o pasado, no hay nada que mostrar.
+   */
+  protected readonly previewTo = computed(() => {
+    const from = this.from();
+    const hovered = this.hovered();
+    if (from === null || this.to() !== null || hovered === null) return null;
+    return hovered > from && hovered >= this.min() ? hovered : null;
+  });
+
   protected readonly days = computed<CalendarDay[]>(() => {
     const { year, month } = this.shown();
     const from = this.from();
     const to = this.to();
+    const previewTo = this.previewTo();
     const min = this.min();
     const today = todayIso();
     const count = new Date(year, month + 1, 0).getDate();
@@ -131,6 +150,8 @@ export class ZDateRange {
         start: iso === from,
         end: iso === to,
         inRange: from !== null && to !== null && iso > from && iso < to,
+        preview: from !== null && previewTo !== null && iso > from && iso < previewTo,
+        previewEnd: iso === previewTo,
         label: fullDate.format(date),
       };
     });
@@ -170,12 +191,19 @@ export class ZDateRange {
     }
     this.open.set(field);
     this.view.set(null);
+    this.hovered.set(null);
+  }
+
+  /** El mouse o el foco pasan por un día: es la salida provisoria hasta que se vaya. */
+  protected hover(day: CalendarDay | null): void {
+    this.hovered.set(day === null || day.past ? null : day.iso);
   }
 
   protected close(): void {
     const field = this.open();
     if (field === null) return;
     this.open.set(null);
+    this.hovered.set(null);
     this.focusField(field);
   }
 
@@ -191,6 +219,7 @@ export class ZDateRange {
    */
   protected pick(day: CalendarDay): void {
     if (day.past) return;
+    this.hovered.set(null);
 
     const from = this.from();
     if (this.open() === 'from' || from === null || day.iso < from) {
