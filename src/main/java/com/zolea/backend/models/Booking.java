@@ -273,6 +273,26 @@ public class Booking {
     }
 
     /**
+     * Importe pagado que el balneario conservó.
+     *
+     * <p>Una cancelada con {@code refundAmount == null} se interpreta como no pagada, según el
+     * modelo de cancelación. Por eso no suma, igual que una pendiente. La regla vive en la reserva
+     * para que el listado de clientes y el Panel no calculen ingresos distintos.
+     */
+    public BigDecimal keptAmount() {
+        if (totalPrice == null) {
+            return BigDecimal.ZERO.setScale(MONEY_SCALE);
+        }
+        if (status == Status.CONFIRMED) {
+            return totalPrice;
+        }
+        if (status == Status.CANCELED && refundAmount != null) {
+            return totalPrice.subtract(refundAmount);
+        }
+        return BigDecimal.ZERO.setScale(MONEY_SCALE);
+    }
+
+    /**
      * Si la reserva se puede calificar {@code today}: solo una confirmada cuya estadía ya terminó.
      * El último día todavía es parte de la estadía, así que se califica desde el día siguiente. Una
      * pendiente nunca se pagó y una cancelada no se usó: ninguna de las dos se califica.
