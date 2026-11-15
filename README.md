@@ -39,6 +39,40 @@ tiene despliegue propio.
 | Frontend de la v1 — despliegue viejo, queda como muestra de las pantallas | [beach-g.vercel.app](https://beach-g.vercel.app) |
 | API Swagger (local) | `http://localhost:8080/swagger-ui/index.html` |
 
+### Cuentas de prueba
+
+La demo se recarga cada vez que arranca el backend. **Todas las cuentas usan la contraseña
+`admin123`**.
+
+| Cuenta | Rol | Para probar |
+|---|---|---|
+| `mostrador@zolea.com` | `USER` | Cuenta técnica para reservas de mostrador |
+| `admin.mdp@zolea.com` | `ADMIN` | Panel de Mar del Plata |
+| `admin.pinamar@zolea.com` | `ADMIN` | Panel de Pinamar |
+| `admin.gesell@zolea.com` | `ADMIN` | Panel de Villa Gesell |
+| `admin.miramar@zolea.com` | `ADMIN` | Panel de Miramar |
+| `admin.necochea@zolea.com` | `ADMIN` | Panel de Necochea |
+| `santi.rodriguez@gmail.com` | `USER` | Cliente con reservas, pagos y reseñas |
+| `vale.garcia@gmail.com` | `USER` | Cliente de prueba |
+| `matias.fern@gmail.com` | `USER` | Cliente de prueba |
+| `cami.martinez@gmail.com` | `USER` | Cliente de prueba |
+| `lucho.torres@gmail.com` | `USER` | Cliente de prueba |
+| `agus.lopez@gmail.com` | `USER` | Cliente de prueba |
+| `ramiro.gomez@gmail.com` | `USER` | Cliente de prueba |
+| `flor.diaz@gmail.com` | `USER` | Cliente de prueba |
+| `eze.sanchez@gmail.com` | `USER` | Cliente de prueba |
+| `nati.romero@gmail.com` | `USER` | Cliente con reservas próximas |
+| `nacho.perez@gmail.com` | `USER` | Cliente de prueba |
+| `sofi.molina@gmail.com` | `USER` | Cliente de prueba |
+| `tomi.gut@gmail.com` | `USER` | Cliente de prueba |
+| `mice.flores@gmail.com` | `USER` | Cliente de prueba |
+| `facu.ruiz@gmail.com` | `USER` | Cliente de prueba |
+| `mili.jimenez@gmail.com` | `USER` | Cliente de prueba |
+| `nico.acosta@gmail.com` | `USER` | Cliente de prueba |
+| `rocio.villalba@gmail.com` | `USER` | Cliente de prueba |
+| `seba.medina@gmail.com` | `USER` | Cliente de prueba |
+| `zolea@zolea.com` | `ADMIN` sin balneario | Catálogo de servicios y alta de balnearios |
+
 ---
 
 ## ✨ Características
