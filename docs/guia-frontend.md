@@ -157,6 +157,11 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
 - Un administrador **no reserva por `POST /api/bookings`**, ni a su nombre: usa la de mostrador. Y
   por `GET /api/clients/{id}`, `PUT /api/clients/{id}` y `GET /api/bookings/client/{id}` solo llega
   a **su propio** perfil: a sus clientes los ve en `GET /api/clients`.
+- **Mi cuenta** (`PUT /api/clients/{id}`) lleva todos los datos; la contraseña, solo si se cambia
+  (sin ella, queda la que había). Un email, teléfono o DNI que ya es de otra cuenta responde `409`
+  con el campo en `campos` (`email`, `phone` o `dni`), así `toFieldErrors` lo marca debajo. El
+  token es del email: si el email cambia, la sesión abierta deja de valer y hay que volver a
+  ingresar.
 - `GET /api/clients` devuelve **los clientes de su balneario**, cada uno con su historial en ese
   balneario. Incluye a quienes reservaron por mostrador: esos no tienen cuenta, así que vienen con
   `walkIn: true` y sin `idClient`, `email` ni `phone`. El importe `totalSpent` ya viene sumado por el
