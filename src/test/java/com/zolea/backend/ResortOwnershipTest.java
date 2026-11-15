@@ -217,26 +217,34 @@ class ResortOwnershipTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("el total gastado cuenta solo las reservas confirmadas")
-    void clientTotalSpent_onlyConfirmedBookings() throws Exception {
+    @DisplayName("el total gastado cuenta lo pagado y no reintegrado")
+    void clientTotalSpent_countsPaidAndKeptAmounts() throws Exception {
         Resort mio = aResort();
         Client cliente = aClient();
         Booking confirmada = aBooking(cliente, aUnitIn(mio, 10_000.0),
                 today().plusDays(5), today().plusDays(7), Status.CONFIRMED, now());
         confirmada.setTotalPrice(new BigDecimal("10000.00"));
-        Booking cancelada = aBooking(cliente, aUnitIn(mio, 20_000.0),
+        Booking canceladaConReintegroParcial = aBooking(cliente, aUnitIn(mio, 20_000.0),
                 today().plusDays(10), today().plusDays(12), Status.CANCELED, now());
-        cancelada.setTotalPrice(new BigDecimal("20000.00"));
-        Booking pendiente = aBooking(cliente, aUnitIn(mio, 30_000.0),
-                today().plusDays(15), today().plusDays(17), Status.PENDING, now());
-        pendiente.setTotalPrice(new BigDecimal("30000.00"));
+        canceladaConReintegroParcial.setTotalPrice(new BigDecimal("20000.00"));
+        canceladaConReintegroParcial.setRefundAmount(new BigDecimal("10000.00"));
+        Booking canceladaConReintegroTotal = aBooking(cliente, aUnitIn(mio, 30_000.0),
+                today().plusDays(15), today().plusDays(17), Status.CANCELED, now());
+        canceladaConReintegroTotal.setTotalPrice(new BigDecimal("30000.00"));
+        canceladaConReintegroTotal.setRefundAmount(new BigDecimal("30000.00"));
+        Booking canceladaSinPagar = aBooking(cliente, aUnitIn(mio, 40_000.0),
+                today().plusDays(20), today().plusDays(22), Status.CANCELED, now());
+        canceladaSinPagar.setTotalPrice(new BigDecimal("40000.00"));
+        Booking pendiente = aBooking(cliente, aUnitIn(mio, 50_000.0),
+                today().plusDays(25), today().plusDays(27), Status.PENDING, now());
+        pendiente.setTotalPrice(new BigDecimal("50000.00"));
         Client admin = anAdminOf(mio);
         syncWithDatabase();
 
         mockMvc.perform(get("/api/clients")
                         .header("Authorization", "Bearer " + tokenFor(admin)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].totalSpent").value(10_000.0));
+                .andExpect(jsonPath("$[0].totalSpent").value(20_000.0));
     }
 
     /**

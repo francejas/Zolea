@@ -43,7 +43,8 @@ public record ResortClientResponse(
         @Schema(description = "Cuántas reservas hizo en este balneario", example = "3")
         int bookingCount,
 
-        @Schema(description = "Lo que gastó en este balneario, con dos decimales exactos", example = "25500.30")
+        @Schema(description = "Lo que pagó y el balneario conservó: suma las confirmadas y la parte no reintegrada de las canceladas pagas",
+                example = "25500.30")
         BigDecimal totalSpent,
 
         @Schema(description = "Sus reservas en este balneario")
