@@ -16,7 +16,6 @@ import { AmenitiesApi } from '../../../core/api/amenities.api';
 import { Amenity, Resort } from '../../../core/api/resort.models';
 import { ResortsApi } from '../../../core/api/resorts.api';
 import { toUserMessage } from '../../../core/errors/error-message';
-import { SessionService } from '../../../core/session/session.service';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
@@ -32,23 +31,17 @@ interface NameDraft {
   name: string;
 }
 
-/** Cuántos balnearios ofrecen un servicio y si uno de ellos es el del administrador. */
-interface Usage {
-  count: number;
-  mine: boolean;
-}
-
 /** El backend pide al menos tres letras, sin contar los espacios de las puntas. */
 const MIN_NAME = 3;
 const EMPTY_MESSAGE = 'Escribí el nombre del servicio.';
 const SHORT_MESSAGE = `El nombre tiene que tener al menos ${MIN_NAME} letras.`;
-const GONE_MESSAGE =
-  'Este servicio ya no está en el catálogo: puede que lo haya borrado otro administrador.';
+const GONE_MESSAGE = 'Este servicio ya no está en el catálogo: puede que lo hayan borrado recién.';
 
 /**
  * El catálogo de servicios (12.2): Wi-Fi, duchas, estacionamiento… Es uno solo para los cinco
- * balnearios, así que lo que se crea, renombra o borra acá cambia para todos. Qué servicios ofrece
- * cada balneario se marca en Mi balneario, aparte a propósito.
+ * balnearios y lo carga la cuenta de Zolea (12.9), la única que entra a esta pantalla: lo que se
+ * crea acá lo puede elegir cualquier balneario, y lo que se renombra o borra cambia para todos.
+ * Qué servicios ofrece cada balneario lo marca su administrador en Mi balneario.
  *
  * Borrar es el único borrado real de la aplicación: el servicio desaparece y se desvincula de los
  * balnearios que lo ofrecían. Por eso pide confirmación y dice cuántos lo ofrecen hoy, contados
@@ -73,7 +66,6 @@ const GONE_MESSAGE =
 export class Amenities {
   private readonly amenitiesApi = inject(AmenitiesApi);
   private readonly resortsApi = inject(ResortsApi);
-  private readonly session = inject(SessionService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly amenities = signal<Amenity[]>([]);
@@ -89,19 +81,14 @@ export class Amenities {
   protected readonly amenityIcon = amenityIcon;
 
   /** Por servicio, cuántos balnearios lo ofrecen. `null` si no se pudo contar. */
-  protected readonly usage = computed<Map<number, Usage> | null>(() => {
+  protected readonly usage = computed<Map<number, number> | null>(() => {
     const resorts = this.resorts();
     if (!resorts) return null;
 
-    const myResort = this.session.user()?.idManagedResort;
-    const usage = new Map<number, Usage>();
+    const usage = new Map<number, number>();
     for (const resort of resorts) {
       for (const amenity of resort.amenities) {
-        const current = usage.get(amenity.idAmenity) ?? { count: 0, mine: false };
-        usage.set(amenity.idAmenity, {
-          count: current.count + 1,
-          mine: current.mine || resort.idResort === myResort,
-        });
+        usage.set(amenity.idAmenity, (usage.get(amenity.idAmenity) ?? 0) + 1);
       }
     }
     return usage;
@@ -142,18 +129,16 @@ export class Amenities {
   protected readonly deleting = signal(false);
   private readonly deleteDialog = viewChild<ElementRef<HTMLDialogElement>>('deleteDialog');
 
-  /** Lo que dice la confirmación: a cuántos afecta hoy y que no se deshace. */
+  /** Lo que dice la confirmación: a cuántos balnearios se les saca y que no se deshace. */
   protected readonly deleteConsequence = computed(() => {
     const amenity = this.pendingDelete();
     if (!amenity) return '';
 
-    const scope =
-      'Se borra del catálogo de todos los balnearios, no solo del tuyo, y no se puede deshacer.';
+    const scope = 'Sale del catálogo y no se puede deshacer.';
     const usage = this.usage();
-    if (!usage) return scope;
+    if (!usage) return `Se les saca a todos los balnearios que lo ofrecen. ${scope}`;
 
-    const { count, mine } = usage.get(amenity.idAmenity) ?? { count: 0, mine: false };
-    return `${todayUsage(count, mine)} ${scope}`;
+    return `${removedFrom(usage.get(amenity.idAmenity) ?? 0)} ${scope}`;
   });
 
   constructor() {
@@ -193,18 +178,11 @@ export class Amenities {
     });
   }
 
-  /** «3 balnearios», «Solo el tuyo» o «Ninguno», para la columna de la tabla. */
+  /** «3 balnearios», «1 balneario» o «Ninguno», para la columna de la tabla. */
   protected usageLabel(amenity: Amenity): string {
-    const { count, mine } = this.usage()?.get(amenity.idAmenity) ?? { count: 0, mine: false };
+    const count = this.usage()?.get(amenity.idAmenity) ?? 0;
     if (count === 0) return 'Ninguno';
-    if (count === 1 && mine) return 'Solo el tuyo';
     return `${count} ${count === 1 ? 'balneario' : 'balnearios'}`;
-  }
-
-  /** Si se muestra «incluido el tuyo» al lado del número. */
-  protected includesMine(amenity: Amenity): boolean {
-    const usage = this.usage()?.get(amenity.idAmenity);
-    return !!usage && usage.mine && usage.count > 1;
   }
 
   /** El campo mostró su error: se marca también para el lector de pantalla. */
@@ -402,11 +380,11 @@ function nameError(
   return [{ fieldTree, kind: 'server', message }];
 }
 
-/** «Hoy lo ofrecen 3 balnearios, entre ellos el tuyo.» */
-function todayUsage(count: number, mine: boolean): string {
+/** «Se les saca a los 3 balnearios que hoy lo ofrecen.» */
+function removedFrom(count: number): string {
   if (count === 0) return 'Hoy no lo ofrece ningún balneario.';
-  if (count === 1) return mine ? 'Hoy lo ofrece solo el tuyo.' : 'Hoy lo ofrece 1 balneario.';
-  return `Hoy lo ofrecen ${count} balnearios${mine ? ', entre ellos el tuyo' : ''}.`;
+  if (count === 1) return 'Se le saca al único balneario que hoy lo ofrece.';
+  return `Se les saca a los ${count} balnearios que hoy lo ofrecen.`;
 }
 
 /** Por nombre, en orden alfabético y sin importar tildes ni mayúsculas. */

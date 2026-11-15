@@ -27,6 +27,8 @@ const adminMe: Me = {
   role: 'ADMIN',
   idManagedResort: 7,
 };
+/** La cuenta de Zolea: un administrador sin balneario. */
+const zoleaMe: Me = { ...adminMe, idClient: 3, email: 'zolea@zolea.com', idManagedResort: null };
 
 /** Un destino cualquiera: lo que importa de estas pantallas es la URL a la que se llega. */
 @Component({ template: '' })
@@ -49,6 +51,7 @@ describe('Login', () => {
             { path: 'login', component: Login },
             { path: '', pathMatch: 'full', component: Destination },
             { path: 'admin', component: Destination },
+            { path: 'admin/amenities', component: Destination },
             { path: 'dashboard', component: Destination },
             { path: 'my-bookings', component: Destination },
             { path: 'bookings/:id', component: Destination },
@@ -257,6 +260,14 @@ describe('Login', () => {
 
       expect(router.url).toBe('/admin');
       expect(session.isAdmin()).toBe(true);
+    });
+
+    it('la cuenta de Zolea, sin volver, va directo al catálogo de servicios', async () => {
+      await open();
+      await fillAndSubmit('zolea@zolea.com', 'admin123');
+      await succeedAs(zoleaMe);
+
+      expect(router.url).toBe('/admin/amenities');
     });
 
     it('con volver, va a esa ruta, con sus parámetros', async () => {

@@ -154,6 +154,10 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
   por la API: no tiene pantalla. El administrador de un balneario recibe `403` con el motivo «Los
   balnearios los da de alta Zolea.». Esa cuenta carga el catálogo y da de alta balnearios, y nada
   más: el panel le sigue respondiendo `403`.
+- En el frontend, la cuenta de Zolea se reconoce por `/me` con `role: ADMIN` e `idManagedResort`
+  vacío. Al ingresar va directo a `/admin/amenities`, su barra lateral solo tiene el catálogo, y
+  cualquier otra pantalla de `/admin` la devuelve ahí. El administrador de un balneario no ve el
+  catálogo: `/admin/amenities` lo lleva a su Panel (`adminAreaGuard`).
 - Un administrador **no reserva por `POST /api/bookings`**, ni a su nombre: usa la de mostrador. Y
   por `GET /api/clients/{id}`, `PUT /api/clients/{id}` y `GET /api/bookings/client/{id}` solo llega
   a **su propio** perfil: a sus clientes los ve en `GET /api/clients`.
