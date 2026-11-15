@@ -269,12 +269,22 @@ describe('MyResort', () => {
     amenity('Snack bar').click();
     await fixture.whenStable();
 
-    expect(text(preview.querySelector('.my-resort__card-name'))).toBe('Zolea Playa Norte');
+    expect(text(preview.querySelector('.z-resort-card__name'))).toContain('Zolea Playa Norte');
     expect(Array.from(preview.querySelectorAll('.z-amenity')).map((chip) => text(chip))).toEqual([
       'Wi-Fi',
       'Guardavidas',
       'Snack bar',
     ]);
+  });
+
+  it('la vista previa comparte las reseñas y no convierte el nombre en enlace', async () => {
+    await open({ ...myResort, averageRating: 4.5, reviewCount: 2 });
+
+    const preview = page.querySelector('.my-resort__preview')!;
+    expect(preview.querySelector('z-rating')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      '4,5 de 5 estrellas · 2 reseñas',
+    );
+    expect(preview.querySelector('.z-resort-card__name a')).toBeNull();
   });
 
   it('la vista previa ordena los servicios por id, como la Portada', async () => {

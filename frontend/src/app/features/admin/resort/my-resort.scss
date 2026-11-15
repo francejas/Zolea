@@ -177,44 +177,6 @@
   display: flex;
 }
 
-/* La tarjeta de la Portada, como la dibuja la lista de balnearios (resort-list.scss). */
-.my-resort__card {
-  overflow: hidden;
-  border: var(--border);
-  border-radius: var(--radius-m);
-  background: var(--color-sand);
-  transition: opacity var(--duration) var(--ease);
-}
-
-/* Desactivado: en neutro, como lo bloqueado. */
-.my-resort__card--off {
-  opacity: 0.55;
-  filter: grayscale(1);
-}
-
-.my-resort__card-body {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-5);
-}
-
-.my-resort__card-name {
-  margin: 0;
-  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
-  overflow-wrap: anywhere;
-}
-
-.my-resort__card-price {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-small);
-  color: var(--color-text-muted);
-
-  strong {
-    font-size: 16px;
-    color: var(--color-ink);
-  }
-}
-
 .my-resort__loading {
   display: grid;
   gap: var(--space-6);

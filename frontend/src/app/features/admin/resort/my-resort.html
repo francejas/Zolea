@@ -69,41 +69,13 @@
             </p>
 
             @let card = preview();
-            <div class="my-resort__card" [class.my-resort__card--off]="!resort.active">
-              <div class="z-photo">
-                @if (card.photo; as photo) {
-                  <img [src]="photo" alt="" (error)="onPhotoError(photo)" />
-                }
-              </div>
-              <div class="my-resort__card-body">
-                <p class="my-resort__card-name">{{ card.name }}</p>
-                <p class="z-place">
-                  <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ card.location }}
-                </p>
-                @if (card.amenities.length > 0) {
-                  <div class="z-amenities">
-                    @for (amenity of card.amenities; track amenity.idAmenity) {
-                      <span class="z-amenity">
-                        <svg lucideCheck class="z-icon" aria-hidden="true"></svg>{{ amenity.name }}
-                      </span>
-                    }
-                    @if (card.moreAmenities > 0) {
-                      <span class="z-amenity z-amenity--more">
-                        +{{ card.moreAmenities
-                        }}<span class="z-visually-hidden"> servicios más</span>
-                      </span>
-                    }
-                  </div>
-                }
-                @if (card.price; as price) {
-                  <p class="my-resort__card-price">
-                    desde <strong class="z-money">{{ price }}</strong> por día
-                  </p>
-                }
-              </div>
-            </div>
+            <z-resort-card
+              [data]="card"
+              [muted]="!resort.active"
+              (photoError)="onPhotoError($event)"
+            />
 
-            @if (card.photoBroken) {
+            @if (photoBroken()) {
               <p class="my-resort__hint my-resort__hint--warning">
                 No se pudo cargar la imagen de esa dirección: la Portada mostraría el dibujo de
                 cielo, mar y arena.

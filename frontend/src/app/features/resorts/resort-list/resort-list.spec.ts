@@ -270,7 +270,7 @@ describe('ResortList', () => {
     });
 
     it('sin fechas las tarjetas no hablan de lugares libres y llevan a la ficha sola', async () => {
-      await respondWith([arenaDorada]);
+      await respondWith([{ ...arenaDorada, availableUnits: 8 }]);
 
       expect(page.querySelector('.z-resort-card__free')).toBeNull();
       expect(page.querySelector('.z-resort-card__name a')!.getAttribute('href')).toBe('/resorts/1');
