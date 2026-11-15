@@ -352,7 +352,7 @@ public class ResortService {
             occupancyByDay.add(new OccupancyDayStats(current, occupied, totalUnits));
         }
 
-        // 3. Ingresos: cada reserva suma entera en el mes en que empieza
+        // 3. Ingresos: cada reserva suma el importe conservado en el mes en que empieza.
         List<IncomeMonthStats> incomeByMonth = new ArrayList<>();
         YearMonth startMonth = YearMonth.from(from);
         YearMonth endMonth = YearMonth.from(to);
@@ -360,7 +360,7 @@ public class ResortService {
             final YearMonth currentMonth = m;
             BigDecimal income = bookings.stream()
                     .filter(b -> YearMonth.from(b.getStartDate()).equals(currentMonth))
-                    .map(Booking::getTotalPrice)
+                    .map(Booking::keptAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             incomeByMonth.add(new IncomeMonthStats(currentMonth.toString(), income.setScale(2, RoundingMode.HALF_UP)));
         }

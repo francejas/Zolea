@@ -15,9 +15,10 @@ import java.util.List;
  * del balneario aunque nunca se haya registrado. En ese caso {@code idClient}, {@code email} y
  * {@code phone} vienen vacíos y {@code walkIn} es {@code true}.
  *
- * <p>{@code totalSpent} lo suma el backend a propósito. Los importes son {@code BigDecimal}
- * justamente para no perder centavos, y sumarlos en el navegador con números de JavaScript
- * reintroduce el error que esa decisión evita.
+ * <p>{@code totalSpent} cuenta lo pagado y conservado por el balneario: las reservas confirmadas
+ * y la parte no reintegrada de las canceladas pagas. Las canceladas sin pagar y las pendientes no
+ * suman. El backend lo calcula a propósito con {@code BigDecimal} para no perder centavos, y
+ * sumarlo en el navegador con números de JavaScript reintroduciría el error que esa decisión evita.
  */
 @Schema(description = "Un cliente del balneario, con su historial de reservas en ese balneario")
 public record ResortClientResponse(

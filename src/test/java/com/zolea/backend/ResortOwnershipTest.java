@@ -244,6 +244,7 @@ class ResortOwnershipTest extends IntegrationTest {
         mockMvc.perform(get("/api/clients")
                         .header("Authorization", "Bearer " + tokenFor(admin)))
                 .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].bookingCount").value(5))
                 .andExpect(jsonPath("$[0].totalSpent").value(20_000.0));
     }
 

@@ -9,7 +9,6 @@ import com.zolea.backend.exceptions.client.ClientInvalidRegisterException;
 import com.zolea.backend.exceptions.client.ClientNotFoundException;
 import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.Client;
-import com.zolea.backend.models.Status;
 import com.zolea.backend.repositories.BookingRepository;
 import com.zolea.backend.repositories.ClientRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,6 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -157,7 +155,7 @@ public class ClientService {
         Booking primera = bookings.get(0);
 
         BigDecimal gastado = bookings.stream()
-                .map(ClientService::amountKeptByResort)
+                .map(Booking::keptAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<BookingSummaryResponse> historial = bookings.stream()
@@ -178,20 +176,6 @@ public class ClientService {
                 titular.getEmail(),
                 titular.getPhone(),
                 false, bookings.size(), gastado, historial);
-    }
-
-    private static BigDecimal amountKeptByResort(Booking booking) {
-        BigDecimal total = booking.getTotalPrice();
-        if (total == null) {
-            return BigDecimal.ZERO;
-        }
-        if (booking.getStatus() == Status.CONFIRMED) {
-            return total;
-        }
-        if (booking.getStatus() == Status.CANCELED && booking.getRefundAmount() != null) {
-            return total.subtract(booking.getRefundAmount());
-        }
-        return BigDecimal.ZERO;
     }
 
     private static BookingSummaryResponse toSummary(Booking booking) {
