@@ -214,6 +214,83 @@ describe('ResortPlan', () => {
     });
   });
 
+  describe('las carpas en columnas', () => {
+    const columns = () => Array.from(page.querySelectorAll<HTMLElement>('.z-plan__column'));
+    const pairIds = (column: Element) =>
+      Array.from(column.querySelectorAll('.z-plan__pair')).map((pair) =>
+        Array.from(pair.querySelectorAll('.z-unit__id')).map((id) => text(id)),
+      );
+
+    it('las carpas de un prefijo quedan en la misma columna, de a dos y de arriba abajo', async () => {
+      await render(zoleaClub().reverse());
+
+      const [c, d] = columns();
+      expect(columns().length).toBe(2);
+      expect(pairIds(c)).toEqual([
+        ['C-01', 'C-02'],
+        ['C-03', 'C-04'],
+        ['C-05', 'C-06'],
+      ]);
+      expect(pairIds(d)).toEqual([['D-01', 'D-02']]);
+      // Cada columna en su pista de la grilla, con el pasillo entre las dos.
+      expect(c.style.gridColumn).not.toBe(d.style.gridColumn);
+      expect(page.querySelectorAll('.z-plan__aisle').length).toBe(1);
+    });
+
+    it('con una cantidad impar, el último renglón queda a medias', async () => {
+      await render(zoleaClub().filter((u) => u.identifier !== 'C-06'));
+
+      expect(pairIds(columns()[0]).map((pair) => pair.length)).toEqual([2, 2, 1]);
+    });
+
+    it('al pie de cada columna va la letra del prefijo, y el grupo se llama igual que antes', async () => {
+      await render(zoleaClub());
+
+      const [c] = columns();
+      const badge = c.querySelector('.z-plan__badge')!;
+      // Se ve «C»; «Fila» queda solo para el lector de pantalla.
+      expect(text(badge)).toBe('Fila C');
+      expect(text(badge.querySelector('.z-visually-hidden'))).toBe('Fila');
+      expect(label(c)).toBe('Fila C, $ 14.500 por día');
+      expect(c.getAttribute('role')).toBe('group');
+    });
+
+    it('hay una bajada al mar por cada pasillo, en la misma pista', async () => {
+      const extra: RentalUnit[] = [1, 2, 3].map((n) => ({
+        ...zoleaClub()[20],
+        idRentalUnit: 200 + n,
+        identifier: `E-0${n}`,
+      }));
+      await render([...zoleaClub(), ...extra]);
+
+      const aisles = Array.from(page.querySelectorAll<HTMLElement>('.z-plan__aisle'));
+      const accesses = Array.from(
+        page.querySelectorAll<HTMLElement>('.z-plan__sea .z-plan__access'),
+      );
+      expect(aisles.length).toBe(2);
+      expect(accesses.map((a) => a.style.gridColumn)).toEqual(
+        aisles.map((a) => a.style.gridColumn),
+      );
+      expect(accesses.every((a) => a.getAttribute('aria-hidden') === 'true')).toBe(true);
+    });
+
+    it('las sombrillas siguen en filas frente al mar, con la A más cerca', async () => {
+      await render(zoleaClub());
+
+      const rows = Array.from(page.querySelectorAll('.z-plan__row:not(.z-plan__column)'));
+      expect(rows.map((r) => text(r.querySelector('strong')))).toEqual(['Fila A', 'Fila B']);
+      expect(page.querySelector('.z-plan__column .z-unit--umbrella')).toBeNull();
+    });
+
+    it('un balneario de una sola columna no dibuja pasillos ni bajadas', async () => {
+      await render(zoleaClub().filter((u) => !u.identifier.startsWith('D')));
+
+      expect(columns().length).toBe(1);
+      expect(page.querySelector('.z-plan__aisle')).toBeNull();
+      expect(page.querySelector('.z-plan__access')).toBeNull();
+    });
+  });
+
   describe('las ocupadas en las fechas', () => {
     // A-03 es la unidad 3 del Zolea Club de Playa.
     it('una ocupada se marca aria-disabled, lo dice en la etiqueta y no se puede elegir', async () => {

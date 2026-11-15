@@ -189,6 +189,7 @@ INSERT INTO resort_amenities (resorts_id_resort, amenities_id_amenity) VALUES
 --    Resort 3 (Gesell):  IDs 45–64  (20 unidades)
 --    Resort 4 (Miramar): IDs 65–84  (20 unidades)
 --    Resort 5 (Necochea):IDs 85–100 (16 unidades)
+--    Resort 1, carpas sumadas para el plano (10.4): IDs 101–114 (14 unidades)
 -- =============================================================================
 
 -- ---- Resort 1: Zolea Club de Playa (Mar del Plata) ----
@@ -313,6 +314,31 @@ INSERT INTO rental_unit (id_rental_unit, identifier, type, daily_price, is_block
 (98,  'MS-06', 'TENT',     14000.0, false, 5),
 (99,  'MS-07', 'TENT',     14000.0, false, 5),
 (100, 'MS-08', 'TENT',     14000.0, true,  5); -- bloqueada
+
+-- ---- Resort 1: carpas sumadas para el plano (10.4) ----
+-- El plano dibuja cada prefijo de carpas como una columna, de a dos por renglón.
+-- Con la C de 6 y la D de 2 (la D-01 está dada de baja, ver 12) no se veía la
+-- forma: se suman carpas al final, sin cambiar los números de las que ya había.
+-- Con tres columnas, a 390 px de ancho el plano se desplaza de costado. La D
+-- queda con 5 a la vista, así se ve el último renglón a medias.
+INSERT INTO rental_unit (id_rental_unit, identifier, type, daily_price, is_blocked, id_resort) VALUES
+-- Carpas Premium - Sector C
+(101, 'C-07', 'TENT',     14500.0, false, 1),
+(102, 'C-08', 'TENT',     14500.0, false, 1),
+-- Carpas Estándar - Sector D
+(103, 'D-03', 'TENT',     12000.0, false, 1),
+(104, 'D-04', 'TENT',     12000.0, false, 1),
+(105, 'D-05', 'TENT',     12000.0, false, 1),
+(106, 'D-06', 'TENT',     12000.0, false, 1),
+-- Carpas Estándar - Sector E
+(107, 'E-01', 'TENT',     12000.0, false, 1),
+(108, 'E-02', 'TENT',     12000.0, false, 1),
+(109, 'E-03', 'TENT',     12000.0, false, 1),
+(110, 'E-04', 'TENT',     12000.0, false, 1),
+(111, 'E-05', 'TENT',     12000.0, false, 1),
+(112, 'E-06', 'TENT',     12000.0, false, 1),
+(113, 'E-07', 'TENT',     12000.0, false, 1),
+(114, 'E-08', 'TENT',     12000.0, false, 1);
 
 -- =============================================================================
 -- 6. RESERVAS
