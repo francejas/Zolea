@@ -137,16 +137,6 @@
   gap: var(--space-4);
 }
 
-.resorts-grid > .z-resort-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: var(--border);
-  border-radius: var(--radius-m);
-  background: var(--color-sand);
-}
-
 /* --- Esqueleto --- */
 .skeleton-photo {
   aspect-ratio: 16 / 10;

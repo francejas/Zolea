@@ -31,7 +31,10 @@ export interface ResortCardLink {
 @Component({
   selector: 'z-resort-card',
   imports: [LucideCheck, LucideMapPin, RouterLink, ZRating],
-  host: { class: 'z-resort-card' },
+  host: {
+    class: 'z-resort-card',
+    '[class.z-resort-card--muted]': 'muted()',
+  },
   template: `
     <div class="z-photo">
       @if (photo(); as photo) {
@@ -40,22 +43,24 @@ export interface ResortCardLink {
     </div>
 
     <div class="z-resort-card__body">
-      <h3 class="z-resort-card__name">
-        @if (link(); as link) {
+      @if (link(); as link) {
+        <h3 class="z-resort-card__name">
           <a [routerLink]="link.commands" [queryParams]="link.queryParams">{{ data().name }}</a>
-        } @else {
+        </h3>
+      } @else {
+        <p class="z-resort-card__name">
           <span>{{ data().name }}</span>
-        }
-      </h3>
+        </p>
+      }
       <p class="z-place">
         <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ data().location }}
       </p>
 
-      @if (data().averageRating != null && data().reviewCount) {
+      @if (rating(); as rating) {
         <z-rating
           class="z-resort-card__rating"
-          [value]="data().averageRating!"
-          [count]="data().reviewCount!"
+          [value]="rating.value"
+          [count]="rating.count"
           compact
         />
       }
@@ -114,6 +119,11 @@ export interface ResortCardLink {
 
     :host(:hover) .z-resort-card__cta {
       background: var(--color-ink-hover);
+    }
+
+    :host(.z-resort-card--muted) {
+      opacity: 0.55;
+      filter: grayscale(1);
     }
 
     .z-resort-card__body {
@@ -187,8 +197,13 @@ export interface ResortCardLink {
   `,
 })
 export class ZResortCard {
+  /** Datos que se muestran en la tarjeta, tanto en la Portada como en la vista previa. */
   readonly data = input.required<ResortCardData>();
+  /** En la Portada cubre toda la tarjeta; en la vista previa queda vacío. */
   readonly link = input<ResortCardLink | null>(null);
+  /** Atenúa una tarjeta que no está publicada, sin cambiar su contenido. */
+  readonly muted = input(false);
+  /** El padre lo usa solo para mostrar su aviso contextual. */
   readonly photoError = output<string>();
   private readonly brokenPhoto = signal<string | null>(null);
 
@@ -196,16 +211,23 @@ export class ZResortCard {
     const photo = this.data().coverPhotoUrl;
     return photo !== this.brokenPhoto() ? photo : null;
   });
-  protected readonly topAmenities = () =>
-    [...this.data().amenities].sort(byAmenityId).slice(0, VISIBLE_AMENITIES);
-  protected readonly moreAmenities = () =>
-    Math.max(this.data().amenities.length - VISIBLE_AMENITIES, 0);
-  protected readonly minPrice = () => {
+  protected readonly topAmenities = computed(() =>
+    [...this.data().amenities].sort(byAmenityId).slice(0, VISIBLE_AMENITIES),
+  );
+  protected readonly moreAmenities = computed(() =>
+    Math.max(this.data().amenities.length - VISIBLE_AMENITIES, 0),
+  );
+  protected readonly minPrice = computed(() => {
     const prices = this.data()
       .rentalUnits.filter((unit) => !unit.isBlocked && !unit.retired)
       .map((unit) => unit.dailyPrice);
     return prices.length > 0 ? pesos.format(Math.min(...prices)) : null;
-  };
+  });
+  protected readonly rating = computed(() => {
+    const value = this.data().averageRating;
+    const count = this.data().reviewCount ?? 0;
+    return value != null && count > 0 ? { value, count } : null;
+  });
   protected readonly freeUnits = computed(() => {
     const count = this.data().availableUnits;
     if (count == null) return null;

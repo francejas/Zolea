@@ -71,7 +71,7 @@
             @let card = preview();
             <z-resort-card
               [data]="card"
-              [class.my-resort__card--off]="!resort.active"
+              [muted]="!resort.active"
               (photoError)="onPhotoError($event)"
             />
 

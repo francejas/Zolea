@@ -193,7 +193,7 @@ export class MyResort {
     return {
       name: value.name.trim() || 'Nombre del balneario',
       location: value.location.trim() || 'Dirección del balneario',
-      coverPhotoUrl: photo && PHOTO_URL.test(photo) && photo !== this.brokenPhoto() ? photo : null,
+      coverPhotoUrl: photo && PHOTO_URL.test(photo) ? photo : null,
       amenities: offered,
       rentalUnits: this.resort()?.rentalUnits ?? [],
       averageRating: this.resort()?.averageRating,

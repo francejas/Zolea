@@ -190,6 +190,28 @@ export class ResortList {
     return count === 1 ? '1 balneario' : `${count} balnearios`;
   });
 
+  /** Datos de las tarjetas: la disponibilidad solo corresponde a una búsqueda con fechas. */
+  readonly cardData = computed(() => {
+    const includeAvailability = this.hasDates();
+    return new Map(
+      this.filteredResorts().map((resort) => [
+        resort.idResort,
+        includeAvailability ? resort : { ...resort, availableUnits: undefined },
+      ]),
+    );
+  });
+
+  /** Enlaces estables para que cada ciclo no cree un objeto nuevo por tarjeta. */
+  readonly cardLinks = computed(
+    () =>
+      new Map(
+        this.filteredResorts().map((resort) => [
+          resort.idResort,
+          { commands: ['/resorts', resort.idResort], queryParams: this.cardParams() },
+        ]),
+      ),
+  );
+
   constructor() {
     toObservable(computed(() => ({ filters: this.urlFilters(), attempt: this.attempt() })))
       .pipe(
@@ -264,14 +286,6 @@ export class ResortList {
     void this.router.navigate(['/']);
   }
 
-  /** «8 lugares libres», o null si no se buscó con fechas. */
-  protected freeUnitsLabel(resort: Resort): string | null {
-    if (!this.hasDates() || resort.availableUnits == null) return null;
-    return resort.availableUnits === 1
-      ? '1 lugar libre'
-      : `${resort.availableUnits} lugares libres`;
-  }
-
   /** Con fechas, la Ficha se abre con esas fechas ya puestas. */
   protected cardParams(): Params | null {
     const { from, to } = this.urlFilters();
@@ -281,10 +295,6 @@ export class ResortList {
   /** Sin mayúsculas, sin tildes y sin espacios sobrantes en los bordes. */
   private normalizeText(text: string): string {
     return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-  }
-
-  cardLink(resort: Resort): { commands: unknown[]; queryParams: Params | null } {
-    return { commands: ['/resorts', resort.idResort], queryParams: this.cardParams() };
   }
 }
 

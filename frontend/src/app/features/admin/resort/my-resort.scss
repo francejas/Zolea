@@ -177,12 +177,6 @@
   display: flex;
 }
 
-/* Desactivado: en neutro, como lo bloqueado. */
-.my-resort__card--off {
-  opacity: 0.55;
-  filter: grayscale(1);
-}
-
 .my-resort__loading {
   display: grid;
   gap: var(--space-6);

@@ -175,7 +175,10 @@
     } @else {
       <div class="resorts-grid">
         @for (resort of filteredResorts(); track resort.idResort) {
-          <z-resort-card [data]="resort" [link]="cardLink(resort)" />
+          <z-resort-card
+            [data]="cardData().get(resort.idResort)!"
+            [link]="cardLinks().get(resort.idResort)!"
+          />
         }
       </div>
     }
