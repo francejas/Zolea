@@ -2,14 +2,9 @@ import { Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LucideCalendarDays, LucideStar, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { Booking } from '../../core/api/booking.models';
+import type { BookingCardNotice } from './booking-payment-notice';
 import { ZAlert } from '../z-alert/z-alert';
 import { ZBtn } from '../z-btn/z-btn';
-
-export interface BookingCardNotice {
-  variant: 'success' | 'warning';
-  title: string;
-  text: string;
-}
 
 @Component({
   selector: 'app-booking-card',
@@ -23,6 +18,7 @@ export class BookingCard {
   unit = input.required<string>();
   days = input.required<string>();
   total = input.required<string>();
+  heading = input<'h2' | 'h3'>('h2');
   today = input(false);
   notice = input<BookingCardNotice | null>(null);
   refund = input<string | null>(null);

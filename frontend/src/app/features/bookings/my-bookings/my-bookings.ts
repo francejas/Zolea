@@ -23,7 +23,7 @@ import { BookingCard } from '../../../shared/booking-card/booking-card';
 import { BookingPayment } from '../../../shared/booking-card/booking-payment';
 import {
   bookingPaymentNotice,
-  BookingPaymentNotice,
+  BookingCardNotice,
 } from '../../../shared/booking-card/booking-payment-notice';
 import {
   BOOKING_STATUS,
@@ -71,7 +71,7 @@ interface BookingCardData {
   total: string;
   /** Confirmada y con hoy adentro: se destaca. */
   today: boolean;
-  notice: BookingPaymentNotice | null;
+  notice: BookingCardNotice | null;
   /** Ya no se puede pagar: en lugar de «Pagar», «Volver a reservar». */
   rebook: boolean;
   /** Pasada, confirmada y sin calificar: lleva «Calificar». */
@@ -265,7 +265,7 @@ export class MyBookings {
   private focusReviewed(id: number): void {
     afterNextRender(
       () =>
-        this.host.nativeElement.querySelector<HTMLElement>(`#my-bookings-reviewed-${id}`)?.focus(),
+        this.host.nativeElement.querySelector<HTMLElement>(`#booking-card-reviewed-${id}`)?.focus(),
       { injector: this.injector },
     );
   }
@@ -309,7 +309,7 @@ export class MyBookings {
    * El aviso de una reserva que ya no se paga. Una pendiente vence al pasar la hora, o cuando el
    * backend lo dice aunque la computadora atrase; las demás, solo si se intentó pagarlas.
    */
-  private noticeFor(booking: Booking): BookingPaymentNotice | null {
+  private noticeFor(booking: Booking): BookingCardNotice | null {
     return bookingPaymentNotice(booking, this.rejected().has(booking.id), this.now());
   }
 

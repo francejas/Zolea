@@ -14,7 +14,10 @@ import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 import { BookingCard } from '../../../shared/booking-card/booking-card';
 import { BookingPayment } from '../../../shared/booking-card/booking-payment';
-import { bookingPaymentNotice } from '../../../shared/booking-card/booking-payment-notice';
+import {
+  bookingPaymentNotice,
+  BookingCardNotice,
+} from '../../../shared/booking-card/booking-payment-notice';
 import {
   BOOKING_STATUS,
   dayCount,
@@ -50,6 +53,7 @@ interface UpcomingCard {
   unit: string;
   days: string;
   total: string;
+  notice: BookingCardNotice | null;
   /** Pendiente y pasada la hora (o el backend dijo que ya no se paga): «Volver a reservar». */
   expired: boolean;
 }
@@ -217,8 +221,10 @@ export class ClientDashboard {
         this.show(bookings);
         this.paying.set(null);
         if (current) {
-          const notice = bookingPaymentNotice(current, true, this.now());
-          this.payNotice.set(notice ? { ...notice, rebook: current } : null);
+          if (current.status !== 'PENDING') {
+            const notice = bookingPaymentNotice(current, true, this.now());
+            this.payNotice.set(notice ? { ...notice, rebook: current } : null);
+          }
         } else this.payError.set(rejection);
       },
       error: () => {
@@ -244,6 +250,11 @@ export class ClientDashboard {
   }
 
   private toCard(booking: Booking): UpcomingCard {
+    const notice = bookingPaymentNotice(
+      booking,
+      booking.status === 'PENDING' && this.rejected().has(booking.id),
+      this.now(),
+    );
     return {
       booking,
       status: BOOKING_STATUS[booking.status],
@@ -251,6 +262,7 @@ export class ClientDashboard {
       days: this.days(booking),
       total: money(booking.totalPrice),
       expired: this.isExpired(booking),
+      notice,
     };
   }
 

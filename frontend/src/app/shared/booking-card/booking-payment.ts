@@ -9,7 +9,11 @@ export type BookingPaymentResult =
   | { kind: 'rejected'; message: string }
   | { kind: 'error'; message: string };
 
-/** Unifica el pago y la recuperación cuando la reserva cambió en otra pantalla. */
+/**
+ * Unifica el pedido de pago.
+ * El endpoint usa 400 para indicar que la reserva cambió en otra pantalla; no es una validación
+ * genérica del formulario y se clasifica para que cada pantalla vuelva a cargar su recurso.
+ */
 @Injectable({ providedIn: 'root' })
 export class BookingPayment {
   private readonly bookingsApi = inject(BookingsApi);

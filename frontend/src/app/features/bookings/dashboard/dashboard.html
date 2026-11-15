@@ -112,15 +112,8 @@
                       [unit]="card.unit"
                       [days]="card.days"
                       [total]="card.total"
-                      [notice]="
-                        card.expired
-                          ? {
-                              variant: 'warning',
-                              title: 'La reserva venció',
-                              text: 'Pasó la hora para pagarla y se cancela sola. Si todavía te sirve, reservala de nuevo.',
-                            }
-                          : null
-                      "
+                      [heading]="'h3'"
+                      [notice]="card.notice"
                       [rebook]="card.expired"
                       [detailsLabel]="'Ver entradas'"
                       [paying]="paying() === card.booking.id"

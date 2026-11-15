@@ -4,11 +4,19 @@
       @if (today()) {
         <p class="z-eyebrow">Hoy</p>
       }
-      <h2 class="z-booking-card__title">
-        <a class="z-booking-card__link" [routerLink]="['/bookings', booking().id]">{{
-          booking().resortName
-        }}</a>
-      </h2>
+      @if (heading() === 'h3') {
+        <h3 class="z-booking-card__title">
+          <a class="z-booking-card__link" [routerLink]="['/bookings', booking().id]">{{
+            booking().resortName
+          }}</a>
+        </h3>
+      } @else {
+        <h2 class="z-booking-card__title">
+          <a class="z-booking-card__link" [routerLink]="['/bookings', booking().id]">{{
+            booking().resortName
+          }}</a>
+        </h2>
+      }
     </div>
     <span class="z-status z-status--{{ status().modifier }}">{{ status().label }}</span>
   </div>
@@ -43,7 +51,11 @@
   }
 
   @if (reviewed(); as reviewText) {
-    <p class="z-booking-card__reviewed" tabindex="-1" [id]="'my-bookings-reviewed-' + booking().id">
+    <p
+      class="z-booking-card__reviewed"
+      tabindex="-1"
+      [id]="'booking-card-reviewed-' + booking().id"
+    >
       <svg lucideStar class="z-icon z-icon--s" aria-hidden="true"></svg>
       {{ reviewText }}
     </p>

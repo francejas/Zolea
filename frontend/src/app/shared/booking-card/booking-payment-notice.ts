@@ -1,7 +1,7 @@
 import { Booking } from '../../core/api/booking.models';
 import { paymentExpired } from '../../features/bookings/booking-format';
 
-export interface BookingPaymentNotice {
+export interface BookingCardNotice {
   variant: 'success' | 'warning';
   title: string;
   text: string;
@@ -12,7 +12,7 @@ export function bookingPaymentNotice(
   booking: Booking,
   rejected: boolean,
   now: number,
-): BookingPaymentNotice | null {
+): BookingCardNotice | null {
   if (booking.status === 'PENDING') {
     return rejected || paymentExpired(booking, now)
       ? {
