@@ -200,7 +200,7 @@ describe('MyBookings', () => {
       ]);
       await open('Canceladas');
 
-      const refunds = Array.from(page.querySelectorAll('.my-bookings__refund')).map((p) =>
+      const refunds = Array.from(page.querySelectorAll('.z-booking-card__refund')).map((p) =>
         p.textContent!.replace(/\s+/g, ' ').trim(),
       );
       expect(refunds).toEqual(['Se reintegraron $ 25.500,00.', 'Sin reintegro: no estaba paga.']);

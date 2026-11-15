@@ -106,73 +106,20 @@
               <ul class="home__list">
                 @for (card of upcoming(); track card.booking.id) {
                   <li>
-                    <article class="z-booking-card">
-                      <div class="z-booking-card__head">
-                        <h3 class="z-booking-card__title">
-                          <a class="home__link" [routerLink]="['/bookings', card.booking.id]">{{
-                            card.booking.resortName
-                          }}</a>
-                        </h3>
-                        <span class="z-status z-status--{{ card.status.modifier }}">{{
-                          card.status.label
-                        }}</span>
-                      </div>
-
-                      <ul class="z-facts">
-                        <li>
-                          @if (card.booking.rentalUnitType === 'TENT') {
-                            <svg lucideTent class="z-icon" aria-hidden="true"></svg>
-                          } @else {
-                            <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
-                          }
-                          {{ card.unit }}
-                        </li>
-                        <li>
-                          <svg lucideCalendarDays class="z-icon" aria-hidden="true"></svg>
-                          {{ card.days }}
-                        </li>
-                      </ul>
-
-                      @if (card.expired) {
-                        <z-alert
-                          variant="warning"
-                          title="La reserva venció"
-                          text="Pasó la hora para pagarla y se cancela sola. Si todavía te sirve, reservala de nuevo."
-                        />
-                      }
-
-                      <div class="z-booking-card__foot">
-                        <div class="z-total">
-                          <span>Total</span>
-                          <strong class="z-money">{{ card.total }}</strong>
-                        </div>
-
-                        @if (card.expired) {
-                          <a
-                            class="z-btn z-btn--primary"
-                            [routerLink]="['/book', card.booking.resortId]"
-                            [queryParams]="rebookQuery(card.booking)"
-                          >
-                            Volver a reservar
-                          </a>
-                        } @else if (card.booking.status === 'PENDING') {
-                          <z-btn
-                            [loading]="paying() === card.booking.id"
-                            [disabled]="paying() !== null"
-                            (click)="pay(card.booking)"
-                          >
-                            Pagar
-                          </z-btn>
-                        } @else {
-                          <a
-                            class="z-btn z-btn--secondary"
-                            [routerLink]="['/bookings', card.booking.id]"
-                          >
-                            Ver entradas
-                          </a>
-                        }
-                      </div>
-                    </article>
+                    <app-booking-card
+                      [booking]="card.booking"
+                      [status]="card.status"
+                      [unit]="card.unit"
+                      [days]="card.days"
+                      [total]="card.total"
+                      [heading]="'h3'"
+                      [notice]="card.notice"
+                      [rebook]="card.expired"
+                      [detailsLabel]="'Ver entradas'"
+                      [paying]="paying() === card.booking.id"
+                      [paymentDisabled]="paying() !== null"
+                      (pay)="pay(card.booking)"
+                    />
                   </li>
                 }
               </ul>

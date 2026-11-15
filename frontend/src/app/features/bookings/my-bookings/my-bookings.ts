@@ -10,23 +10,25 @@ import {
   viewChildren,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { LucideCalendarDays, LucideStar, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { Booking } from '../../../core/api/booking.models';
 import { BookingsApi } from '../../../core/api/bookings.api';
 import { Review } from '../../../core/api/review.models';
 import { toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
 import { todayIso } from '../../../shared/utils/days';
-import { ZAlert } from '../../../shared/z-alert/z-alert';
-import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { BookingCard } from '../../../shared/booking-card/booking-card';
+import { BookingPayment } from '../../../shared/booking-card/booking-payment';
+import {
+  bookingPaymentNotice,
+  BookingCardNotice,
+} from '../../../shared/booking-card/booking-payment-notice';
 import {
   BOOKING_STATUS,
   dayCount,
   money,
-  paymentExpired,
   refundLine,
   shortDate,
   unitLabel,
@@ -60,39 +62,8 @@ export function tabOf(booking: Booking, today: string): BookingTab {
   return booking.endDate >= today ? 'upcoming' : 'past';
 }
 
-/** Por qué una reserva que se iba a pagar ya no se paga. */
-interface PayNotice {
-  variant: 'success' | 'warning';
-  title: string;
-  text: string;
-}
-
-const EXPIRED: PayNotice = {
-  variant: 'warning',
-  title: 'La reserva venció',
-  text: 'Pasó la hora para pagarla y se cancela sola. Si todavía te sirve, reservala de nuevo.',
-};
-
-const EXPIRED_CANCELED: PayNotice = {
-  variant: 'warning',
-  title: 'La reserva venció',
-  text: 'Pasó la hora para pagarla y se canceló. Si todavía te sirve, reservala de nuevo.',
-};
-
-const CANCELED: PayNotice = {
-  variant: 'warning',
-  title: 'La reserva se canceló',
-  text: 'Ya no está pendiente de pago. Si todavía te sirve, reservala de nuevo.',
-};
-
-const PAID: PayNotice = {
-  variant: 'success',
-  title: 'Ya está paga',
-  text: 'El pago se acreditó mientras tanto: tus entradas están en la reserva.',
-};
-
 /** Lo que muestra cada tarjeta, ya armado. */
-interface BookingCard {
+interface BookingCardData {
   booking: Booking;
   status: { label: string; modifier: string };
   unit: string;
@@ -100,7 +71,7 @@ interface BookingCard {
   total: string;
   /** Confirmada y con hoy adentro: se destaca. */
   today: boolean;
-  notice: PayNotice | null;
+  notice: BookingCardNotice | null;
   /** Ya no se puede pagar: en lugar de «Pagar», «Volver a reservar». */
   rebook: boolean;
   /** Pasada, confirmada y sin calificar: lleva «Calificar». */
@@ -118,24 +89,13 @@ interface BookingCard {
  */
 @Component({
   selector: 'app-my-bookings',
-  imports: [
-    RouterLink,
-    LucideCalendarDays,
-    LucideStar,
-    LucideTent,
-    LucideUmbrella,
-    ReviewDialog,
-    ZAlert,
-    ZBtn,
-    ZEmpty,
-    ZProblem,
-    ZSkeleton,
-  ],
+  imports: [RouterLink, BookingCard, ReviewDialog, ZEmpty, ZProblem, ZSkeleton],
   templateUrl: './my-bookings.html',
   styleUrl: './my-bookings.scss',
 })
 export class MyBookings {
   private readonly bookingsApi = inject(BookingsApi);
+  private readonly bookingPayment = inject(BookingPayment);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
@@ -176,7 +136,7 @@ export class MyBookings {
     return counts;
   });
 
-  protected readonly cards = computed<BookingCard[]>(() => {
+  protected readonly cards = computed<BookingCardData[]>(() => {
     const tab = this.tab();
     return this.bookings()
       .filter((booking) => this.tabFor(booking) === tab)
@@ -253,16 +213,19 @@ export class MyBookings {
     this.paying.set(booking.id);
     this.setPayError(booking.id, null);
 
-    this.bookingsApi.pay(booking.id).subscribe({
-      next: ({ paymentUrl }) => this.redirect(paymentUrl),
-      error: (error: HttpErrorResponse) => {
-        if (error.status === 400) {
-          this.refresh(booking, error);
-        } else {
-          this.paying.set(null);
-          this.setPayError(booking.id, toUserMessage(error));
-        }
-      },
+    this.bookingPayment.pay(booking.id).subscribe((result) => {
+      if (result.kind === 'redirect') {
+        this.redirect(result.url);
+        return;
+      }
+
+      if (result.kind === 'error') {
+        this.paying.set(null);
+        this.setPayError(booking.id, result.message);
+        return;
+      }
+
+      this.refresh(booking, result.message);
     });
   }
 
@@ -302,7 +265,7 @@ export class MyBookings {
   private focusReviewed(id: number): void {
     afterNextRender(
       () =>
-        this.host.nativeElement.querySelector<HTMLElement>(`#my-bookings-reviewed-${id}`)?.focus(),
+        this.host.nativeElement.querySelector<HTMLElement>(`#booking-card-reviewed-${id}`)?.focus(),
       { injector: this.injector },
     );
   }
@@ -311,23 +274,6 @@ export class MyBookings {
   private replace(booking: Booking, current: Booking): void {
     this.placed.update((placed) => ({ ...placed, [booking.id]: this.tabFor(booking) }));
     this.bookings.update((list) => list.map((b) => (b.id === current.id ? current : b)));
-  }
-
-  /** Al pagar respondió 400: la reserva como está ahora dice si venció, se pagó o se canceló. */
-  private refresh(booking: Booking, rejection: HttpErrorResponse): void {
-    this.bookingsApi.get(booking.id).subscribe({
-      next: (current) => {
-        this.replace(booking, current);
-        this.rejected.update((ids) => new Set(ids).add(booking.id));
-        this.now.set(Date.now());
-        this.paying.set(null);
-      },
-      // Sin la reserva, queda el motivo que dio el backend: «no está pendiente» o «venció».
-      error: () => {
-        this.paying.set(null);
-        this.setPayError(booking.id, toUserMessage(rejection));
-      },
-    });
   }
 
   private setPayError(id: number, message: string | null): void {
@@ -339,6 +285,22 @@ export class MyBookings {
     });
   }
 
+  /** Al pagar respondió 400: trae la reserva como está ahora, sin pasar por el esqueleto. */
+  private refresh(booking: Booking, rejection: string): void {
+    this.bookingsApi.get(booking.id).subscribe({
+      next: (current) => {
+        this.replace(booking, current);
+        this.rejected.update((ids) => new Set(ids).add(booking.id));
+        this.now.set(Date.now());
+        this.paying.set(null);
+      },
+      error: () => {
+        this.paying.set(null);
+        this.setPayError(booking.id, rejection);
+      },
+    });
+  }
+
   private tabFor(booking: Booking): BookingTab {
     return this.placed()[booking.id] ?? tabOf(booking, this.today);
   }
@@ -347,19 +309,8 @@ export class MyBookings {
    * El aviso de una reserva que ya no se paga. Una pendiente vence al pasar la hora, o cuando el
    * backend lo dice aunque la computadora atrase; las demás, solo si se intentó pagarlas.
    */
-  private noticeFor(booking: Booking): PayNotice | null {
-    const rejected = this.rejected().has(booking.id);
-    if (booking.status === 'PENDING') {
-      return rejected || paymentExpired(booking, this.now()) ? EXPIRED : null;
-    }
-    if (!rejected) return null;
-    if (booking.status === 'CONFIRMED') return PAID;
-    return booking.canceledBy === 'SYSTEM' ? EXPIRED_CANCELED : CANCELED;
-  }
-
-  /** Volver a reservar lo mismo: el mismo balneario, con la unidad y las fechas ya puestas. */
-  protected rebookQuery(booking: Booking): Record<string, string | number> {
-    return { unit: booking.rentalUnitId, from: booking.startDate, to: booking.endDate };
+  private noticeFor(booking: Booking): BookingCardNotice | null {
+    return bookingPaymentNotice(booking, this.rejected().has(booking.id), this.now());
   }
 
   /** Sale de la aplicación hacia MercadoPago. Aparte, para poder reemplazarlo en las pruebas. */
@@ -375,7 +326,7 @@ export class MyBookings {
     return `Calificaste con ${rating} ${rating === 1 ? 'estrella' : 'estrellas'}.`;
   }
 
-  private toCard(booking: Booking): BookingCard {
+  private toCard(booking: Booking): BookingCardData {
     const count = dayCount(booking.startDate, booking.endDate);
     const range =
       booking.startDate === booking.endDate
@@ -393,7 +344,7 @@ export class MyBookings {
         booking.startDate <= this.today &&
         booking.endDate >= this.today,
       notice,
-      rebook: notice !== null && notice !== PAID,
+      rebook: notice !== null && booking.status !== 'CONFIRMED',
       canReview:
         booking.status === 'CONFIRMED' &&
         !booking.reviewed &&
