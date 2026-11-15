@@ -1,0 +1,206 @@
+<section class="clients">
+  <header>
+    <h1>Mis clientes</h1>
+    <p class="clients__lead">Quienes reservaron en tu balneario y su historial acá.</p>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="clients__loading" role="status" aria-label="Cargando clientes" aria-busy="true">
+        @for (row of [1, 2, 3, 4]; track row) {
+          <z-skeleton width="100%" height="48px" />
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer tus clientes" [text]="error()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (clients().length === 0) {
+        <z-empty title="Todavía nadie reservó en tu balneario" />
+      } @else {
+        <div class="clients__search">
+          <label for="client-search">Buscar por nombre o DNI</label>
+
+          <input
+            #search
+            id="client-search"
+            class="z-input"
+            type="search"
+            autocomplete="off"
+            [value]="query()"
+            (input)="query.set(search.value)"
+          />
+        </div>
+
+        <p class="clients__count" role="status">
+          {{ visibleClients().length }}
+          {{ visibleClients().length === 1 ? 'cliente' : 'clientes' }}
+        </p>
+
+        @if (visibleClients().length === 0) {
+          <z-empty
+            title="No encontramos clientes con esa búsqueda"
+            text="Probá con otro nombre o DNI."
+            actionLabel="Limpiar búsqueda"
+            (action)="query.set('')"
+          />
+        } @else {
+          <div class="z-table-wrap">
+            <table class="z-table">
+              <caption class="z-visually-hidden">
+                Clientes de tu balneario
+              </caption>
+
+              <thead>
+                <tr>
+                  <th scope="col">Nombre</th>
+                  <th scope="col">DNI</th>
+                  <th scope="col">Contacto</th>
+                  <th scope="col" class="is-num">Reservas</th>
+                  <th scope="col" class="is-num">Total gastado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (client of visibleClients(); track client) {
+                  <tr class="clients__row">
+                    <td data-label="Nombre">
+                      <div class="clients__name">
+                        <button
+                          type="button"
+                          class="clients__open"
+                          aria-haspopup="dialog"
+                          [attr.aria-label]="'Ver historial de ' + client.fullName"
+                          (click)="showHistory(client)"
+                        >
+                          {{ client.fullName }}
+                        </button>
+
+                        @if (client.walkIn) {
+                          <span class="z-status z-status--neutral">Sin cuenta</span>
+                        }
+                      </div>
+                    </td>
+
+                    <td data-label="DNI">
+                      <span class="z-code">{{ client.dni || 'Sin DNI' }}</span>
+                    </td>
+
+                    <td data-label="Contacto">
+                      @if (client.walkIn) {
+                        <span class="is-muted">Sin datos de contacto</span>
+                      } @else {
+                        <div class="clients__contact">
+                          <span>{{ client.email || 'Sin email' }}</span>
+                          <span>{{ client.phone || 'Sin teléfono' }}</span>
+                        </div>
+                      }
+                    </td>
+
+                    <td data-label="Reservas" class="is-num">
+                      {{ client.bookingCount }}
+                    </td>
+
+                    <td data-label="Total gastado" class="is-num">
+                      <span class="z-money">{{ money(client.totalSpent) }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+  }
+
+  <dialog
+    #historyDialog
+    class="z-modal clients__dialog"
+    aria-labelledby="client-history-title"
+    (close)="selected.set(null)"
+  >
+    @if (selected(); as client) {
+      <h2 id="client-history-title" class="z-modal__title">Historial de {{ client.fullName }}</h2>
+
+      <p class="z-modal__body">
+        Reservas en tu balneario · Total gastado: {{ money(client.totalSpent) }}
+      </p>
+
+      @if (client.walkIn) {
+        <p>
+          <span class="z-status z-status--neutral">Sin cuenta</span>
+        </p>
+      }
+
+      @if (history().length === 0) {
+        <p>No hay reservas para mostrar.</p>
+      } @else {
+        <div class="z-table-wrap">
+          <table class="z-table">
+            <caption class="z-visually-hidden">
+              Reservas de
+              {{
+                client.fullName
+              }}
+            </caption>
+
+            <thead>
+              <tr>
+                <th scope="col">Fechas</th>
+                <th scope="col">Unidad</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="is-num">Total</th>
+                <th scope="col">Detalle</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (booking of history(); track booking.idBooking) {
+                <tr>
+                  <td data-label="Fechas">
+                    {{ date(booking.startDate) }} → {{ date(booking.endDate) }}
+                  </td>
+
+                  <td data-label="Unidad">
+                    <span class="z-code">{{ booking.rentalUnitIdentifier }}</span>
+                  </td>
+
+                  <td data-label="Estado">
+                    <span [class]="'z-status z-status--' + statuses[booking.status].modifier">
+                      {{ statuses[booking.status].label }}
+                    </span>
+                  </td>
+
+                  <td data-label="Total" class="is-num">
+                    <span class="z-money">{{ money(booking.totalPrice) }}</span>
+                  </td>
+
+                  <td class="is-actions">
+                    <a
+                      class="z-btn z-btn--secondary z-btn--small"
+                      [routerLink]="['/admin/bookings', booking.idBooking]"
+                      (click)="closeHistory()"
+                    >
+                      Ver reserva
+                      <span class="z-visually-hidden">
+                        {{ bookingNumber(booking.idBooking) }}
+                      </span>
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <div class="z-modal__actions">
+        <z-btn variant="secondary" block (click)="closeHistory()"> Cerrar historial </z-btn>
+      </div>
+    }
+  </dialog>
+</section>
