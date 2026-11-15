@@ -60,7 +60,10 @@ export class Login {
 
   /** `?volver=`, que manda el guard. Llega por `withComponentInputBinding()`. */
   readonly volver = input<string | string[]>();
-  /** `?motivo=`, que manda el interceptor cuando la sesión venció. */
+  /**
+   * `?motivo=`: `sesion-vencida`, que manda el interceptor, o `email-nuevo`, que manda Mi cuenta
+   * después de cambiar el email (la sesión abierta era la del email viejo).
+   */
   readonly motivo = input<string | string[]>();
 
   // Los campos se llaman igual que en el pedido al backend (`LoginRequest`).
@@ -74,6 +77,7 @@ export class Login {
   protected readonly formError = signal('');
   protected readonly showPassword = signal(false);
   protected readonly sessionExpired = computed(() => this.motivo() === 'sesion-vencida');
+  protected readonly emailChanged = computed(() => this.motivo() === 'email-nuevo');
 
   /** El campo mostró su error: se marca también para el lector de pantalla. */
   protected hasError(field: ReadonlyFieldTree<unknown>): boolean {

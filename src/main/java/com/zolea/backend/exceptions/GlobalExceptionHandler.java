@@ -8,6 +8,7 @@ import com.zolea.backend.exceptions.booking.BookingAlreadyCanceledException;
 import com.zolea.backend.exceptions.booking.BookingForbiddenException;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
 import com.zolea.backend.exceptions.booking.UnitNotAvailableException;
+import com.zolea.backend.exceptions.client.ClientDataTakenException;
 import com.zolea.backend.exceptions.client.ClientInvalidRegisterException;
 import com.zolea.backend.exceptions.client.ClientNotFoundException;
 import com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException;
@@ -249,6 +250,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, String>> handleDireccionInexistente(NoResourceFoundException ex) {
         return respuesta(HttpStatus.NOT_FOUND, "No existe la dirección pedida.");
+    }
+
+    /**
+     * Un email, teléfono o DNI que ya es de otra cuenta, al editar el perfil: 409, con el campo en
+     * {@code campos}, para que el formulario lo marque debajo de ese campo.
+     */
+    @ExceptionHandler(ClientDataTakenException.class)
+    public ResponseEntity<Map<String, Object>> handleDatoDeOtraCuenta(ClientDataTakenException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", ex.getMessage(), "campos", Map.of(ex.getField(), ex.getMessage())));
     }
 
     /**

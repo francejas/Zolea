@@ -10,6 +10,12 @@ export interface ClientRequest {
   password: string;
 }
 
+/**
+ * El pedido de `PUT /api/clients/{id}` (Mi cuenta): todos los datos, siempre. La contraseña va solo
+ * si se cambia: sin ella, el backend deja la que había.
+ */
+export type ClientUpdateRequest = Omit<ClientRequest, 'password'> & { password?: string };
+
 export interface Client {
   idClient: number;
   firstName: string;

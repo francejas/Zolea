@@ -115,6 +115,20 @@ describe('SessionService', () => {
     });
   });
 
+  describe('reloadUser', () => {
+    it('vuelve a pedir /me: el nombre nuevo se ve en la barra', () => {
+      localStorage.setItem(TOKEN_KEY, 'abc');
+      const session = setup();
+      session.restore().subscribe();
+      http.expectOne(`${API}/me`).flush(clientMe);
+
+      session.reloadUser().subscribe();
+      http.expectOne(`${API}/me`).flush({ ...clientMe, firstName: 'Santiago' });
+
+      expect(session.user()?.firstName).toBe('Santiago');
+    });
+  });
+
   describe('restore', () => {
     it('sin token guardado no pide nada', () => {
       const session = setup();
