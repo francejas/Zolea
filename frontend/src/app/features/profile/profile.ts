@@ -59,8 +59,8 @@ const toRequest = (value: ProfileModel): ClientUpdateRequest => ({
   ...(value.password ? { password: value.password } : {}),
 });
 
-/** Como se ingresa: sin espacios de más ni mayúsculas. */
-const sameEmail = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+/** Como se ingresa: sin espacios de más. */
+const sameEmail = (a: string, b: string) => a.trim() === b.trim();
 
 /**
  * Mi cuenta (`/profile`, 9.3): el cliente corrige sus datos y cambia la contraseña. Las

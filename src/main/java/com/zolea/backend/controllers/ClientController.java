@@ -79,7 +79,7 @@ public class ClientController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Actualizar datos del cliente")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "El perfil como quedó. Los campos que no vengan en el pedido no se tocan"),
+            @ApiResponse(responseCode = "200", description = "El perfil como quedó. Los campos que no vengan en el pedido no se tocan; un DNI vacío conserva el que ya tenía"),
             @ApiResponse(responseCode = "400", description = "Algún dato tiene formato inválido", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "El perfil es de otra persona, aunque quien pide sea un administrador", content = @Content),

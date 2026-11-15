@@ -208,12 +208,20 @@ describe('Profile', () => {
     expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'email-nuevo' } });
   });
 
-  it('el mismo email con otras mayúsculas no cuenta como nuevo', async () => {
+  it('un cambio de mayúsculas en el email cierra la sesión y manda a Ingresar', async () => {
     await open();
+    const navigate = vi.spyOn(router, 'navigate');
 
     await type('#profile-email', '  Nati.Romero@gmail.com ');
 
-    expect(text(submitButton())).toBe('Guardar cambios');
+    expect(text(submitButton())).toBe('Guardar y volver a ingresar');
+
+    await save();
+    http.expectOne(`${API}/16`).flush({ ...nati, email: 'Nati.Romero@gmail.com' });
+    await settle();
+
+    expect(session.clear).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'email-nuevo' } });
   });
 
   it('si falla la carga, deja reintentar', async () => {

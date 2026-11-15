@@ -96,6 +96,8 @@ public class ClientService {
             rejectIfTaken(clientRepository.findByDni(request.dni()), id, "dni", "Ya hay otra cuenta con ese DNI.");
         }
 
+        // Si dos personas guardan el mismo dato a la vez, la restricción única de la base devuelve
+        // un 409 genérico, sin el campo.
         saved.setFirstName(request.firstName());
         saved.setLastName(request.lastName());
         saved.setEmail(request.email());
