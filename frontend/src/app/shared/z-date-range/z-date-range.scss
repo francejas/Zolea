@@ -138,6 +138,32 @@
   background: linear-gradient(90deg, var(--color-sand-soft) 50%, transparent 50%);
 }
 
+/* La salida provisoria: el tramo hasta el día bajo el mouse, con el color del tramo pero más suave,
+   y ese día con el borde de la salida. */
+.z-cal__day.is-preview {
+  background: color-mix(in srgb, var(--color-sand-soft) 55%, transparent);
+}
+
+.z-cal__grid.is-previewing .z-cal__day.is-start {
+  background: linear-gradient(
+    90deg,
+    transparent 50%,
+    color-mix(in srgb, var(--color-sand-soft) 55%, transparent) 50%
+  );
+}
+
+.z-cal__day.is-preview-end {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-sand-soft) 55%, transparent) 50%,
+    transparent 50%
+  );
+}
+
+.z-cal__day.is-preview-end > span {
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
 /* Un solo día: entrada y salida son la misma, sin franja a los costados. */
 .z-cal__day.is-single {
   background: transparent;
