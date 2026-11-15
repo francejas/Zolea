@@ -1,0 +1,60 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.z-booking-card {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.z-booking-card__foot {
+  margin-top: auto;
+}
+
+.z-booking-card__name {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.z-booking-card__name .z-eyebrow {
+  margin: 0;
+}
+
+.z-booking-card__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.z-booking-card__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.z-booking-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.z-booking-card__refund {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.z-booking-card__reviewed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.z-booking-card__reviewed .z-icon {
+  color: var(--color-coral-text);
+  fill: var(--color-coral-text);
+}

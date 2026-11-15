@@ -1,0 +1,90 @@
+<article class="z-booking-card" [class.z-booking-card--today]="today()">
+  <div class="z-booking-card__head">
+    <div class="z-booking-card__name">
+      @if (today()) {
+        <p class="z-eyebrow">Hoy</p>
+      }
+      <h2 class="z-booking-card__title">
+        <a class="z-booking-card__link" [routerLink]="['/bookings', booking().id]">{{
+          booking().resortName
+        }}</a>
+      </h2>
+    </div>
+    <span class="z-status z-status--{{ status().modifier }}">{{ status().label }}</span>
+  </div>
+
+  <ul class="z-facts">
+    <li>
+      @if (booking().rentalUnitType === 'TENT') {
+        <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+      } @else {
+        <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+      }
+      {{ unit() }}
+    </li>
+    <li>
+      <svg lucideCalendarDays class="z-icon" aria-hidden="true"></svg>
+      {{ days() }}
+    </li>
+  </ul>
+
+  @if (notice(); as currentNotice) {
+    <z-alert
+      [variant]="currentNotice.variant"
+      [title]="currentNotice.title"
+      [text]="currentNotice.text"
+    />
+  } @else if (paymentError(); as error) {
+    <z-alert variant="danger" title="No se pudo pagar" [text]="error" />
+  }
+
+  @if (refund(); as refundText) {
+    <p class="z-booking-card__refund">{{ refundText }}</p>
+  }
+
+  @if (reviewed(); as reviewText) {
+    <p class="z-booking-card__reviewed" tabindex="-1" [id]="'my-bookings-reviewed-' + booking().id">
+      <svg lucideStar class="z-icon z-icon--s" aria-hidden="true"></svg>
+      {{ reviewText }}
+    </p>
+  }
+
+  <div class="z-booking-card__foot">
+    <div class="z-total">
+      <span>Total</span>
+      <strong class="z-money">{{ total() }}</strong>
+    </div>
+
+    @if (rebook()) {
+      <a
+        class="z-btn z-btn--primary"
+        [routerLink]="['/book', booking().resortId]"
+        [queryParams]="{
+          unit: booking().rentalUnitId,
+          from: booking().startDate,
+          to: booking().endDate,
+        }"
+      >
+        Volver a reservar
+      </a>
+    } @else {
+      @switch (booking().status) {
+        @case ('CONFIRMED') {
+          <div class="z-booking-card__actions">
+            <a class="z-btn z-btn--secondary" [routerLink]="['/bookings', booking().id]">
+              {{ detailsLabel() }}
+            </a>
+            @if (canReview()) {
+              <z-btn (click)="review.emit()">Calificar</z-btn>
+            }
+          </div>
+        }
+        @case ('PENDING') {
+          <z-btn [loading]="paying()" [disabled]="paymentDisabled()" (click)="pay.emit()">
+            Pagar
+          </z-btn>
+        }
+      }
+    }
+  </div>
+</article>

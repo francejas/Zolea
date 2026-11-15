@@ -61,54 +61,6 @@
   margin-top: auto;
 }
 
-/* El reintegro de una cancelada: dato, no aviso, así que sin bandera. */
-.my-bookings__refund {
-  margin: 0;
-  font-size: var(--text-small);
-  color: var(--color-text-muted);
-}
-
-/* Ver la reserva y calificarla: si no entran al lado del total, bajan juntas. */
-.my-bookings__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.my-bookings__reviewed {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  font-size: var(--text-small);
-  color: var(--color-text-muted);
-}
-
-.my-bookings__reviewed .z-icon {
-  color: var(--color-coral-text);
-  fill: var(--color-coral-text);
-}
-
-.my-bookings__name {
-  display: grid;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.my-bookings__name .z-eyebrow {
-  margin: 0;
-}
-
-.my-bookings__link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.my-bookings__link:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 .my-bookings__none {
   display: grid;
   gap: var(--space-3);

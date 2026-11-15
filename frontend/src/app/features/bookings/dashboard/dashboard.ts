@@ -1,14 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import {
-  LucideCalendarDays,
-  LucideChevronLeft,
-  LucideChevronRight,
-  LucideSearch,
-  LucideTent,
-  LucideUmbrella,
-} from '@lucide/angular';
+import { LucideChevronLeft, LucideChevronRight, LucideSearch } from '@lucide/angular';
 import { Booking } from '../../../core/api/booking.models';
 import { BookingsApi } from '../../../core/api/bookings.api';
 import { toUserMessage } from '../../../core/errors/error-message';
@@ -16,10 +9,12 @@ import { SessionService } from '../../../core/session/session.service';
 import { GuestQr } from '../../../shared/guest-qr/guest-qr';
 import { todayIso } from '../../../shared/utils/days';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
-import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { BookingCard } from '../../../shared/booking-card/booking-card';
+import { BookingPayment } from '../../../shared/booking-card/booking-payment';
+import { bookingPaymentNotice } from '../../../shared/booking-card/booking-payment-notice';
 import {
   BOOKING_STATUS,
   dayCount,
@@ -68,15 +63,12 @@ interface UpcomingCard {
   selector: 'app-client-dashboard',
   imports: [
     RouterLink,
-    LucideCalendarDays,
+    BookingCard,
     LucideChevronLeft,
     LucideChevronRight,
     LucideSearch,
-    LucideTent,
-    LucideUmbrella,
     GuestQr,
     ZAlert,
-    ZBtn,
     ZEmpty,
     ZProblem,
     ZSkeleton,
@@ -86,6 +78,7 @@ interface UpcomingCard {
 })
 export class ClientDashboard {
   private readonly bookingsApi = inject(BookingsApi);
+  private readonly bookingPayment = inject(BookingPayment);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
 
@@ -170,18 +163,20 @@ export class ClientDashboard {
     this.payError.set('');
     this.payNotice.set(null);
 
-    this.bookingsApi.pay(booking.id).subscribe({
-      next: ({ paymentUrl }) => this.redirect(paymentUrl),
-      error: (error: HttpErrorResponse) => {
-        if (error.status === 400) {
-          // Sigue «pagando» hasta que vuelve la lista: no se puede tocar de nuevo mientras tanto, y
-          // no dice «venció» antes de saber cómo está.
-          this.refresh(booking, toUserMessage(error));
-        } else {
-          this.paying.set(null);
-          this.payError.set(toUserMessage(error));
-        }
-      },
+    this.bookingPayment.pay(booking.id).subscribe((result) => {
+      if (result.kind === 'redirect') {
+        this.redirect(result.url);
+        return;
+      }
+
+      if (result.kind === 'error') {
+        this.paying.set(null);
+        this.payError.set(result.message);
+        return;
+      }
+
+      // Sigue «pagando» hasta que vuelve la lista: no se puede tocar de nuevo mientras tanto.
+      this.refresh(booking, result.message);
     });
   }
 
@@ -216,15 +211,15 @@ export class ClientDashboard {
     this.bookingsApi.byClient(clientId).subscribe({
       next: (bookings) => {
         const current = bookings.find((b) => b.id === booking.id);
-        // Sigue pendiente: para el backend ya venció, aunque la computadora atrase.
         if (current?.status === 'PENDING') {
           this.rejected.update((ids) => new Set(ids).add(booking.id));
         }
         this.show(bookings);
         this.paying.set(null);
-        // Si no vuelve en la lista (no debería), al menos el motivo del 400.
-        if (current) this.payNotice.set(noticeFor(current));
-        else this.payError.set(rejection);
+        if (current) {
+          const notice = bookingPaymentNotice(current, true, this.now());
+          this.payNotice.set(notice ? { ...notice, rebook: current } : null);
+        } else this.payError.set(rejection);
       },
       error: () => {
         this.paying.set(null);
@@ -266,35 +261,4 @@ export class ClientDashboard {
       (this.rejected().has(booking.id) || paymentExpired(booking, this.now()))
     );
   }
-}
-
-/**
- * El aviso de una reserva que ya no se paga, según cómo está ahora. Una que sigue pendiente ya lo
- * dice en su tarjeta («La reserva venció»): no lleva aviso aparte.
- */
-function noticeFor(booking: Booking): PayNotice | null {
-  if (booking.status === 'CONFIRMED') {
-    return {
-      variant: 'success',
-      title: 'Ya está paga',
-      text: `El pago de ${booking.resortName} se acreditó mientras tanto: tus entradas están en la reserva.`,
-      rebook: null,
-    };
-  }
-  if (booking.status === 'CANCELED') {
-    return booking.canceledBy === 'SYSTEM'
-      ? {
-          variant: 'warning',
-          title: 'La reserva venció',
-          text: `La de ${booking.resortName} pasó la hora para pagarla y se canceló. Si todavía te sirve, reservala de nuevo.`,
-          rebook: booking,
-        }
-      : {
-          variant: 'warning',
-          title: 'La reserva se canceló',
-          text: `La de ${booking.resortName} ya no está pendiente de pago. Si todavía te sirve, reservala de nuevo.`,
-          rebook: booking,
-        };
-  }
-  return null;
 }
