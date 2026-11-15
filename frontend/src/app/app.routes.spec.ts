@@ -26,6 +26,8 @@ const admin: Me = {
   role: 'ADMIN',
   idManagedResort: 7,
 };
+/** La cuenta de Zolea: un administrador sin balneario. */
+const zolea: Me = { ...admin, idClient: 3, email: 'zolea@zolea.com', idManagedResort: null };
 
 describe('routes', () => {
   const user = signal<Me | null>(null);
@@ -185,13 +187,12 @@ describe('routes', () => {
     expect(router.url).toBe('/');
   });
 
-  it('el administrador entra a todas las rutas del panel', async () => {
+  it('el administrador de un balneario entra a todas las rutas del panel menos el catálogo', async () => {
     user.set(admin);
     for (const url of [
       '/admin',
       '/admin/resort',
       '/admin/units',
-      '/admin/amenities',
       '/admin/bookings',
       '/admin/bookings/4',
       '/admin/clients',
@@ -203,12 +204,52 @@ describe('routes', () => {
     }
   });
 
+  it('el administrador de un balneario que pide el catálogo vuelve a su Panel', async () => {
+    user.set(admin);
+    await harness.navigateByUrl('/admin/amenities');
+
+    expect(router.url).toBe('/admin');
+    expect(heading()).toBe('Panel');
+  });
+
   it('el administrador que pide una ruta de cliente va a /admin', async () => {
     user.set(admin);
     await harness.navigateByUrl('/my-bookings');
 
     expect(router.url).toBe('/admin');
     expect(heading()).toBe('Panel');
+  });
+
+  it('la cuenta de Zolea entra al catálogo', async () => {
+    user.set(zolea);
+    await harness.navigateByUrl('/admin/amenities');
+
+    expect(router.url).toBe('/admin/amenities');
+    expect(heading()).toBe('Catálogo de servicios');
+  });
+
+  it('la cuenta de Zolea vuelve al catálogo desde cualquier otra pantalla del panel', async () => {
+    user.set(zolea);
+    for (const url of [
+      '/admin',
+      '/admin/resort',
+      '/admin/units',
+      '/admin/bookings',
+      '/admin/bookings/4',
+      '/admin/clients',
+      '/admin/walkin',
+      '/admin/validate',
+    ]) {
+      await harness.navigateByUrl(url);
+      expect(router.url).toBe('/admin/amenities');
+    }
+  });
+
+  it('la cuenta de Zolea que pide una ruta de cliente va a su catálogo', async () => {
+    user.set(zolea);
+    await harness.navigateByUrl('/my-bookings');
+
+    expect(router.url).toBe('/admin/amenities');
   });
 
   it('una dirección que no existe muestra «No encontramos esta página»', async () => {

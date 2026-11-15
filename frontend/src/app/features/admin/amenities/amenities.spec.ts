@@ -1,24 +1,12 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { environment } from '../../../../environments/environment';
-import { Me } from '../../../core/api/auth.models';
 import { Amenity, Resort } from '../../../core/api/resort.models';
-import { SessionService } from '../../../core/session/session.service';
 import { Amenities } from './amenities';
 
 const API = `${environment.apiUrl}/api/amenities`;
 const RESORTS = `${environment.apiUrl}/api/resorts`;
-
-const admin: Me = {
-  idClient: 2,
-  firstName: 'Admin',
-  lastName: 'Mar del Plata',
-  email: 'admin.mdp@zolea.com',
-  role: 'ADMIN',
-  idManagedResort: 1,
-};
 
 const wifi: Amenity = { idAmenity: 1, name: 'WiFi' };
 const spa: Amenity = { idAmenity: 6, name: 'Spa' };
@@ -38,7 +26,7 @@ function resort(idResort: number, amenities: Amenity[]): Resort {
   };
 }
 
-/** El 1 es el del administrador. WiFi en tres (con el suyo), Spa en dos, Duchas solo en el suyo. */
+/** WiFi en tres balnearios, Spa en dos, Duchas en uno y Música en ninguno. */
 const resorts: Resort[] = [
   resort(1, [wifi, duchas]),
   resort(2, [wifi, spa]),
@@ -61,11 +49,7 @@ describe('Amenities', () => {
 
     await TestBed.configureTestingModule({
       imports: [Amenities],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: SessionService, useValue: { user: signal<Me | null>(admin) } },
-      ],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
@@ -126,12 +110,13 @@ describe('Amenities', () => {
       const headers = Array.from(page.querySelectorAll('th')).map((th) => text(th));
       expect(headers).toEqual(['Servicio', 'Lo ofrecen', 'Acciones']);
       expect(rows().map((row) => cells(row).slice(0, 2))).toEqual([
-        ['Duchas y Vestuarios', 'Solo el tuyo'],
+        ['Duchas y Vestuarios', '1 balneario'],
         ['Música en Vivo', 'Ninguno'],
         ['Spa', '2 balnearios'],
-        ['WiFi', '3 balnearios incluido el tuyo'],
+        ['WiFi', '3 balnearios'],
       ]);
       expect(text(page.querySelector('.amenities__summary'))).toBe('4 servicios en el catálogo');
+      expect(text(page.querySelector('table'))).not.toContain('tuyo');
     });
 
     it('cada servicio lleva su ícono, el mismo que en la ficha', async () => {
@@ -173,6 +158,11 @@ describe('Amenities', () => {
       const headers = Array.from(page.querySelectorAll('th')).map((th) => text(th));
       expect(headers).toEqual(['Servicio', 'Acciones']);
       expect(rows()).toHaveLength(2);
+
+      // Sin el conteo, la confirmación de borrar lo dice sin número.
+      button('Borrar', rowOf('Spa'))!.click();
+      await fixture.whenStable();
+      expect(text(dialog())).toContain('Se les saca a todos los balnearios que lo ofrecen.');
     });
 
     it('el aviso de que el catálogo es de todos está fijo arriba, en todos los estados', async () => {
@@ -181,7 +171,8 @@ describe('Amenities', () => {
 
       await respondWith([wifi]);
       expect(notice()).toContain('El catálogo es de todos los balnearios');
-      expect(notice()).toContain('no solo en el tuyo');
+      expect(notice()).toContain('lo pueden elegir todos los balnearios');
+      expect(notice()).not.toContain('tuyo');
     });
   });
 
@@ -436,23 +427,23 @@ describe('Amenities', () => {
       expect(rowOf('Spa')).toBeDefined();
     });
 
-    it('la confirmación dice cuántos lo ofrecen y que se borra de todos, no solo del propio', async () => {
+    it('la confirmación dice a cuántos balnearios se les saca y que no se deshace', async () => {
       await askDelete('Spa');
 
       expect(text(dialog().querySelector('h2'))).toBe('¿Borrar «Spa» del catálogo?');
       const body = text(dialog().querySelector('.z-modal__body'));
-      expect(body).toContain('Hoy lo ofrecen 2 balnearios.');
-      expect(body).toContain('de todos los balnearios, no solo del tuyo');
+      expect(body).toContain('Se les saca a los 2 balnearios que hoy lo ofrecen.');
       expect(body).toContain('no se puede deshacer');
+      expect(body).not.toContain('tuyo');
     });
 
-    it('si lo ofrece el propio, también lo dice', async () => {
+    it('con uno o ningún balneario también lo dice', async () => {
       await askDelete('WiFi');
-      expect(text(dialog())).toContain('Hoy lo ofrecen 3 balnearios, entre ellos el tuyo.');
+      expect(text(dialog())).toContain('Se les saca a los 3 balnearios que hoy lo ofrecen.');
       button('Volver', dialog())!.click();
 
       await askDelete('Duchas y Vestuarios');
-      expect(text(dialog())).toContain('Hoy lo ofrece solo el tuyo.');
+      expect(text(dialog())).toContain('Se le saca al único balneario que hoy lo ofrece.');
       button('Volver', dialog())!.click();
 
       await askDelete('Música en Vivo');

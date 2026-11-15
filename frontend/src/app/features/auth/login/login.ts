@@ -11,20 +11,16 @@ import {
 import { Router, RouterLink, UrlTree } from '@angular/router';
 import { LucideEye, LucideEyeOff } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
-import { Me, Role } from '../../../core/api/auth.models';
+import { Me } from '../../../core/api/auth.models';
+import { homeOf } from '../../../core/auth/home';
 import { toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZField } from '../../../shared/z-field/z-field';
 
-/**
- * El inicio de cada rol: adonde se va después de ingresar si no hay un `volver` válido. El cliente
- * va a su Inicio (11.5), con lo que tiene hoy y lo que le viene; no a la Portada.
- */
-export function homeFor(role: Role): string {
-  return role === 'ADMIN' ? '/admin' : '/dashboard';
-}
+// `homeFor` vive en `core/auth/home.ts`; se reexporta acá, donde lo buscan el registro y las pruebas.
+export { homeFor } from '../../../core/auth/home';
 
 /**
  * El `volver` que mandó el guard (`authGuard`, tarea 8.4), resuelto con el Router, o `null` si no
@@ -110,7 +106,7 @@ export class Login {
 
       // El botón sigue en «cargando» hasta llegar: así no se puede volver a tocar mientras navega.
       const backTo = resolveBackTo(this.router, this.volver());
-      await this.router.navigateByUrl(backTo ?? homeFor(me.role));
+      await this.router.navigateByUrl(backTo ?? homeOf(me));
     });
 
     this.focusFirstInvalid();

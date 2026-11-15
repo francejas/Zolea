@@ -1,7 +1,10 @@
 import { Routes } from '@angular/router';
 import { PlaceholderPage } from '../../core/placeholder-page';
 
-/** Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. */
+/**
+ * Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. Ahí también se decide quién
+ * ve qué: `amenities` es solo de la cuenta de Zolea y el resto, del administrador de un balneario.
+ */
 export const adminRoutes: Routes = [
   { path: '', loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard) },
   { path: 'resort', loadComponent: () => import('./resort/my-resort').then((m) => m.MyResort) },

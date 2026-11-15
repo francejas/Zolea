@@ -15,11 +15,11 @@
     }
   </header>
 
-  <!-- Fijo, en los cuatro estados: el catálogo no es del balneario, es de todos. -->
+  <!-- Fijo, en los cuatro estados: lo que se carga acá llega a todos los balnearios. -->
   <z-alert
     variant="info"
     title="El catálogo es de todos los balnearios"
-    text="Lo que crees, renombres o borres acá cambia en todos los balnearios, no solo en el tuyo. Los servicios que ofrece el tuyo se marcan en Mi balneario."
+    text="Lo que cargues acá lo pueden elegir todos los balnearios en Mi balneario. Si renombrás o borrás un servicio, cambia en todos los que lo ofrecen."
   />
 
   <!-- El aviso es un role="status": el lector de pantalla anuncia lo que pasó sin leer la tabla. -->
@@ -155,12 +155,7 @@
 
                   @if (usage()) {
                     <td data-label="Lo ofrecen">
-                      <span class="amenities__usage">
-                        {{ usageLabel(amenity) }}
-                        @if (includesMine(amenity)) {
-                          <span class="amenities__mine">incluido el tuyo</span>
-                        }
-                      </span>
+                      <span class="amenities__usage">{{ usageLabel(amenity) }}</span>
                     </td>
                   }
 
