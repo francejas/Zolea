@@ -62,59 +62,124 @@
     [attr.aria-labelledby]="id + '-tab-plano'"
     [hidden]="view() !== 'plan'"
   >
-    <div class="z-plan">
-      <div class="z-plan__sea"><span>Mar</span></div>
-
-      @for (zone of zones(); track zone.type; let first = $first) {
-        @if (!first) {
-          <div class="z-plan__walk"><span>Paseo</span></div>
-        }
-        <div class="z-plan__zone">
-          <p class="z-plan__zone-label">
-            @if (zone.type === 'UMBRELLA') {
-              <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
-            } @else {
-              <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+    <div class="z-plan" [class.z-plan--more]="moreToTheRight()">
+      <div #scroller class="z-plan__scroll" (scroll)="updateScrollHint()">
+        <div class="z-plan__map" [style.grid-template-columns]="planTracks()">
+          <div class="z-plan__sea">
+            <span>Mar</span>
+            @for (aisle of aisles(); track aisle) {
+              <i
+                class="z-plan__access"
+                aria-hidden="true"
+                [style.grid-column]="aisleTrack(aisle)"
+              ></i>
             }
-            {{ zone.title }}
-          </p>
+          </div>
 
-          @for (row of zone.rows; track row.prefix) {
-            <div
-              class="z-plan__row"
-              role="group"
-              [attr.aria-label]="row.name + ', ' + row.priceLabel"
-            >
-              <div class="z-plan__row-label">
-                <strong>{{ row.name }}</strong>
-                <span>{{ row.priceLabel }}</span>
-              </div>
-              <div class="z-plan__cells">
-                @for (unit of row.units; track unit.idRentalUnit) {
-                  <button
-                    type="button"
-                    class="z-unit"
-                    [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
-                    [class.z-unit--tent]="unit.type === 'TENT'"
-                    [attr.aria-pressed]="
-                      isUnavailable(unit) ? null : selectedId() === unit.idRentalUnit
-                    "
-                    [attr.aria-disabled]="isUnavailable(unit) ? 'true' : null"
-                    [attr.aria-label]="unitLabel(unit)"
-                    (click)="toggle(unit)"
+          @for (zone of zones(); track zone.type; let first = $first) {
+            @if (!first) {
+              <div class="z-plan__walk"><span>Paseo</span></div>
+            }
+            @if (zone.type === 'UMBRELLA') {
+              <div class="z-plan__zone">
+                <p class="z-plan__zone-label">
+                  <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+                  {{ zone.title }}
+                </p>
+
+                @for (row of zone.rows; track row.prefix) {
+                  <div
+                    class="z-plan__row"
+                    role="group"
+                    [attr.aria-label]="row.name + ', ' + row.priceLabel"
                   >
-                    <span class="z-unit__shape"></span>
-                    <span class="z-unit__id">{{ unit.identifier }}</span>
-                  </button>
+                    <div class="z-plan__row-label">
+                      <strong>{{ row.name }}</strong>
+                      <span>{{ row.priceLabel }}</span>
+                    </div>
+                    <div class="z-plan__cells">
+                      @for (unit of row.units; track unit.idRentalUnit) {
+                        <ng-container
+                          *ngTemplateOutlet="unitButton; context: { $implicit: unit }"
+                        />
+                      }
+                    </div>
+                  </div>
                 }
               </div>
-            </div>
-          }
-        </div>
-      }
+            } @else {
+              <div class="z-plan__zone z-plan__zone--columns">
+                <p class="z-plan__zone-label">
+                  <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+                  {{ zone.title }}
+                </p>
 
-      <div class="z-plan__entry"><span>Entrada del balneario</span></div>
+                @for (aisle of aisles(); track aisle) {
+                  <i
+                    class="z-plan__aisle"
+                    aria-hidden="true"
+                    [style.grid-column]="aisleTrack(aisle)"
+                  ></i>
+                }
+
+                @for (row of zone.rows; track row.prefix; let i = $index) {
+                  <div
+                    class="z-plan__row z-plan__column"
+                    role="group"
+                    [attr.aria-label]="row.name + ', ' + row.priceLabel"
+                    [style.grid-column]="columnTrack(i)"
+                  >
+                    <div class="z-plan__pairs">
+                      @for (pair of row.pairs; track pair[0].idRentalUnit) {
+                        <div class="z-plan__pair">
+                          @for (unit of pair; track unit.idRentalUnit) {
+                            <ng-container
+                              *ngTemplateOutlet="unitButton; context: { $implicit: unit }"
+                            />
+                          }
+                        </div>
+                      }
+                    </div>
+                    <div class="z-plan__row-label z-plan__foot">
+                      <!-- Se ve la letra en el círculo, como el cartel del pasillo; «Fila» queda
+                           para el lector, que sigue leyendo lo mismo que antes. -->
+                      <strong class="z-plan__badge">
+                        @if (row.prefix !== row.name) {
+                          <small class="z-visually-hidden">Fila&#32;</small>
+                        }
+                        {{ row.prefix }}
+                      </strong>
+                      <span>{{ row.priceLabel }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          <div class="z-plan__entry"><span>Entrada del balneario</span></div>
+        </div>
+      </div>
+      <span class="z-plan__more" aria-hidden="true">
+        <svg lucideChevronRight class="z-icon z-icon--s"></svg>
+      </span>
     </div>
+
+    <ng-template #unitButton let-unit>
+      <button
+        type="button"
+        class="z-unit"
+        [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
+        [class.z-unit--tent]="unit.type === 'TENT'"
+        [attr.aria-pressed]="isUnavailable(unit) ? null : selectedId() === unit.idRentalUnit"
+        [attr.aria-disabled]="isUnavailable(unit) ? 'true' : null"
+        [attr.aria-label]="unitLabel(unit)"
+        (click)="toggle(unit)"
+      >
+        <span class="z-unit__shape"></span>
+        <span class="z-unit__id">{{ unit.identifier }}</span>
+      </button>
+    </ng-template>
 
     <ul class="z-plan-legend" aria-label="Referencias">
       <li>
