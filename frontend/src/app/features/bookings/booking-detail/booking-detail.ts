@@ -30,6 +30,7 @@ import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { ZDirections } from '../../../shared/z-directions/z-directions';
 import {
   BOOKING_STATUS,
   bookingNumber,
@@ -68,6 +69,7 @@ interface CancelNotice {
     GuestQr,
     ZAlert,
     ZBtn,
+    ZDirections,
     ZEmpty,
     ZProblem,
     ZSkeleton,

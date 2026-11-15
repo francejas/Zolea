@@ -54,6 +54,10 @@
                 <svg lucideMapPin class="z-icon" aria-hidden="true"></svg
                 >{{ booking.resortLocation }}
               </p>
+              <!-- Solo sirve para ir: una reserva cancelada (o vencida sin pagar) ya no lo necesita. -->
+              @if (booking.status !== 'CANCELED') {
+                <z-directions [name]="booking.resortName" [location]="booking.resortLocation" />
+              }
               <span class="z-status z-status--{{ status()!.modifier }}">{{ status()!.label }}</span>
             </header>
 

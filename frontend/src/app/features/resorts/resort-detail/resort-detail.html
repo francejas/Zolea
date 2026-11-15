@@ -41,6 +41,7 @@
       <p class="z-place">
         <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
       </p>
+      <z-directions [name]="resort.name" [location]="resort.location" />
       @if (resort.averageRating != null && resort.reviewCount) {
         <z-rating [value]="resort.averageRating" [count]="resort.reviewCount" />
       }

@@ -21,7 +21,9 @@ public record ResortRequest(
         @NotBlank(message = "El nombre del balneario es obligatorio")
         String name,
 
-        @Schema(description = "Ciudad donde está", example = "Mar del Plata")
+        @Schema(description = "Dirección completa: calle y número, ciudad y provincia, como se buscaría en un mapa. "
+                + "El botón «Cómo llegar» la usa para abrir Google Maps",
+                example = "Av. Patricio Peralta Ramos 4800, Mar del Plata, Buenos Aires")
         @NotBlank(message = "La ubicación es obligatoria")
         String location,
 
