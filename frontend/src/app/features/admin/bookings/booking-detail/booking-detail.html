@@ -121,12 +121,18 @@
           <section class="detail__card" aria-labelledby="entry-title">
             <h2 id="entry-title">Ingresos</h2>
 
-            <p class="detail__count">{{ entered() }} de {{ b.guests.length }}</p>
+            @if (stay() === 'ongoing') {
+              <p class="detail__count">{{ entered() }} de {{ b.guests.length }}</p>
 
-            <p class="detail__muted">
-              Personas que ya entraron. Actualizá para consultar los ingresos registrados desde otra
-              pantalla.
-            </p>
+              <p class="detail__muted">
+                Personas que entraron hoy. Actualizá para consultar los ingresos registrados desde
+                otra pantalla.
+              </p>
+            } @else if (stay() === 'finished') {
+              <p class="detail__muted">La estadía ya terminó. Cada persona muestra cuándo entró.</p>
+            } @else if (stay() === 'upcoming') {
+              <p class="detail__muted">La estadía todavía no empezó.</p>
+            }
 
             @if (b.status === 'CANCELED') {
               <h2>Cancelación</h2>
@@ -190,13 +196,9 @@
                       </td>
 
                       <td data-label="Ingreso">
-                        <span
-                          [class]="
-                            'z-status z-status--' +
-                            (guest.isEntryValidated ? 'confirmed' : 'pending')
-                          "
-                        >
-                          {{ guest.isEntryValidated ? 'Ya entró' : 'Todavía no entró' }}
+                        @let entry = entryStatus(guest);
+                        <span [class]="'z-status z-status--' + entry.modifier">
+                          {{ entry.text }}
                         </span>
                       </td>
                     </tr>

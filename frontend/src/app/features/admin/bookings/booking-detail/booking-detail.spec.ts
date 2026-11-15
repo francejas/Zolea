@@ -44,6 +44,9 @@ describe('Detalle de reserva del administrador', () => {
   }
 
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 0, 16, 12));
+
     HTMLDialogElement.prototype.showModal ??= function () {
       this.setAttribute('open', '');
     };
@@ -64,7 +67,10 @@ describe('Detalle de reserva del administrador', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    vi.useRealTimers();
+  });
 
   it('muestra carga, datos de estadía y enlace al listado administrativo', async () => {
     expect(page.querySelector('[aria-busy="true"]')).not.toBeNull();
@@ -101,7 +107,7 @@ describe('Detalle de reserva del administrador', () => {
 
     expect(text(rows[0].querySelectorAll('td')[0])).toBe('Ana Pérez');
     expect(text(rows[0].querySelectorAll('td')[1])).toBe('Titular');
-    expect(text(rows[0])).toContain('Ya entró');
+    expect(text(rows[0])).toContain('Entró hoy');
 
     expect(text(rows[1].querySelectorAll('td')[0])).toBe('Luis García');
     expect(text(rows[1].querySelectorAll('td')[1])).toBe('Acompañante');
@@ -126,8 +132,91 @@ describe('Detalle de reserva del administrador', () => {
       }),
     );
 
-    expect(text(section('guests-title'))).toContain('Ya entró');
+    expect(text(section('guests-title'))).toContain('Entró hoy');
     expect(text(section('entry-title'))).toContain('1 de 1');
+  });
+
+  describe('el ingreso de cada persona', () => {
+    const rowsOf = () => [...section('guests-title').querySelectorAll('tbody tr')];
+    const ingreso = (row: Element) => text(row.querySelectorAll('td')[3]);
+
+    it('entró hoy: dice a qué hora, tal cual la manda el servidor', async () => {
+      await respond(
+        aBooking({
+          guests: [aGuest({ isEntryValidated: true, lastEntryAt: '2026-01-16T10:15:00.123456' })],
+        }),
+      );
+
+      expect(ingreso(rowsOf()[0])).toBe('Entró hoy a las 10:15');
+      expect(rowsOf()[0].querySelector('.z-status--confirmed')).not.toBeNull();
+    });
+
+    it('entró otro día: dice cuándo fue la última vez', async () => {
+      await respond(
+        aBooking({
+          guests: [aGuest({ isEntryValidated: false, lastEntryAt: '2026-01-15T10:15:00' })],
+        }),
+      );
+
+      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 15/01 a las 10:15');
+      expect(rowsOf()[0].querySelector('.z-status--neutral')).not.toBeNull();
+    });
+
+    it('nunca entró: todavía no entró', async () => {
+      await respond(aBooking({ guests: [aGuest({ isEntryValidated: false, lastEntryAt: null })] }));
+
+      expect(ingreso(rowsOf()[0])).toBe('Todavía no entró');
+      expect(rowsOf()[0].querySelector('.z-status--pending')).not.toBeNull();
+    });
+
+    it('en una misma reserva, cada persona con lo suyo y el contador cuenta solo a quien entró hoy', async () => {
+      await respond(
+        aBooking({
+          guests: [
+            aGuest({ idGuest: 1, isEntryValidated: true, lastEntryAt: '2026-01-16T10:15:00' }),
+            aGuest({ idGuest: 2, isEntryValidated: false, lastEntryAt: '2026-01-15T18:40:00' }),
+            aGuest({ idGuest: 3, isEntryValidated: false, lastEntryAt: null }),
+          ],
+        }),
+      );
+
+      expect(rowsOf().map(ingreso)).toEqual([
+        'Entró hoy a las 10:15',
+        'Entró por última vez el 15/01 a las 18:40',
+        'Todavía no entró',
+      ]);
+      expect(text(section('entry-title'))).toContain('1 de 3');
+      expect(text(section('entry-title'))).toContain('Personas que entraron hoy');
+    });
+
+    it('en una estadía terminada no hay contador, pero cada persona dice cuándo entró', async () => {
+      vi.setSystemTime(new Date(2026, 0, 20, 12));
+      await respond(
+        aBooking({
+          guests: [aGuest({ isEntryValidated: false, lastEntryAt: '2026-01-17T09:05:00' })],
+        }),
+      );
+
+      expect(page.querySelector('.detail__count')).toBeNull();
+      expect(text(section('entry-title'))).not.toContain('0 de 1');
+      expect(text(section('entry-title'))).toContain('La estadía ya terminó');
+      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 17/01 a las 09:05');
+    });
+
+    it('en una estadía que no empezó no hay contador', async () => {
+      vi.setSystemTime(new Date(2026, 0, 10, 12));
+      await respond(aBooking());
+
+      expect(page.querySelector('.detail__count')).toBeNull();
+      expect(text(section('entry-title'))).toContain('La estadía todavía no empezó');
+      expect(ingreso(rowsOf()[0])).toBe('Todavía no entró');
+    });
+
+    it('una reserva cancelada no tiene contador de ingresos', async () => {
+      await respond(aBooking({ status: 'CANCELED' }));
+
+      expect(page.querySelector('.detail__count')).toBeNull();
+    });
   });
 
   it('muestra todos los cobros, sus operaciones, importes, fechas y estados', async () => {

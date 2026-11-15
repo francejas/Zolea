@@ -18,9 +18,11 @@ import { Subject, takeUntil } from 'rxjs';
 import {
   bookingDate,
   CANCELED_BY,
+  entryStatus,
   manualRefund,
   paymentLabel,
   paymentModifier,
+  stayPhase,
 } from './booking-detail-format';
 import { ZAlert } from '../../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../../shared/z-btn/z-btn';
@@ -73,6 +75,14 @@ export class AdminBookingDetail {
 
   protected readonly refund = computed(() => (this.booking() ? manualRefund(this.booking()!) : 0));
 
+  /** El contador de ingresos solo se muestra con la reserva confirmada y la estadía en curso. */
+  protected readonly stay = computed(() => {
+    const booking = this.booking();
+    if (!booking || booking.status !== 'CONFIRMED') return null;
+    return stayPhase(booking);
+  });
+
+  /** Cuántas personas entraron hoy. */
   protected readonly entered = computed(
     () => this.booking()?.guests.filter((guest) => guest.isEntryValidated).length ?? 0,
   );
@@ -86,6 +96,7 @@ export class AdminBookingDetail {
   protected readonly holder = bookingHolder;
   protected readonly paymentLabel = paymentLabel;
   protected readonly paymentModifier = paymentModifier;
+  protected readonly entryStatus = entryStatus;
   protected readonly canceledBy = CANCELED_BY;
 
   constructor() {
