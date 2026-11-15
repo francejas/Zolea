@@ -15,6 +15,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -212,6 +214,29 @@ class ResortOwnershipTest extends IntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].bookings", hasSize(1)))
                 .andExpect(jsonPath("$[0].bookingCount").value(1));
+    }
+
+    @Test
+    @DisplayName("el total gastado cuenta solo las reservas confirmadas")
+    void clientTotalSpent_onlyConfirmedBookings() throws Exception {
+        Resort mio = aResort();
+        Client cliente = aClient();
+        Booking confirmada = aBooking(cliente, aUnitIn(mio, 10_000.0),
+                today().plusDays(5), today().plusDays(7), Status.CONFIRMED, now());
+        confirmada.setTotalPrice(new BigDecimal("10000.00"));
+        Booking cancelada = aBooking(cliente, aUnitIn(mio, 20_000.0),
+                today().plusDays(10), today().plusDays(12), Status.CANCELED, now());
+        cancelada.setTotalPrice(new BigDecimal("20000.00"));
+        Booking pendiente = aBooking(cliente, aUnitIn(mio, 30_000.0),
+                today().plusDays(15), today().plusDays(17), Status.PENDING, now());
+        pendiente.setTotalPrice(new BigDecimal("30000.00"));
+        Client admin = anAdminOf(mio);
+        syncWithDatabase();
+
+        mockMvc.perform(get("/api/clients")
+                        .header("Authorization", "Bearer " + tokenFor(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].totalSpent").value(10_000.0));
     }
 
     /**

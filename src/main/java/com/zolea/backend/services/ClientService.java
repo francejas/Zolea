@@ -8,6 +8,7 @@ import com.zolea.backend.exceptions.client.ClientInvalidRegisterException;
 import com.zolea.backend.exceptions.client.ClientNotFoundException;
 import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.Client;
+import com.zolea.backend.models.Status;
 import com.zolea.backend.repositories.BookingRepository;
 import com.zolea.backend.repositories.ClientRepository;
 import lombok.RequiredArgsConstructor;
@@ -137,6 +138,7 @@ public class ClientService {
         Booking primera = bookings.get(0);
 
         BigDecimal gastado = bookings.stream()
+                .filter(booking -> booking.getStatus() == Status.CONFIRMED)
                 .map(Booking::getTotalPrice)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
