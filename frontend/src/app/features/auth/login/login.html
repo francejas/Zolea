@@ -10,6 +10,8 @@
       <z-alert variant="danger" [text]="message" />
     } @else if (sessionExpired()) {
       <z-alert variant="info" text="Tu sesión venció. Volvé a ingresar." />
+    } @else if (emailChanged()) {
+      <z-alert variant="info" text="Ingresá con tu email nuevo." />
     }
 
     <form class="login__form" novalidate (submit)="onSubmit($event)">

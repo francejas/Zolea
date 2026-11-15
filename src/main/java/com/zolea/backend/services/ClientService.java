@@ -4,6 +4,7 @@ import com.zolea.backend.dtos.booking.BookingSummaryResponse;
 import com.zolea.backend.dtos.client.ClientRequest;
 import com.zolea.backend.dtos.client.ClientResponse;
 import com.zolea.backend.dtos.client.ResortClientResponse;
+import com.zolea.backend.exceptions.client.ClientDataTakenException;
 import com.zolea.backend.exceptions.client.ClientInvalidRegisterException;
 import com.zolea.backend.exceptions.client.ClientNotFoundException;
 import com.zolea.backend.models.Booking;
@@ -20,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -86,6 +88,16 @@ public class ClientService {
         Client saved = clientRepository.findById(id)
                 .orElseThrow(() -> new ClientNotFoundException("Client with id " + id + " not found"));
 
+        // Antes de guardar: si no, lo frena la restricción única de la base, con un 409 que no dice
+        // cuál de los tres datos es el repetido.
+        rejectIfTaken(clientRepository.findByEmail(request.email()), id, "email", "Ya hay otra cuenta con ese email.");
+        rejectIfTaken(clientRepository.findByPhone(request.phone()), id, "phone", "Ya hay otra cuenta con ese teléfono.");
+        if (request.dni() != null && !request.dni().isBlank()) {
+            rejectIfTaken(clientRepository.findByDni(request.dni()), id, "dni", "Ya hay otra cuenta con ese DNI.");
+        }
+
+        // Si dos personas guardan el mismo dato a la vez, la restricción única de la base devuelve
+        // un 409 genérico, sin el campo.
         saved.setFirstName(request.firstName());
         saved.setLastName(request.lastName());
         saved.setEmail(request.email());
@@ -98,6 +110,13 @@ public class ClientService {
         }
 
         return mapToResponse(clientRepository.save(saved));
+    }
+
+    /** El dato es de otra cuenta (no de la que se está editando): 409 con el campo. */
+    private static void rejectIfTaken(Optional<Client> owner, Long id, String field, String message) {
+        if (owner.isPresent() && !owner.get().getIdClient().equals(id)) {
+            throw new ClientDataTakenException(field, message);
+        }
     }
 
     /**
