@@ -90,7 +90,7 @@ describe('BookingDetail', () => {
     expect(page.querySelector('.z-status')!.textContent).toContain('Confirmada');
   });
 
-  it('«Cómo llegar» lleva a Google Maps con la ubicación del balneario de la reserva', async () => {
+  it('«Cómo llegar» lleva a Google Maps con el nombre y la ubicación del balneario de la reserva', async () => {
     await respondWith(
       aBooking({ resortName: 'Ocean View Resort', resortLocation: 'Av. del Mar 1450, Pinamar' }),
     );
@@ -98,12 +98,25 @@ describe('BookingDetail', () => {
     const link = page.querySelector<HTMLAnchorElement>('a[href*="google.com/maps"]')!;
     expect(plain(link)).toBe('Cómo llegar');
     expect(link.href).toBe(
-      'https://www.google.com/maps/search/?api=1&query=Av.%20del%20Mar%201450%2C%20Pinamar',
+      'https://www.google.com/maps/search/?api=1&query=' +
+        'Ocean%20View%20Resort%2C%20Av.%20del%20Mar%201450%2C%20Pinamar',
     );
     expect(link.target).toBe('_blank');
     expect(link.getAttribute('aria-label')).toBe(
       'Cómo llegar a Ocean View Resort, en Google Maps (se abre en otra pestaña)',
     );
+  });
+
+  it('una reserva cancelada no ofrece «Cómo llegar»', async () => {
+    await respondWith(aBooking({ status: 'CANCELED' }));
+
+    expect(page.querySelector('a[href*="google.com/maps"]')).toBeNull();
+  });
+
+  it('una reserva cancelada no ofrece «Cómo llegar»', async () => {
+    await respondWith(aBooking({ status: 'CANCELED' }));
+
+    expect(page.querySelector('a[href*="google.com/maps"]')).toBeNull();
   });
 
   it('pendiente: ofrece pagar y cancelar, y todavía no hay entradas', async () => {

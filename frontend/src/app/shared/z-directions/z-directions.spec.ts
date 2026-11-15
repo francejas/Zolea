@@ -24,9 +24,10 @@ describe('ZDirections', () => {
     expect(link.querySelector('svg')).not.toBeNull();
   });
 
-  it('abre Google Maps con la dirección, codificada', () => {
+  it('abre Google Maps buscando el nombre y la dirección, codificados', () => {
     expect(link.href).toBe(
       'https://www.google.com/maps/search/?api=1&query=' +
+        'Zolea%20Club%20de%20Playa%2C%20' +
         'Av.%20Patricio%20Peralta%20Ramos%204800%2C%20Mar%20del%20Plata%2C%20Buenos%20Aires',
     );
   });

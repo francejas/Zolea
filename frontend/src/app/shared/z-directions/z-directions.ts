@@ -30,6 +30,6 @@ export class ZDirections {
   /** La dirección del balneario (`location`): lo que se busca en Maps. */
   location = input.required<string>();
 
-  protected readonly url = computed(() => mapsUrl(this.location()));
+  protected readonly url = computed(() => mapsUrl(this.name(), this.location()));
   protected readonly label = computed(() => directionsLabel(this.name()));
 }

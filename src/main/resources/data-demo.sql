@@ -104,38 +104,41 @@ INSERT INTO client (id_client, first_name, last_name, email, phone, password_has
 -- =============================================================================
 -- 2. BALNEARIOS (RESORTS)
 --    admin_email debe coincidir con el email del cliente ADMIN correspondiente
+--    location es la dirección completa (calle y número, ciudad y provincia): el
+--    botón «Cómo llegar» (10.5) la busca en Google Maps junto con el nombre. Solo
+--    con la ciudad, Maps mostraba el centro de la ciudad y no el balneario.
 -- =============================================================================
 INSERT INTO resort (id_resort, name, location, admin_email, cover_photo_url, description, is_active) VALUES
 (1, 'Zolea Club de Playa',
-    'Mar del Plata, Buenos Aires',
+    'Av. Patricio Peralta Ramos 4800, Mar del Plata, Buenos Aires',
     'admin.mdp@zolea.com',
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800',
     'El balneario más completo de Mar del Plata. Ubicado en Playa Grande, con sombrillas de primera fila, carpas premium, pileta climatizada y restaurante con vista al mar. Ideal para familias y grupos que buscan comodidad y servicios de calidad a metros del Atlántico.',
     true),
 
 (2, 'Ocean View Resort',
-    'Pinamar, Buenos Aires',
+    'Av. del Mar 1450, Pinamar, Buenos Aires',
     'admin.pinamar@zolea.com',
     'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=800',
     'Experiencia de lujo frente al mar en Pinamar. Carpas VIP con servicio exclusivo, spa, bar de tragos y acceso directo a la playa. Para quienes buscan una escapada premium con todas las comodidades.',
     true),
 
 (3, 'Arena Dorada',
-    'Villa Gesell, Buenos Aires',
+    'Av. Costanera 1850, Villa Gesell, Buenos Aires',
     'admin.gesell@zolea.com',
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800',
     'La playa favorita de Villa Gesell. Ambiente joven y familiar con música en vivo los fines de semana, deportes acuáticos y snack bar. Más de 20 carpas y sombrillas a elegir con los mejores precios de la costa.',
     true),
 
 (4, 'Costa Sur',
-    'Miramar, Buenos Aires',
+    'Av. Costanera Sur 2300, Miramar, Buenos Aires',
     'admin.miramar@zolea.com',
     'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800',
     'La tranquilidad de Miramar con todos los servicios. Playa familiar, guardavidas de temporada, recreación infantil y estacionamiento propio. El destino perfecto para descansar lejos del bullicio.',
     true),
 
 (5, 'Mar del Sur',
-    'Necochea, Buenos Aires',
+    'Av. Costanera 4500, Necochea, Buenos Aires',
     'admin.necochea@zolea.com',
     'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=800',
     'Disfrutá de las dunas y el mar en Necochea. Balneario con ambiente natural, kayaks y deportes acuáticos, duchas y vestuarios modernos. La escapada perfecta para los amantes del surf y la naturaleza.',

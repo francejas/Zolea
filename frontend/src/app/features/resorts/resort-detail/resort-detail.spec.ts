@@ -143,7 +143,7 @@ describe('ResortDetail', () => {
       expect(page.textContent).toContain('El balneario más completo de Mar del Plata.');
     });
 
-    it('«Cómo llegar» abre Google Maps con la ubicación, en otra pestaña', async () => {
+    it('«Cómo llegar» abre Google Maps con el nombre y la ubicación, en otra pestaña', async () => {
       await respondWith(
         resort({ location: 'Av. Patricio Peralta Ramos 4800, Mar del Plata, Buenos Aires' }),
       );
@@ -152,6 +152,7 @@ describe('ResortDetail', () => {
       expect(text(link)).toBe('Cómo llegar');
       expect(link.href).toBe(
         'https://www.google.com/maps/search/?api=1&query=' +
+          'Zolea%20Club%20de%20Playa%2C%20' +
           'Av.%20Patricio%20Peralta%20Ramos%204800%2C%20Mar%20del%20Plata%2C%20Buenos%20Aires',
       );
       expect(link.target).toBe('_blank');
