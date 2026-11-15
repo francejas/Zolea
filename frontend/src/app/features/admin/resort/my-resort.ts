@@ -19,7 +19,7 @@ import {
   submit,
   validate,
 } from '@angular/forms/signals';
-import { LucideCheck, LucideDynamicIcon, LucideIcon, LucideMapPin } from '@lucide/angular';
+import { LucideCheck, LucideDynamicIcon, LucideIcon } from '@lucide/angular';
 import { catchError, firstValueFrom, forkJoin, map, of } from 'rxjs';
 import { AmenitiesApi } from '../../../core/api/amenities.api';
 import { Amenity, Resort, ResortRequest } from '../../../core/api/resort.models';
@@ -33,6 +33,7 @@ import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { ResortCardData, ZResortCard } from '../../../shared/resort-card/z-resort-card';
 
 type LoadState = 'loading' | 'ready' | 'no-resort' | 'error';
 
@@ -49,16 +50,6 @@ interface ResortModel {
 const MAX_TEXT = 255;
 /** Una dirección de imagen: vacía o con http(s)://. */
 const PHOTO_URL = /^(https?:\/\/\S+)?$/;
-
-/** Cuántos servicios muestra la tarjeta de la Portada; el resto va como «+N». */
-const VISIBLE_AMENITIES = 3;
-
-/** Como en la Portada: pesos sin centavos. */
-const pesos = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 const toModel = (resort: Resort): ResortModel => ({
   name: resort.name,
@@ -119,12 +110,12 @@ interface ActiveNotice {
     FormField,
     LucideCheck,
     LucideDynamicIcon,
-    LucideMapPin,
     ZAlert,
     ZBtn,
     ZEmpty,
     ZField,
     ZProblem,
+    ZResortCard,
     ZSkeleton,
   ],
   templateUrl: './my-resort.html',
@@ -164,7 +155,11 @@ export class MyResort {
   protected readonly activeError = signal<ActiveNotice | null>(null);
 
   /** La dirección de la foto que no se pudo cargar: la tarjeta vuelve al dibujo de cielo y mar. */
-  private readonly brokenPhoto = signal<string | null>(null);
+  protected readonly brokenPhoto = signal<string | null>(null);
+  protected readonly photoBroken = computed(() => {
+    const photo = this.model().coverPhotoUrl.trim();
+    return photo !== '' && photo === this.brokenPhoto();
+  });
 
   protected readonly account = computed(() => {
     const user = this.session.user();
@@ -187,7 +182,7 @@ export class MyResort {
   });
 
   /** La tarjeta de la Portada, con lo que hay escrito ahora. */
-  protected readonly preview = computed(() => {
+  protected readonly preview = computed<ResortCardData>(() => {
     const value = this.model();
     const photo = value.coverPhotoUrl.trim();
     // Por id, como la Portada: el catálogo y el backend no garantizan el orden.
@@ -195,17 +190,14 @@ export class MyResort {
       .filter((amenity) => value.amenityIds.includes(amenity.idAmenity))
       .sort(byAmenityId);
     // Como la Portada: sin las bloqueadas ni las dadas de baja, que la Portada no recibe.
-    const prices = (this.resort()?.rentalUnits ?? [])
-      .filter((unit) => !unit.isBlocked && !unit.retired)
-      .map((unit) => unit.dailyPrice);
     return {
       name: value.name.trim() || 'Nombre del balneario',
       location: value.location.trim() || 'Dirección del balneario',
-      photo: photo && PHOTO_URL.test(photo) && photo !== this.brokenPhoto() ? photo : null,
-      photoBroken: photo !== '' && photo === this.brokenPhoto(),
-      amenities: offered.slice(0, VISIBLE_AMENITIES),
-      moreAmenities: Math.max(offered.length - VISIBLE_AMENITIES, 0),
-      price: prices.length > 0 ? pesos.format(Math.min(...prices)) : null,
+      coverPhotoUrl: photo && PHOTO_URL.test(photo) && photo !== this.brokenPhoto() ? photo : null,
+      amenities: offered,
+      rentalUnits: this.resort()?.rentalUnits ?? [],
+      averageRating: this.resort()?.averageRating,
+      reviewCount: this.resort()?.reviewCount,
     };
   });
 

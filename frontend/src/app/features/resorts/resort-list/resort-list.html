@@ -175,70 +175,7 @@
     } @else {
       <div class="resorts-grid">
         @for (resort of filteredResorts(); track resort.idResort) {
-          <article class="z-resort-card">
-            <div class="z-photo">
-              @if (resort.coverPhotoUrl) {
-                <img [src]="resort.coverPhotoUrl" alt="" loading="lazy" />
-              }
-            </div>
-
-            <div class="z-resort-card__body">
-              <h3 class="z-resort-card__name">
-                <a [routerLink]="['/resorts', resort.idResort]" [queryParams]="cardParams()">{{
-                  resort.name
-                }}</a>
-              </h3>
-              <p class="z-place">
-                <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>{{ resort.location }}
-              </p>
-
-              @if (resort.averageRating != null && resort.reviewCount) {
-                <z-rating
-                  class="z-resort-card__rating"
-                  [value]="resort.averageRating"
-                  [count]="resort.reviewCount"
-                  compact
-                />
-              }
-
-              @if (freeUnitsLabel(resort); as free) {
-                <p class="z-resort-card__free">{{ free }}</p>
-              }
-
-              <div class="z-amenities">
-                @for (amenity of getTopAmenities(resort); track amenity.idAmenity) {
-                  <span class="z-amenity">
-                    <svg lucideCheck class="z-icon" aria-hidden="true"></svg>{{ amenity.name }}
-                  </span>
-                }
-
-                @if (resort.amenities.length > visibleAmenities) {
-                  <span class="z-amenity z-amenity--more">
-                    +{{ resort.amenities.length - visibleAmenities
-                    }}<span class="z-visually-hidden"> servicios más</span>
-                  </span>
-                }
-              </div>
-
-              <div class="z-resort-card__foot">
-                @let minPrice = getMinPrice(resort);
-                @if (minPrice !== null) {
-                  <span class="z-price-from">
-                    desde
-                    <span class="z-price-from__amount"
-                      ><strong class="z-money">{{ formatPrice(minPrice) }}</strong> por día</span
-                    >
-                  </span>
-                }
-                <span
-                  class="z-btn z-btn--primary z-btn--compact z-resort-card__cta"
-                  aria-hidden="true"
-                >
-                  Ver balneario
-                </span>
-              </div>
-            </div>
-          </article>
+          <z-resort-card [data]="resort" [link]="cardLink(resort)" />
         }
       </div>
     }

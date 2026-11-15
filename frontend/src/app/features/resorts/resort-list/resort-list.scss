@@ -131,25 +131,13 @@
   gap: var(--space-2);
 }
 
-.z-resort-card__rating {
-  font-size: var(--text-small);
-}
-
-.z-resort-card__free {
-  margin: 0;
-  font-weight: 600;
-  font-size: var(--text-small);
-  color: var(--color-ink);
-}
-
 .resorts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-4);
 }
 
-/* --- Tarjeta de balneario (componentes.css:608-631) --- */
-.z-resort-card {
+.resorts-grid > .z-resort-card {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -157,73 +145,6 @@
   border: var(--border);
   border-radius: var(--radius-m);
   background: var(--color-sand);
-  transition: border-color var(--duration) var(--ease);
-}
-
-.z-resort-card:hover {
-  border-color: var(--color-line-strong);
-}
-
-.z-resort-card:hover .z-resort-card__cta {
-  background: var(--color-ink-hover);
-}
-
-.z-resort-card__body {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-5);
-}
-
-.z-resort-card__name {
-  margin: 0;
-  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
-}
-
-.z-resort-card__name a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* El enlace cubre toda la tarjeta: un clic en cualquier parte abre el balneario. */
-.z-resort-card__name a::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-
-.z-resort-card__name a:focus-visible {
-  outline: none;
-}
-
-.z-resort-card:has(a:focus-visible) {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.z-resort-card__foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: var(--space-1);
-
-  .z-price-from {
-    font-size: var(--text-small);
-    color: var(--color-text-muted);
-
-    strong {
-      color: var(--color-ink);
-      font-size: 16px;
-    }
-  }
-}
-
-.z-price-from__amount {
-  white-space: nowrap;
-}
-
-.z-resort-card__cta {
-  margin-left: auto;
 }
 
 /* --- Esqueleto --- */

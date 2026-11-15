@@ -10,36 +10,20 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { form, FormField, min, submit, validate } from '@angular/forms/signals';
-import { Params, Router, RouterLink } from '@angular/router';
-import {
-  LucideCheck,
-  LucideDynamicIcon,
-  LucideMapPin,
-  LucideSearch,
-  LucideSlidersHorizontal,
-} from '@lucide/angular';
+import { Params, Router } from '@angular/router';
+import { LucideDynamicIcon, LucideSearch, LucideSlidersHorizontal } from '@lucide/angular';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AmenitiesApi } from '../../../core/api/amenities.api';
 import { Amenity, Resort, UnitType } from '../../../core/api/resort.models';
 import { ResortsApi } from '../../../core/api/resorts.api';
-import { amenityIcon, byAmenityId } from '../../../shared/utils/amenity-icons';
+import { amenityIcon } from '../../../shared/utils/amenity-icons';
 import { validRange } from '../../../shared/utils/days';
+import { ZResortCard } from '../../../shared/resort-card/z-resort-card';
 import { ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
-import { ZRating } from '../../../shared/z-rating/z-rating';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
-
-/** Cuántos servicios se ven en la tarjeta; el resto se resume en «+N». */
-const VISIBLE_AMENITIES = 3;
-
-/** Se crea una sola vez: un Intl.NumberFormat nuevo por cada tarjeta y cada dibujo es caro. */
-const pesos = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 const UNIT_TYPES: readonly UnitType[] = ['TENT', 'UMBRELLA'];
 
@@ -80,17 +64,14 @@ const sameFilters = (a: UrlFilters, b: UrlFilters) =>
 @Component({
   imports: [
     FormField,
-    RouterLink,
-    LucideCheck,
     LucideDynamicIcon,
-    LucideMapPin,
     LucideSearch,
     LucideSlidersHorizontal,
     ZDateRange,
     ZEmpty,
     ZField,
     ZProblem,
-    ZRating,
+    ZResortCard,
     ZSkeleton,
   ],
   selector: 'app-resort-list',
@@ -103,7 +84,6 @@ export class ResortList {
   private router = inject(Router);
   private searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
 
-  protected readonly visibleAmenities = VISIBLE_AMENITIES;
   protected readonly amenityIcon = amenityIcon;
 
   // Los filtros de la dirección, que llegan por `withComponentInputBinding()`.
@@ -303,21 +283,8 @@ export class ResortList {
     return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
   }
 
-  formatPrice(price: number): string {
-    return pesos.format(price);
-  }
-
-  /** El precio por día más bajo entre las unidades disponibles, o null si no hay ninguna. */
-  getMinPrice(resort: Resort): number | null {
-    const prices = (resort.rentalUnits ?? [])
-      .filter((unit) => !unit.isBlocked)
-      .map((unit) => unit.dailyPrice);
-    return prices.length > 0 ? Math.min(...prices) : null;
-  }
-
-  getTopAmenities(resort: Resort): Amenity[] {
-    // Por id, como la vista previa de Mi balneario: el backend no garantiza el orden.
-    return [...(resort.amenities ?? [])].sort(byAmenityId).slice(0, VISIBLE_AMENITIES);
+  cardLink(resort: Resort): { commands: unknown[]; queryParams: Params | null } {
+    return { commands: ['/resorts', resort.idResort], queryParams: this.cardParams() };
   }
 }
 
