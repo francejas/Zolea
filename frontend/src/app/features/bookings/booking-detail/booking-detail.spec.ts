@@ -90,6 +90,22 @@ describe('BookingDetail', () => {
     expect(page.querySelector('.z-status')!.textContent).toContain('Confirmada');
   });
 
+  it('«Cómo llegar» lleva a Google Maps con la ubicación del balneario de la reserva', async () => {
+    await respondWith(
+      aBooking({ resortName: 'Ocean View Resort', resortLocation: 'Av. del Mar 1450, Pinamar' }),
+    );
+
+    const link = page.querySelector<HTMLAnchorElement>('a[href*="google.com/maps"]')!;
+    expect(plain(link)).toBe('Cómo llegar');
+    expect(link.href).toBe(
+      'https://www.google.com/maps/search/?api=1&query=Av.%20del%20Mar%201450%2C%20Pinamar',
+    );
+    expect(link.target).toBe('_blank');
+    expect(link.getAttribute('aria-label')).toBe(
+      'Cómo llegar a Ocean View Resort, en Google Maps (se abre en otra pestaña)',
+    );
+  });
+
   it('pendiente: ofrece pagar y cancelar, y todavía no hay entradas', async () => {
     await respondWith(aBooking({ status: 'PENDING' }));
 

@@ -54,6 +54,7 @@
                 <svg lucideMapPin class="z-icon" aria-hidden="true"></svg
                 >{{ booking.resortLocation }}
               </p>
+              <z-directions [name]="booking.resortName" [location]="booking.resortLocation" />
               <span class="z-status z-status--{{ status()!.modifier }}">{{ status()!.label }}</span>
             </header>
 
