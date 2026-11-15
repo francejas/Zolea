@@ -32,4 +32,32 @@ describe('ClientsApi', () => {
     expect(created).toMatchObject({ idClient: 9, email: 'lucia.perez@gmail.com' });
     http.verify();
   });
+
+  it('get hace GET /api/clients/{id} y update, PUT con el pedido tal cual', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const api = TestBed.inject(ClientsApi);
+
+    api.get(16).subscribe();
+    const get = http.expectOne(`${environment.apiUrl}/api/clients/16`);
+    expect(get.request.method).toBe('GET');
+    get.flush({});
+
+    // Sin contraseña: no viaja, y el backend no la cambia.
+    const request = {
+      firstName: 'Natalia',
+      lastName: 'Romero',
+      email: 'nati.romero@gmail.com',
+      phone: '2235123456',
+      dni: '40123456',
+    };
+    api.update(16, request).subscribe();
+    const put = http.expectOne(`${environment.apiUrl}/api/clients/16`);
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body).toEqual(request);
+    put.flush({});
+    http.verify();
+  });
 });

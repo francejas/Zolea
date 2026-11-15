@@ -153,6 +153,13 @@ describe('Login', () => {
       );
     });
 
+    it('con motivo=email-nuevo pide ingresar con el email nuevo (Mi cuenta)', async () => {
+      await open('/login?motivo=email-nuevo');
+
+      expect(alerts()).toHaveLength(1);
+      expect(alerts()[0].textContent).toContain('Ingresá con tu email nuevo.');
+    });
+
     it('sin ese motivo no hay aviso, ni con otro valor', async () => {
       await open('/login?motivo=otra-cosa');
 

@@ -1,13 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, inject, signal, viewChildren } from '@angular/core';
-import {
-  email,
-  form,
-  FormField,
-  ReadonlyFieldTree,
-  required,
-  submit,
-} from '@angular/forms/signals';
+import { form, FormField, ReadonlyFieldTree, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { LucideEye, LucideEyeOff } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
@@ -18,6 +11,7 @@ import { SessionService } from '../../../core/session/session.service';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZField } from '../../../shared/z-field/z-field';
+import { keepDigits, personalDataRules } from '../client-rules';
 import { homeFor } from '../login/login';
 
 /**
@@ -53,12 +47,7 @@ export class Register {
       password: '',
     }),
     (path) => {
-      required(path.firstName, { message: 'Escribí tu nombre.' });
-      required(path.lastName, { message: 'Escribí tu apellido.' });
-      required(path.email, { message: 'Escribí tu email.' });
-      email(path.email, { message: 'El email no tiene un formato válido.' });
-      required(path.phone, { message: 'Escribí tu teléfono.' });
-      required(path.dni, { message: 'Escribí tu DNI.' });
+      personalDataRules(path);
       required(path.password, { message: 'Elegí una contraseña.' });
     },
   );
@@ -73,16 +62,9 @@ export class Register {
     return state.touched() && state.errors().length > 0;
   }
 
-  /**
-   * Teléfono y DNI son solo números: lo que no es un dígito se descarta al escribir o pegar. Se
-   * corrige también el valor que muestra el navegador, porque si el modelo no cambia (una letra
-   * en un campo vacío) Angular no lo vuelve a escribir.
-   */
+  /** Teléfono y DNI son solo números (`keepDigits`). */
   protected onlyDigits(event: Event, field: 'phone' | 'dni'): void {
-    const control = event.target as HTMLInputElement;
-    const digits = control.value.replace(/\D/g, '');
-    if (digits !== control.value) control.value = digits;
-    this.registerForm[field]().value.set(digits);
+    this.registerForm[field]().value.set(keepDigits(event));
   }
 
   protected onSubmit(event: Event): void {

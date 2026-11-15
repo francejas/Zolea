@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { PlaceholderPage } from '../../core/placeholder-page';
 import { authGuard } from '../../core/auth/auth.guard';
 import { roleGuard } from '../../core/auth/role.guard';
 
@@ -15,7 +14,6 @@ export const authRoutes: Routes = [
   {
     path: 'profile',
     canActivate: [authGuard, roleGuard('USER')],
-    component: PlaceholderPage,
-    data: { title: 'Mi cuenta' },
+    loadComponent: () => import('../profile/profile').then((m) => m.Profile),
   },
 ];
