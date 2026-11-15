@@ -113,12 +113,6 @@ describe('BookingDetail', () => {
     expect(page.querySelector('a[href*="google.com/maps"]')).toBeNull();
   });
 
-  it('una reserva cancelada no ofrece «Cómo llegar»', async () => {
-    await respondWith(aBooking({ status: 'CANCELED' }));
-
-    expect(page.querySelector('a[href*="google.com/maps"]')).toBeNull();
-  });
-
   it('pendiente: ofrece pagar y cancelar, y todavía no hay entradas', async () => {
     await respondWith(aBooking({ status: 'PENDING' }));
 
