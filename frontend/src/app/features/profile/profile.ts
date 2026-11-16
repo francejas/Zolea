@@ -21,6 +21,7 @@ import { ZBtn } from '../../shared/z-btn/z-btn';
 import { ZField } from '../../shared/z-field/z-field';
 import { ZProblem } from '../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../shared/z-skeleton/z-skeleton';
+import { PHONE_COUNTRIES, joinPhone, phoneCountry, splitPhone } from '../../shared/utils/phone';
 import { keepDigits, personalDataRules } from '../auth/client-rules';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -33,7 +34,9 @@ interface ProfileModel {
   firstName: string;
   lastName: string;
   email: string;
+  /** Los números del teléfono, sin el código de país, que va en `phoneCountry`. */
   phone: string;
+  phoneCountry: string;
   dni: string;
   password: string;
   passwordRepeat: string;
@@ -43,7 +46,8 @@ const toModel = (client: Client): ProfileModel => ({
   firstName: client.firstName,
   lastName: client.lastName,
   email: client.email,
-  phone: client.phone,
+  phone: splitPhone(client.phone).digits,
+  phoneCountry: splitPhone(client.phone).iso,
   dni: client.dni ?? '',
   password: '',
   passwordRepeat: '',
@@ -54,7 +58,7 @@ const toRequest = (value: ProfileModel): ClientUpdateRequest => ({
   firstName: value.firstName.trim(),
   lastName: value.lastName.trim(),
   email: value.email.trim(),
-  phone: value.phone,
+  phone: joinPhone(value.phoneCountry, value.phone),
   dni: value.dni,
   ...(value.password ? { password: value.password } : {}),
 });
@@ -159,9 +163,19 @@ export class Profile {
     return state.touched() && state.errors().length > 0;
   }
 
+  protected readonly countries = PHONE_COUNTRIES;
+  /** El país elegido para el teléfono: da el ejemplo y el largo del campo. */
+  protected readonly country = computed(() =>
+    phoneCountry(this.profileForm.phoneCountry().value()),
+  );
+
   /** Teléfono y DNI son solo números (`keepDigits`). */
   protected onlyDigits(event: Event, field: 'phone' | 'dni'): void {
     this.profileForm[field]().value.set(keepDigits(event));
+  }
+
+  protected setCountry(event: Event): void {
+    this.profileForm.phoneCountry().value.set((event.target as HTMLSelectElement).value);
   }
 
   protected onSubmit(event: Event): void {

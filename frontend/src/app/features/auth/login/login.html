@@ -21,6 +21,7 @@
           id="login-email"
           class="z-input"
           type="email"
+          placeholder="correo@gmail.com"
           inputmode="email"
           autocomplete="email"
           autocapitalize="none"
@@ -37,6 +38,7 @@
             id="login-password"
             class="z-input"
             autocomplete="current-password"
+            placeholder="Tu contraseña"
             [type]="showPassword() ? 'text' : 'password'"
             [formField]="loginForm.password"
             [attr.aria-invalid]="hasError(loginForm.password) ? 'true' : null"
@@ -64,7 +66,8 @@
     </form>
 
     <p class="login__alt">
-      ¿Todavía no tenés cuenta? <a class="z-link" routerLink="/register">Crear cuenta</a>
+      ¿Todavía no tenés cuenta?
+      <a class="z-link" routerLink="/register" [queryParams]="backParams()">Crear cuenta</a>
     </p>
   </div>
 </section>

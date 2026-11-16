@@ -11,10 +11,17 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { form, FormField, min, submit, validate } from '@angular/forms/signals';
 import { Params, Router } from '@angular/router';
-import { LucideDynamicIcon, LucideSearch, LucideSlidersHorizontal } from '@lucide/angular';
+import {
+  LucideCheck,
+  LucideDynamicIcon,
+  LucideSearch,
+  LucideSlidersHorizontal,
+  LucideTent,
+  LucideUmbrella,
+} from '@lucide/angular';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AmenitiesApi } from '../../../core/api/amenities.api';
-import { Amenity, Resort, UnitType } from '../../../core/api/resort.models';
+import { Amenity, Resort, ResortFilters, UnitType } from '../../../core/api/resort.models';
 import { ResortsApi } from '../../../core/api/resorts.api';
 import { amenityIcon } from '../../../shared/utils/amenity-icons';
 import { validRange } from '../../../shared/utils/days';
@@ -27,11 +34,20 @@ import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 
 const UNIT_TYPES: readonly UnitType[] = ['TENT', 'UMBRELLA'];
 
-/** Lo que se completa en el formulario de filtros. `type` vacío es «cualquiera». */
+/** Los dos botones de «Tipo de lugar», en el orden en que se ven. */
+const TYPE_OPTIONS: readonly { value: UnitType; label: string }[] = [
+  { value: 'TENT', label: 'Carpa' },
+  { value: 'UMBRELLA', label: 'Sombrilla' },
+];
+
+/**
+ * Lo que se completa en el formulario de filtros. `types` son los tipos marcados: ninguno o los dos
+ * es «cualquiera»; al backend solo viaja el tipo cuando hay uno solo.
+ */
 interface FilterDraft {
   from: string | null;
   to: string | null;
-  type: UnitType | '';
+  types: UnitType[];
   maxPrice: number | null;
   amenityIds: number[];
 }
@@ -40,33 +56,43 @@ interface FilterDraft {
 interface UrlFilters {
   from: string | null;
   to: string | null;
-  type: UnitType | null;
+  types: UnitType[];
   maxPrice: number | null;
   amenityIds: number[];
 }
 
-const EMPTY_DRAFT: FilterDraft = { from: null, to: null, type: '', maxPrice: null, amenityIds: [] };
+const EMPTY_DRAFT: FilterDraft = {
+  from: null,
+  to: null,
+  types: [],
+  maxPrice: null,
+  amenityIds: [],
+};
 
 const sameFilters = (a: UrlFilters, b: UrlFilters) =>
   a.from === b.from &&
   a.to === b.to &&
-  a.type === b.type &&
+  a.types.join(',') === b.types.join(',') &&
   a.maxPrice === b.maxPrice &&
   a.amenityIds.join(',') === b.amenityIds.join(',');
 
 /**
- * La Portada: qué es Zolea y el listado de balnearios. Arriba, un buscador por nombre o ubicación
- * que filtra al instante lo que ya llegó, y los filtros que piden de nuevo al backend: fechas, tipo,
- * precio máximo por día y servicios. Los filtros viven en la dirección
+ * La Portada: el listado de balnearios, con la búsqueda adelante. Arriba, en el hero, lo que se
+ * busca primero: el balneario o la ciudad, que filtra al instante lo que ya llegó, y las fechas.
+ * Debajo, «Más filtros»: tipo de lugar (carpa, sombrilla o los dos), precio máximo por día y
+ * servicios. Las fechas y los filtros piden de nuevo al backend y viven en la dirección
  * (`/?from=…&to=…&type=…&maxPrice=…&amenityIds=1,2`): «Buscar» navega y la lista se pide con lo
  * que quedó ahí, así se puede volver atrás o compartir la búsqueda.
  */
 @Component({
   imports: [
     FormField,
+    LucideCheck,
     LucideDynamicIcon,
     LucideSearch,
     LucideSlidersHorizontal,
+    LucideTent,
+    LucideUmbrella,
     ZDateRange,
     ZEmpty,
     ZField,
@@ -85,6 +111,7 @@ export class ResortList {
   private searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
 
   protected readonly amenityIcon = amenityIcon;
+  protected readonly typeOptions = TYPE_OPTIONS;
 
   // Los filtros de la dirección, que llegan por `withComponentInputBinding()`.
   readonly from = input<string>();
@@ -109,7 +136,12 @@ export class ResortList {
   readonly urlFilters = computed<UrlFilters>(
     () => {
       const range = validRange(this.from(), this.to());
-      const type = this.type();
+      // `type=TENT`, o los dos separados por coma si se marcaron los dos.
+      const types = new Set(
+        [this.type() ?? '']
+          .flatMap((value) => value.split(','))
+          .filter((value): value is UnitType => UNIT_TYPES.includes(value as UnitType)),
+      );
       const maxPrice = Number(this.maxPrice());
       const ids = [this.amenityIds() ?? []]
         .flat()
@@ -120,7 +152,7 @@ export class ResortList {
       return {
         from: range?.from ?? null,
         to: range?.to ?? null,
-        type: UNIT_TYPES.includes(type as UnitType) ? (type as UnitType) : null,
+        types: UNIT_TYPES.filter((type) => types.has(type)),
         maxPrice: this.maxPrice() && maxPrice > 0 ? maxPrice : null,
         amenityIds: [...new Set(ids)].sort((a, b) => a - b),
       };
@@ -128,12 +160,14 @@ export class ResortList {
     { equal: sameFilters },
   );
 
-  /** Cuántos filtros están puestos: lo dice el botón del celular. */
-  readonly activeFilters = computed(() => {
+  /** Cuántos filtros están puestos, contando las fechas: si hay alguno, se ofrece limpiarlos. */
+  readonly activeFilters = computed(() => (this.urlFilters().from ? 1 : 0) + this.extraFilters());
+
+  /** Los de «Más filtros», sin las fechas, que están en el buscador: lo dice el botón del celular. */
+  readonly extraFilters = computed(() => {
     const filters = this.urlFilters();
     return (
-      (filters.from ? 1 : 0) +
-      (filters.type ? 1 : 0) +
+      (filters.types.length > 0 ? 1 : 0) +
       (filters.maxPrice ? 1 : 0) +
       (filters.amenityIds.length > 0 ? 1 : 0)
     );
@@ -148,7 +182,7 @@ export class ResortList {
     return {
       from: filters.from,
       to: filters.to,
-      type: filters.type ?? '',
+      types: filters.types,
       maxPrice: filters.maxPrice,
       amenityIds: filters.amenityIds,
     };
@@ -220,7 +254,7 @@ export class ResortList {
           this.hasError.set(false);
         }),
         switchMap(({ filters }) =>
-          this.resortsApi.list(filters).pipe(
+          this.resortsApi.list(toApiFilters(filters)).pipe(
             map((resorts) => ({ resorts, failed: false })),
             catchError(() => of({ resorts: [] as Resort[], failed: true })),
           ),
@@ -255,6 +289,20 @@ export class ResortList {
   clearSearch(): void {
     this.searchTerm.set('');
     this.searchInput().nativeElement.focus();
+  }
+
+  protected isTypeChecked(type: UnitType): boolean {
+    return this.filterForm.types().value().includes(type);
+  }
+
+  protected toggleType(type: UnitType): void {
+    this.filterForm
+      .types()
+      .value.update((types) =>
+        types.includes(type)
+          ? types.filter((other) => other !== type)
+          : UNIT_TYPES.filter((other) => other === type || types.includes(other)),
+      );
   }
 
   protected isAmenityChecked(id: number): boolean {
@@ -305,8 +353,19 @@ function toQueryParams(draft: FilterDraft): Params {
     params['from'] = draft.from;
     params['to'] = draft.to;
   }
-  if (draft.type) params['type'] = draft.type;
+  if (draft.types.length > 0) params['type'] = draft.types.join(',');
   if (draft.maxPrice != null && draft.maxPrice > 0) params['maxPrice'] = draft.maxPrice;
   if (draft.amenityIds.length > 0) params['amenityIds'] = draft.amenityIds.join(',');
   return params;
+}
+
+/** Al backend: el tipo viaja solo si se marcó uno; con los dos marcados, es cualquiera. */
+function toApiFilters(filters: UrlFilters): ResortFilters {
+  return {
+    from: filters.from,
+    to: filters.to,
+    type: filters.types.length === 1 ? filters.types[0] : null,
+    maxPrice: filters.maxPrice,
+    amenityIds: filters.amenityIds,
+  };
 }

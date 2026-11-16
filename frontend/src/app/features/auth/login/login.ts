@@ -26,16 +26,24 @@ export { homeFor } from '../../../core/auth/home';
  * El `volver` que mandó el guard (`authGuard`, tarea 8.4), resuelto con el Router, o `null` si no
  * sirve. Solo vale una ruta interna: tiene que empezar con una barra, sin espacios ni barras
  * invertidas, y no puede ser `//sitio.com`, que un navegador toma como otro dominio. Tampoco vale
- * volver al propio login, que dejaría a la persona ingresada mirando el formulario.
+ * volver al propio login ni a Crear cuenta, que dejarían a la persona ingresada mirando un
+ * formulario.
  */
 export function resolveBackTo(router: Router, volver: unknown): UrlTree | null {
   if (typeof volver !== 'string') return null;
   if (!volver.startsWith('/') || volver.startsWith('//') || /[\\\s]/.test(volver)) return null;
 
   const path = volver.split(/[?#]/)[0];
-  if (path === '/login' || path.startsWith('/login/')) return null;
+  if (['/login', '/register'].some((form) => path === form || path.startsWith(form + '/'))) {
+    return null;
+  }
 
   return router.parseUrl(volver);
+}
+
+/** `{ volver }` para pasarlo de Ingresar a Crear cuenta y al revés, o null si no hay uno válido. */
+export function backParamsOf(router: Router, volver: unknown): { volver: string } | null {
+  return resolveBackTo(router, volver) ? { volver: volver as string } : null;
 }
 
 /**
@@ -78,6 +86,12 @@ export class Login {
   protected readonly showPassword = signal(false);
   protected readonly sessionExpired = computed(() => this.motivo() === 'sesion-vencida');
   protected readonly emailChanged = computed(() => this.motivo() === 'email-nuevo');
+
+  /**
+   * El `volver` sigue de largo a Crear cuenta: quien llegó desde Reservar y todavía no tiene cuenta
+   * vuelve a lo que había elegido después de crearla (auditoría, C3).
+   */
+  protected readonly backParams = computed(() => backParamsOf(this.router, this.volver()));
 
   /** El campo mostró su error: se marca también para el lector de pantalla. */
   protected hasError(field: ReadonlyFieldTree<unknown>): boolean {

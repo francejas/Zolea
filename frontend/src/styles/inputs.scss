@@ -104,3 +104,17 @@ select.z-input {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
+
+/* Teléfono: el país (con su código) y el número, en una fila. En un celular angosto, el país va
+   arriba del número para que su nombre entre entero. Lo usan Crear cuenta y Mi cuenta. */
+.z-phone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+@media (min-width: 480px) {
+  .z-phone {
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  }
+}

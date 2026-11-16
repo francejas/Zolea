@@ -13,7 +13,9 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { LucideArrowLeft } from '@lucide/angular';
 import { Subject, takeUntil } from 'rxjs';
+import { todayIso } from '../../../../shared/utils/days';
 
 import {
   bookingDate,
@@ -43,7 +45,7 @@ import { toUserMessage } from '../../../../core/errors/error-message';
 
 @Component({
   selector: 'app-admin-booking-detail',
-  imports: [RouterLink, ZAlert, ZBtn, ZEmpty, ZProblem, ZSkeleton],
+  imports: [RouterLink, LucideArrowLeft, ZAlert, ZBtn, ZEmpty, ZProblem, ZSkeleton],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
@@ -147,10 +149,15 @@ export class AdminBookingDetail {
     void this.router.navigateByUrl('/admin/bookings');
   }
 
+  /** Una confirmada cuya estadía ya terminó no se cancela (`Booking.refundFor`). */
+  protected stayEnded(booking: Booking): boolean {
+    return booking.status === 'CONFIRMED' && booking.endDate < todayIso();
+  }
+
   protected askCancel(): void {
     const booking = this.booking();
 
-    if (!booking || booking.status === 'CANCELED' || this.dialogOpen()) {
+    if (!booking || booking.status === 'CANCELED' || this.dialogOpen() || this.stayEnded(booking)) {
       return;
     }
 

@@ -1,40 +1,102 @@
-/* La Portada, pensada desde el celular (390 px): lo de la computadora va en @media (min-width: 768px). */
+/* La Portada, pensada desde el celular (390 px): lo de la computadora va en @media (min-width: 768px).
+   El buscador y las fechas van adentro del hero, que es lo primero que se ve: es lo que viene a
+   hacer la persona. Lo demás («Más filtros») queda debajo, más liviano. */
 
 .page-container {
   max-width: var(--container);
   margin: 0 auto;
-  padding: var(--space-4) var(--gutter) var(--space-8);
+  padding: var(--space-5) var(--gutter) var(--space-8);
 }
 
-.hero {
+.search {
+  display: grid;
+  gap: var(--space-3);
   margin-bottom: var(--space-6);
-  padding: var(--space-4);
+}
+
+/* --- Hero: el titular y la búsqueda --- */
+.hero {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4);
   border-radius: var(--radius-m);
   background: var(--color-sky);
 
+  /* En el celular, más chico que un título de página: así el buscador entra en la primera pantalla. */
   h1 {
-    margin: 0 0 var(--space-3);
-    font: 400 var(--text-display-l) / var(--leading-title) var(--font-display);
+    margin: 0;
+    font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
   }
 }
 
+.hero__copy {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.hero__eyebrow {
+  margin: 0;
+  color: var(--color-ink);
+}
+
 .hero__lead {
-  max-width: 540px;
-  margin: 0 0 var(--space-4);
+  max-width: 560px;
+  margin: 0;
   font-size: var(--text-body);
   color: var(--color-ink-soft);
 }
 
+/* El buscador: una tarjeta clara sobre el cielo, con el balneario, las fechas y «Buscar». */
+.hero__search {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  box-shadow: 0 10px 28px rgb(72 42 29 / 0.12);
+}
+
+.hero__query .z-input {
+  height: 60px;
+  border-radius: var(--radius-m);
+}
+
+.hero__query > .z-icon {
+  top: 20px;
+}
+
+.hero__dates {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Las dos fechas miden lo mismo que el buscador, así la fila queda pareja. */
+.hero__dates .z-range__field {
+  min-height: 60px;
+  align-content: center;
+}
+
+.hero__submit {
+  height: 56px;
+  font-size: 16px;
+}
+
+.hero__error {
+  margin-top: calc(-1 * var(--space-2));
+}
+
 .hero-steps {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
   counter-reset: step;
   color: var(--color-ink-soft);
-  font-size: var(--text-body);
+  font-size: var(--text-small);
 }
 
 .hero-steps li {
@@ -49,26 +111,20 @@
   display: inline-grid;
   place-items: center;
   flex: none;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-pill);
   background: var(--color-ink);
   color: var(--color-cream);
-  font: 500 var(--text-caption) / 1 var(--font-mono);
+  font: 500 12px / 1 var(--font-mono);
 }
 
-.search-section {
+/* --- Más filtros ---
+   En el celular, un panel que se abre con «Más filtros»; en la computadora, siempre a la vista. */
+.filters {
   display: grid;
-  gap: var(--space-3);
-  margin-bottom: var(--space-6);
-
-  .z-search {
-    max-width: 520px;
-  }
 }
 
-/* --- Filtros ---
-   En el celular, un panel que se abre con «Filtros»; en la computadora, siempre a la vista. */
 .filters__toggle {
   justify-self: start;
 }
@@ -88,6 +144,7 @@
 .filters__panel {
   display: none;
   gap: var(--space-4);
+  min-width: 0;
   margin-top: var(--space-3);
   padding: var(--space-4);
   border: var(--border);
@@ -125,6 +182,27 @@
   gap: var(--space-2);
 }
 
+.filters__choices .z-choice {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* Los servicios en el celular: dos renglones que se deslizan de costado, en vez de una lista que
+   ocupa la pantalla entera. El borde se desvanece para avisar que sigue. */
+.filters__choices--scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(2, auto);
+  justify-content: start;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  margin-inline: calc(-1 * var(--space-4));
+  padding: 2px var(--space-4) var(--space-2);
+  scroll-padding-inline: var(--space-4);
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
+}
+
 .filters__actions {
   display: flex;
   flex-wrap: wrap;
@@ -149,28 +227,9 @@
 
 /* --- Computadora --- */
 @media (min-width: 768px) {
-  .filters__toggle {
-    display: none;
-  }
-
-  .filters__panel {
-    display: grid;
-    grid-template-columns: minmax(280px, 2fr) minmax(160px, 1fr) minmax(160px, 1fr);
-    align-items: start;
-    margin-top: 0;
-  }
-
-  .filters__amenities,
-  .filters__actions {
-    grid-column: 1 / -1;
-  }
-
-  .page-container {
-    padding-top: var(--space-5);
-  }
-
   .hero {
-    padding: var(--space-6);
+    gap: var(--space-5);
+    padding: var(--space-7) var(--space-6) var(--space-6);
 
     h1 {
       font-size: var(--text-display-xl);
@@ -182,9 +241,50 @@
     font-size: var(--text-lead);
   }
 
+  /* El buscador en una sola fila: el balneario, las dos fechas y «Buscar». */
+  .hero__search {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) auto;
+    align-items: center;
+  }
+
+  .hero__submit {
+    height: 60px;
+    padding-inline: var(--space-6);
+  }
+
   .hero-steps {
-    flex-direction: row;
-    gap: var(--space-4);
-    font-size: var(--text-lead);
+    gap: var(--space-5);
+    font-size: var(--text-body);
+  }
+
+  .filters__toggle {
+    display: none;
+  }
+
+  /* En la computadora, una franja liviana con todo a la vista. */
+  .filters__panel {
+    display: grid;
+    /* La tercera pista se queda con lo que sobra: si no, los servicios, que ocupan toda la fila,
+       estirarían la de los tipos y el precio quedaría lejos. */
+    grid-template-columns: max-content minmax(200px, 260px) 1fr;
+    align-items: start;
+    column-gap: var(--space-6);
+    margin-top: 0;
+    padding: var(--space-4) var(--space-5);
+    background: transparent;
+  }
+
+  .filters__amenities,
+  .filters__actions {
+    grid-column: 1 / -1;
+  }
+
+  .filters__choices--scroll {
+    display: flex;
+    flex-wrap: wrap;
+    overflow: visible;
+    margin-inline: 0;
+    padding: 0;
+    mask-image: none;
   }
 }

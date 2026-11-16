@@ -117,7 +117,8 @@ describe('Units', () => {
   }
 
   async function fillCreate(identifier: string, price: string, kind = 'TENT'): Promise<void> {
-    type('#unit-type', kind);
+    // El tipo son dos botones a la vista: se toca el que corresponde.
+    page.querySelector<HTMLInputElement>(`.units__type-option input[value="${kind}"]`)!.click();
     type('#unit-identifier', identifier);
     type('#unit-price', price);
     await fixture.whenStable();

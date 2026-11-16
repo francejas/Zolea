@@ -33,10 +33,20 @@
   text-underline-offset: 3px;
 }
 
+/* Los botones van en fila: el grupo no se achica al lado del total, así que si no entra baja
+   entero al renglón de abajo en vez de apilar un botón sobre el otro. Solo si tampoco entra ahí
+   (una tarjeta muy angosta) cada botón ocupa su renglón. */
 .z-booking-card__actions {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-2);
+  max-width: 100%;
+}
+
+.z-booking-card__actions .z-btn {
+  padding-inline: 20px;
 }
 
 .z-booking-card__refund {

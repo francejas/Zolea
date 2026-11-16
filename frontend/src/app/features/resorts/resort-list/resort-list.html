@@ -1,34 +1,57 @@
 <div class="page-container">
-  <header class="hero">
-    <h1>¿Qué es Zolea?</h1>
-    <p class="hero__lead">
-      Zolea es la forma de reservar tu carpa o sombrilla en un balneario, sin llamar ni hacer cola.
-    </p>
-    <ol class="hero-steps">
-      <li>Elegís tu lugar</li>
-      <li>Pagás</li>
-      <li>Entrás con el QR</li>
-    </ol>
-  </header>
+  <!-- Un solo formulario: la búsqueda del hero y los filtros de abajo se mandan juntos. El texto
+       del buscador filtra al instante lo que ya llegó; «Buscar» lleva el resto a la dirección. -->
+  <form class="search" aria-label="Buscar balnearios" novalidate (submit)="onSubmit($event)">
+    <header class="hero">
+      <div class="hero__copy">
+        <p class="z-eyebrow hero__eyebrow">Carpas y sombrillas en la costa</p>
+        <h1>Reservá tu lugar en la playa</h1>
+        <p class="hero__lead">
+          Zolea es la forma de reservar tu carpa o sombrilla en un balneario, sin llamar ni hacer
+          cola.
+        </p>
+      </div>
 
-  <section class="search-section">
-    <div class="z-search">
-      <svg lucideSearch class="z-icon" aria-hidden="true"></svg>
-      <label class="z-visually-hidden" for="f-search"
-        >Buscar balneario por nombre o ubicación</label
-      >
-      <input
-        #searchInput
-        class="z-input"
-        id="f-search"
-        name="q"
-        type="search"
-        autocomplete="off"
-        placeholder="Buscar por nombre o ubicación..."
-        [value]="searchTerm()"
-        (input)="onSearch($event)"
-      />
-    </div>
+      <div class="hero__search">
+        <div class="z-search hero__query">
+          <svg lucideSearch class="z-icon" aria-hidden="true"></svg>
+          <label class="z-visually-hidden" for="f-search"
+            >Buscar balneario por nombre o ubicación</label
+          >
+          <input
+            #searchInput
+            class="z-input"
+            id="f-search"
+            name="q"
+            type="search"
+            autocomplete="off"
+            placeholder="Balneario o ciudad"
+            [value]="searchTerm()"
+            (input)="onSearch($event)"
+          />
+        </div>
+
+        <fieldset class="hero__dates">
+          <legend class="z-visually-hidden">Fechas</legend>
+          <z-date-range [(from)]="draftFrom" [(to)]="draftTo" [summary]="false" floating />
+        </fieldset>
+
+        <button class="z-btn z-btn--primary hero__submit" type="submit">
+          <svg lucideSearch class="z-icon" aria-hidden="true"></svg>
+          Buscar
+        </button>
+      </div>
+
+      @if (datesError(); as message) {
+        <p class="filters__error hero__error" aria-live="polite">{{ message }}</p>
+      }
+
+      <ol class="hero-steps" aria-label="Cómo funciona">
+        <li>Elegís tu lugar</li>
+        <li>Pagás</li>
+        <li>Entrás con el QR</li>
+      </ol>
+    </header>
 
     <div class="filters" [class.filters--open]="filtersOpen()">
       <!-- Solo en el celular: en la computadora los filtros se ven siempre. -->
@@ -40,36 +63,42 @@
         (click)="filtersOpen.set(!filtersOpen())"
       >
         <svg lucideSlidersHorizontal class="z-icon z-icon--s" aria-hidden="true"></svg>
-        Filtros
-        @if (activeFilters() > 0) {
+        Más filtros
+        @if (extraFilters() > 0) {
           <span class="filters__count"
-            >{{ activeFilters() }}<span class="z-visually-hidden"> puestos</span></span
+            >{{ extraFilters() }}<span class="z-visually-hidden"> puestos</span></span
           >
         }
       </button>
 
-      <form
-        id="filters-panel"
-        class="filters__panel"
-        aria-label="Filtros de búsqueda"
-        novalidate
-        (submit)="onSubmit($event)"
-      >
-        <fieldset class="filters__group filters__dates">
-          <legend class="z-field__label">Fechas</legend>
-          <z-date-range [(from)]="draftFrom" [(to)]="draftTo" [summary]="false" />
-          @if (datesError(); as message) {
-            <p class="filters__error" aria-live="polite">{{ message }}</p>
-          }
+      <div id="filters-panel" class="filters__panel" role="group" aria-label="Más filtros">
+        <fieldset class="filters__group filters__types">
+          <legend class="z-field__label">Tipo de lugar</legend>
+          <div class="filters__choices">
+            @for (option of typeOptions; track option.value) {
+              <label class="z-choice">
+                <input
+                  type="checkbox"
+                  name="type"
+                  [value]="option.value"
+                  [checked]="isTypeChecked(option.value)"
+                  (change)="toggleType(option.value)"
+                />
+                @if (option.value === 'TENT') {
+                  <svg lucideTent class="z-icon z-icon--s z-choice__icon" aria-hidden="true"></svg>
+                } @else {
+                  <svg
+                    lucideUmbrella
+                    class="z-icon z-icon--s z-choice__icon"
+                    aria-hidden="true"
+                  ></svg>
+                }
+                <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg
+                >{{ option.label }}
+              </label>
+            }
+          </div>
         </fieldset>
-
-        <z-field [field]="filterForm.type" inputId="f-type" label="Tipo">
-          <select id="f-type" class="z-input" [formField]="filterForm.type">
-            <option value="">Carpa o sombrilla</option>
-            <option value="TENT">Carpa</option>
-            <option value="UMBRELLA">Sombrilla</option>
-          </select>
-        </z-field>
 
         <z-field [field]="filterForm.maxPrice" inputId="f-max-price" label="Precio máximo por día">
           <input
@@ -79,7 +108,7 @@
             inputmode="numeric"
             step="500"
             autocomplete="off"
-            placeholder="Sin tope"
+            placeholder="Sin tope, por ej. 20000"
             [formField]="filterForm.maxPrice"
           />
         </z-field>
@@ -87,7 +116,8 @@
         @if (amenities().length > 0) {
           <fieldset class="filters__group filters__amenities">
             <legend class="z-field__label">Servicios</legend>
-            <div class="filters__choices">
+            <!-- En el celular, dos renglones que se deslizan de costado: no estiran la pantalla. -->
+            <div class="filters__choices filters__choices--scroll">
               @for (amenity of amenities(); track amenity.idAmenity) {
                 <label class="z-choice">
                   <input
@@ -109,16 +139,22 @@
         }
 
         <div class="filters__actions">
-          <button class="z-btn z-btn--primary" type="submit">Buscar</button>
+          <button class="z-btn z-btn--primary z-btn--compact filters__apply" type="submit">
+            Aplicar filtros
+          </button>
           @if (activeFilters() > 0) {
-            <button class="z-btn z-btn--ghost" type="button" (click)="clearFilters()">
+            <button
+              class="z-btn z-btn--ghost z-btn--compact"
+              type="button"
+              (click)="clearFilters()"
+            >
               Limpiar filtros
             </button>
           }
         </div>
-      </form>
+      </div>
     </div>
-  </section>
+  </form>
 
   <section class="resorts-section" aria-labelledby="resorts-title">
     <h2 id="resorts-title" class="z-visually-hidden">Balnearios</h2>

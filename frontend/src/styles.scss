@@ -10,6 +10,7 @@
 @use 'styles/modal';
 @use 'styles/tabs';
 @use 'styles/booking-card';
+@use 'styles/resort-plan-narrow';
 @use 'styles/print';
 
 /* La base de Zolea-docs/diseno/componentes.css. Lo de cada pieza va en su componente, salvo los
@@ -18,6 +19,12 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* El lugar de la barra de desplazamiento queda reservado siempre: si no, una pantalla corta (Ingresar)
+   y una larga (la Portada) centran el contenido con anchos distintos y la barra de arriba salta. */
+html {
+  scrollbar-gutter: stable;
 }
 
 body {

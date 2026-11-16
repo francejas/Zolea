@@ -310,8 +310,22 @@ Mis reservas muestra «Calificar» en las terminadas que lo tienen en `false`.
 
 ```
 POST /api/bookings/{id}/review     { "rating": 5, "comment": "..." }
-→ 201 { "author": "Santiago R.", "rating": 5, "comment": "...", "createdAt": "2026-01-12T18:30:00" }
+→ 201 { "author": "Santiago R.", "rating": 5, "comment": "...", "createdAt": "2026-01-12T18:30:00", "updatedAt": null }
 ```
+
+Después, su autor la puede **editar**: Mis reservas muestra «Editar reseña» en las que tienen
+`reviewed` en `true`. El diálogo trae la reseña guardada y la reemplaza; la fecha en que se calificó
+no cambia y `updatedAt` dice cuándo se editó (el balneario la muestra como «editada»):
+
+```
+GET /api/bookings/{id}/review
+→ 200 { "author": "Santiago R.", "rating": 3, "comment": "...", "createdAt": "...", "updatedAt": null }
+
+PUT /api/bookings/{id}/review      { "rating": 5, "comment": "..." }
+→ 200 { ..., "rating": 5, "updatedAt": "2026-01-14T09:15:00" }
+```
+
+Las dos responden `404` si la reserva todavía no se calificó, y validan igual que calificar.
 
 Solo la califica su dueño, y solo si es un cliente: la de otro cliente responde `403`, también para
 el administrador del balneario, y un administrador recibe `403` aunque la reserva figure a su nombre. Los rechazos:

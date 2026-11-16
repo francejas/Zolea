@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { form, FormField, maxLength, required, submit } from '@angular/forms/signals';
-import { LucideStar } from '@lucide/angular';
+import { LucideMapPin, LucideStar, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
 import { Booking } from '../../../core/api/booking.models';
 import { Review } from '../../../core/api/review.models';
@@ -29,12 +29,14 @@ const STAR_COUNT = [1, 2, 3, 4, 5];
 
 /**
  * Calificar una estadía terminada: las estrellas, como un grupo de opciones que se maneja con las
- * flechas, y un comentario opcional. Se abre al aparecer y avisa al cerrarse: si calificó, con la
- * reseña (`saved`); si no, con `closed`.
+ * flechas, y un comentario opcional. Arriba, dos tarjetas dicen qué se califica: el balneario, y el
+ * lugar con sus fechas. Con `editing`, es la reseña que ya dejó: la trae, la muestra y al guardar
+ * la reemplaza. Se abre al aparecer y avisa al cerrarse: si guardó, con la reseña (`saved`); si
+ * no, con `closed`.
  */
 @Component({
   selector: 'app-review-dialog',
-  imports: [FormField, LucideStar, ZAlert, ZBtn, ZField],
+  imports: [FormField, LucideMapPin, LucideStar, LucideTent, LucideUmbrella, ZAlert, ZBtn, ZField],
   templateUrl: './review-dialog.html',
   styleUrl: './review-dialog.scss',
 })
@@ -43,6 +45,8 @@ export class ReviewDialog {
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   readonly booking = input.required<Booking>();
+  /** Editar la reseña que ya tiene la reserva, en vez de calificarla por primera vez. */
+  readonly editing = input(false);
   /** Calificó: la reseña, como quedó. */
   readonly saved = output<Review>();
   /** Se cerró sin calificar. */
@@ -80,16 +84,42 @@ export class ReviewDialog {
     () => `${this.reviewForm.comment().value().length} de ${MAX_COMMENT} caracteres`,
   );
 
-  protected readonly stay = computed(() => {
-    const booking = this.booking();
-    return `${unitLabel(booking.rentalUnitType, booking.rentalUnitIdentifier)} · ${dayRange(booking.startDate, booking.endDate)}`;
-  });
+  protected readonly unit = computed(() =>
+    unitLabel(this.booking().rentalUnitType, this.booking().rentalUnitIdentifier),
+  );
+  protected readonly dates = computed(() =>
+    dayRange(this.booking().startDate, this.booking().endDate),
+  );
+
+  /** Al editar, mientras llega la reseña guardada: las estrellas y «Guardar» esperan. */
+  protected readonly loadingExisting = signal(false);
 
   /** Ya avisó cómo terminó: el `close` del diálogo no tiene que volver a avisar. */
   private done = false;
 
   constructor() {
-    afterNextRender(() => this.dialog().nativeElement.showModal());
+    afterNextRender(() => {
+      this.dialog().nativeElement.showModal();
+      if (this.editing()) this.loadExisting();
+    });
+  }
+
+  /** Trae la reseña guardada y la pone en el formulario, para cambiar lo que haga falta. */
+  private loadExisting(): void {
+    this.loadingExisting.set(true);
+    this.reviewsApi.get(this.booking().id).subscribe({
+      next: (review) => {
+        this.reviewForm().value.set({
+          rating: String(review.rating),
+          comment: review.comment ?? '',
+        });
+        this.loadingExisting.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.formError.set(toUserMessage(error));
+        this.loadingExisting.set(false);
+      },
+    });
   }
 
   protected starLabel(star: number): string {
@@ -138,11 +168,12 @@ export class ReviewDialog {
     await submit(this.reviewForm, async () => {
       const { rating, comment } = this.reviewForm().value();
       try {
+        const request = { rating: Number(rating), comment: comment.trim() || null };
+        const id = this.booking().id;
         const review = await firstValueFrom(
-          this.reviewsApi.create(this.booking().id, {
-            rating: Number(rating),
-            comment: comment.trim() || null,
-          }),
+          this.editing()
+            ? this.reviewsApi.update(id, request)
+            : this.reviewsApi.create(id, request),
         );
         this.finish();
         this.saved.emit(review);
@@ -151,8 +182,9 @@ export class ReviewDialog {
         const fieldErrors = toFieldErrors(this.reviewForm, err);
         if (fieldErrors.length > 0) return fieldErrors;
         this.formError.set(toUserMessage(err));
-        // Se mira el código, no el texto, igual que al pagar.
-        if (err.status === 400) this.rejected.emit();
+        // Se mira el código, no el texto, igual que al pagar. Al editar, un 400 sin campos no
+        // pasa: la reseña ya existe.
+        if (err.status === 400 && !this.editing()) this.rejected.emit();
       }
       return;
     });

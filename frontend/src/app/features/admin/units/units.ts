@@ -18,7 +18,7 @@ import {
   submit,
   ValidationError,
 } from '@angular/forms/signals';
-import { LucideLock, LucidePlus, LucideTent, LucideUmbrella } from '@lucide/angular';
+import { LucideCheck, LucideLock, LucidePlus, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
 import { RentalUnit, RentalUnitRequest, UnitType } from '../../../core/api/resort.models';
 import { UnitsApi } from '../../../core/api/units.api';
@@ -74,6 +74,7 @@ const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
   selector: 'app-units',
   imports: [
     FormField,
+    LucideCheck,
     LucideLock,
     LucidePlus,
     LucideTent,
@@ -338,6 +339,7 @@ export class Units {
   /** Al enviar con errores, el foco va al primer campo con error (sistema de diseño, «Campo»). */
   private focusFirstInvalid(): void {
     const fields = this.createForm;
+    // El tipo siempre tiene un valor; su primer botón es el primero de los controles.
     const ordered = [fields.type, fields.identifier, fields.dailyPrice];
     const index = ordered.findIndex((field) => this.hasError(field));
     if (index >= 0) this.controls()[index]?.nativeElement.focus();

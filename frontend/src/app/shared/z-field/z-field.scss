@@ -45,6 +45,27 @@
   display: flex;
 }
 
+/* El error flota debajo del campo en vez de empujar lo que sigue: para un campo dentro de una fila
+   de tabla, como el precio de una unidad, donde abrirlo no tiene que mover las otras filas. */
+.z-field--floating-error {
+  position: relative;
+}
+
+.z-field--floating-error .z-field__error {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  box-shadow: 0 6px 16px rgb(72 42 29 / 0.12);
+  text-align: left;
+}
+
 .z-input-wrap {
   position: relative;
 }

@@ -10,6 +10,8 @@ export interface Review {
   comment: string | null;
   /** Cuándo se calificó, en hora del balneario y sin zona. */
   createdAt: string;
+  /** Cuándo la editó su autor por última vez, o null si nunca la cambió. */
+  updatedAt?: string | null;
 }
 
 /** El pedido de calificar: las estrellas y, si quiere, un comentario de hasta 500 caracteres. */

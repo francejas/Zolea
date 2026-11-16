@@ -130,7 +130,7 @@ describe('routes', () => {
 
   it('las rutas públicas se abren sin sesión', async () => {
     for (const [url, title] of [
-      ['/', '¿Qué es Zolea?'],
+      ['/', 'Reservá tu lugar en la playa'],
       ['/login', 'Ingresar'],
       ['/register', 'Crear cuenta'],
     ]) {
@@ -177,7 +177,7 @@ describe('routes', () => {
     await harness.navigateByUrl('/admin');
 
     expect(router.url).toBe('/');
-    expect(heading()).toBe('¿Qué es Zolea?');
+    expect(heading()).toBe('Reservá tu lugar en la playa');
   });
 
   it('el cliente tampoco entra a las subrutas del panel', async () => {
@@ -259,5 +259,31 @@ describe('routes', () => {
     user.set(admin);
     await harness.navigateByUrl('/admin/no-existe');
     expect(heading()).toBe('No encontramos esta página');
+  });
+
+  it('la 404 dice qué dirección se pidió y ofrece volver a la portada, no una pantalla a medio hacer', async () => {
+    await harness.navigateByUrl('/pagina-inexistente');
+    harness.detectChanges();
+    const page = harness.routeNativeElement as HTMLElement;
+
+    expect(page.textContent).toContain('/pagina-inexistente');
+    expect(page.textContent).not.toContain('todavía no está construida');
+    const home = Array.from(page.querySelectorAll('a')).find((a) =>
+      a.textContent!.includes('Ir a la portada'),
+    );
+    expect(home?.getAttribute('href')).toBe('/');
+  });
+
+  it('la política de cancelación es pública y el pie de página lleva a ella', async () => {
+    await harness.navigateByUrl('/');
+    harness.detectChanges();
+    const link = Array.from(
+      (harness.routeNativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('footer a'),
+    ).find((a) => a.textContent!.includes('Cancelaciones y reintegros'));
+    expect(link?.getAttribute('href')).toBe('/cancellation-policy');
+
+    await harness.navigateByUrl('/cancellation-policy');
+    expect(router.url).toBe('/cancellation-policy');
+    expect(heading()).toBe('Cancelaciones y reintegros');
   });
 });

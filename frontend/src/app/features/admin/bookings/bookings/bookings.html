@@ -29,49 +29,37 @@
         />
       } @else {
         <div class="bookings__filters" role="group" aria-label="Filtrar reservas">
-          <label for="booking-status">
-            Estado
-            <select
-              #statusInput
-              id="booking-status"
-              class="z-input"
-              [value]="status()"
-              (change)="setStatus(statusInput.value)"
-            >
-              <option value="">Todos los estados</option>
-              <option value="PENDING">Pendientes de pago</option>
-              <option value="CONFIRMED">Confirmadas</option>
-              <option value="CANCELED">Canceladas</option>
-            </select>
-          </label>
+          <!-- Las cuatro opciones a la vista: se elige una con un toque, sin abrir nada. -->
+          <fieldset class="bookings__status">
+            <legend class="bookings__label">Estado</legend>
+            <div class="bookings__choices">
+              @for (option of statusOptions; track option.value) {
+                <label class="z-choice">
+                  <input
+                    type="radio"
+                    name="booking-status"
+                    [value]="option.value"
+                    [checked]="status() === option.value"
+                    (change)="setStatus(option.value)"
+                  />
+                  <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg
+                  >{{ option.label }}
+                </label>
+              }
+            </div>
+          </fieldset>
 
-          <label for="booking-from">
-            Desde
-            <input
-              #fromInput
-              id="booking-from"
-              class="z-input"
-              type="date"
-              [value]="from()"
-              (input)="from.set(fromInput.value)"
-              [attr.aria-invalid]="invalidRange() || null"
-              aria-describedby="booking-date-help"
+          <fieldset class="bookings__dates" aria-describedby="booking-date-help">
+            <legend class="bookings__label">Período</legend>
+            <z-date-range
+              [(from)]="from"
+              [(to)]="to"
+              [min]="minDate"
+              [summary]="false"
+              [labels]="rangeLabels"
+              floating
             />
-          </label>
-
-          <label for="booking-to">
-            Hasta
-            <input
-              #toInput
-              id="booking-to"
-              class="z-input"
-              type="date"
-              [value]="to()"
-              (input)="to.set(toInput.value)"
-              [attr.aria-invalid]="invalidRange() || null"
-              aria-describedby="booking-date-help"
-            />
-          </label>
+          </fieldset>
 
           <z-btn variant="ghost" [disabled]="!hasFilters()" (click)="resetFilters()">
             Limpiar filtros
@@ -116,7 +104,7 @@
                   @for (booking of filtered(); track booking.id) {
                     <tr>
                       <td data-label="Titular">
-                        <a [routerLink]="['/admin/bookings', booking.id]">
+                        <a class="bookings__holder" [routerLink]="['/admin/bookings', booking.id]">
                           {{ holder(booking) }}
                           <span class="bookings__code">
                             {{ number(booking.id) }}
@@ -163,7 +151,15 @@
                           </a>
 
                           @if (booking.status !== 'CANCELED') {
-                            <z-btn variant="danger" size="small" (click)="askCancel(booking)">
+                            <!-- Una estadía que ya terminó no se cancela: el botón lo dice de
+                                 entrada, sin abrir la confirmación. -->
+                            <z-btn
+                              variant="danger"
+                              size="small"
+                              [disabled]="stayEnded(booking)"
+                              [attr.title]="stayEnded(booking) ? endedReason : null"
+                              (click)="askCancel(booking)"
+                            >
                               Cancelar
                             </z-btn>
                           }

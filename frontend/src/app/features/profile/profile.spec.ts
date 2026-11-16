@@ -111,6 +111,24 @@ describe('Profile', () => {
     expect(page.querySelector<HTMLInputElement>('#profile-password')!.value).toBe('');
   });
 
+  it('un teléfono guardado con código de país se separa en el país y el número', async () => {
+    await open({ ...nati, phone: '+598 94123456' });
+
+    expect(page.querySelector<HTMLSelectElement>('#profile-phone-country')!.value).toBe('UY');
+    expect(page.querySelector<HTMLInputElement>('#profile-phone')!.value).toBe('94123456');
+    expect(page.querySelector<HTMLInputElement>('#profile-phone')!.placeholder).toBe('00 000 000');
+  });
+
+  it('un DNI que no tiene 7 u 8 números no se guarda', async () => {
+    await open();
+
+    await type('#profile-dni', '381');
+    await save();
+
+    expect(fieldText('#profile-dni')).toContain('El DNI son 7 u 8 números, sin puntos.');
+    http.expectNone(`${API}/16`);
+  });
+
   it('guarda todos los datos sin la contraseña si está vacía, avisa y actualiza la barra', async () => {
     await open();
 
@@ -123,10 +141,11 @@ describe('Profile', () => {
       firstName: 'Natalia',
       lastName: 'Romero',
       email: 'nati.romero@gmail.com',
-      phone: '2235559999',
+      // Un teléfono de antes, sin código, es de Argentina: se guarda ya con el +54.
+      phone: '+54 2235559999',
       dni: '38111222',
     });
-    put.flush({ ...nati, phone: '2235559999' });
+    put.flush({ ...nati, phone: '+54 2235559999' });
     await settle();
 
     expect(text(page.querySelector('.z-alert--success'))).toContain('Guardamos tus datos');

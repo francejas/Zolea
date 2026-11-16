@@ -18,6 +18,7 @@
             id="register-first-name"
             class="z-input"
             type="text"
+            placeholder="Matías"
             autocomplete="given-name"
             [formField]="registerForm.firstName"
             [attr.aria-invalid]="hasError(registerForm.firstName) ? 'true' : null"
@@ -30,6 +31,7 @@
             id="register-last-name"
             class="z-input"
             type="text"
+            placeholder="Fernández"
             autocomplete="family-name"
             [formField]="registerForm.lastName"
             [attr.aria-invalid]="hasError(registerForm.lastName) ? 'true' : null"
@@ -43,6 +45,7 @@
           id="register-email"
           class="z-input"
           type="email"
+          placeholder="correo@gmail.com"
           inputmode="email"
           autocomplete="email"
           autocapitalize="none"
@@ -52,18 +55,39 @@
         />
       </z-field>
 
-      <z-field [field]="registerForm.phone" inputId="register-phone" label="Teléfono">
-        <input
-          #control
-          id="register-phone"
-          class="z-input"
-          type="tel"
-          inputmode="numeric"
-          autocomplete="tel"
-          (input)="onlyDigits($event, 'phone')"
-          [formField]="registerForm.phone"
-          [attr.aria-invalid]="hasError(registerForm.phone) ? 'true' : null"
-        />
+      <z-field
+        [field]="registerForm.phone"
+        inputId="register-phone"
+        label="Teléfono"
+        help="El país y el número, sin el 0 ni el 15."
+      >
+        <div class="z-phone">
+          <select
+            id="register-phone-country"
+            class="z-input z-phone__country"
+            aria-label="País del teléfono"
+            autocomplete="tel-country-code"
+            (change)="setCountry($event)"
+          >
+            @for (option of countries; track option.iso) {
+              <option [value]="option.iso" [selected]="option.iso === country().iso">
+                {{ option.name }} ({{ option.dial }})
+              </option>
+            }
+          </select>
+          <input
+            #control
+            id="register-phone"
+            class="z-input"
+            type="tel"
+            inputmode="numeric"
+            autocomplete="tel-national"
+            [placeholder]="country().placeholder"
+            (input)="onlyDigits($event, 'phone')"
+            [formField]="registerForm.phone"
+            [attr.aria-invalid]="hasError(registerForm.phone) ? 'true' : null"
+          />
+        </div>
       </z-field>
 
       <z-field
@@ -80,6 +104,7 @@
           inputmode="numeric"
           autocomplete="off"
           spellcheck="false"
+          placeholder="12345678"
           (input)="onlyDigits($event, 'dni')"
           [formField]="registerForm.dni"
           [attr.aria-invalid]="hasError(registerForm.dni) ? 'true' : null"
@@ -93,6 +118,7 @@
             id="register-password"
             class="z-input"
             autocomplete="new-password"
+            placeholder="Elegí una contraseña"
             [type]="showPassword() ? 'text' : 'password'"
             [formField]="registerForm.password"
             [attr.aria-invalid]="hasError(registerForm.password) ? 'true' : null"
@@ -120,7 +146,8 @@
     </form>
 
     <p class="register__alt">
-      ¿Ya tenés cuenta? <a class="z-link" routerLink="/login">Ingresar</a>
+      ¿Ya tenés cuenta?
+      <a class="z-link" routerLink="/login" [queryParams]="backParams()">Ingresar</a>
     </p>
   </div>
 </section>

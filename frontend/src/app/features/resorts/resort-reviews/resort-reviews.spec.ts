@@ -56,6 +56,14 @@ describe('ResortReviews', () => {
     ]);
   });
 
+  it('una reseña que su autor editó lo dice', async () => {
+    await respond([review({ updatedAt: '2026-01-14T09:15:00' })]);
+
+    expect(page.querySelector('.reviews__byline')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      'Santiago R. · 12 de enero de 2026 · editada',
+    );
+  });
+
   it('sin reseñas, lo dice', async () => {
     await respond([]);
 

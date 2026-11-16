@@ -24,6 +24,7 @@ import com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitRetiredException;
 import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
+import com.zolea.backend.exceptions.review.ReviewNotFoundException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +79,8 @@ public class GlobalExceptionHandler {
             ResortNotFoundException.class,
             AmenityNotFoundException.class,
             BookingNotFoundException.class,
-            RentalUnitNotFoundException.class
+            RentalUnitNotFoundException.class,
+            ReviewNotFoundException.class
     })
     public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
         return respuesta(HttpStatus.NOT_FOUND, ex.getMessage());

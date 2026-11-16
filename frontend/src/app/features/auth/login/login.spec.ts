@@ -136,6 +136,24 @@ describe('Login', () => {
       expect(link.getAttribute('href')).toBe('/register');
     });
 
+    it('los campos traen un ejemplo de cómo completarlos', async () => {
+      await open();
+      expect(page.querySelector<HTMLInputElement>('#login-email')!.placeholder).toBe(
+        'correo@gmail.com',
+      );
+      expect(page.querySelector<HTMLInputElement>('#login-password')!.placeholder).toBe(
+        'Tu contraseña',
+      );
+    });
+
+    it('«Crear cuenta» lleva el regreso que mandó el guard: quien no tiene cuenta no pierde lo elegido', async () => {
+      const book = '/book/3?unit=7&from=2027-01-15&to=2027-01-17';
+      await open(`/login?volver=${encodeURIComponent(book)}`);
+
+      const link = page.querySelector<HTMLAnchorElement>('.login__alt a')!;
+      expect(link.getAttribute('href')).toBe(`/register?volver=${encodeURIComponent(book)}`);
+    });
+
     it('el modelo tiene exactamente email y contraseña, y el botón no está cargando', async () => {
       await open();
 
@@ -540,5 +558,10 @@ describe('resolveBackTo', () => {
     expect(url('/login')).toBeNull();
     expect(url('/login?motivo=sesion-vencida')).toBeNull();
     expect(url('/login/otra')).toBeNull();
+  });
+
+  it('rechaza volver a Crear cuenta', () => {
+    expect(url('/register')).toBeNull();
+    expect(url('/register?volver=/my-bookings')).toBeNull();
   });
 });

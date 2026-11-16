@@ -19,11 +19,14 @@ public record ReviewResponse(
                 example = "La carpa estaba lista al llegar y la atención fue excelente.")
         String comment,
         @Schema(description = "Cuándo se calificó", example = "2026-01-12T18:30:00")
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        @Schema(description = "Cuándo la editó su autor por última vez; null si nunca la cambió",
+                example = "2026-01-14T09:15:00")
+        LocalDateTime updatedAt
 ) {
     public static ReviewResponse of(Review review) {
         return new ReviewResponse(authorOf(review.getBooking().getClient()), review.getRating(),
-                review.getComment(), review.getCreatedAt());
+                review.getComment(), review.getCreatedAt(), review.getUpdatedAt());
     }
 
     /** «Santiago R.»: el nombre y la inicial del apellido. */

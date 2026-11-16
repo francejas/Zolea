@@ -8,12 +8,18 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     /** Si la reserva ya se calificó. Es la comprobación previa; la garantía es el índice único. */
     boolean existsByBooking_Id(Long bookingId);
+
+    /** La reseña de esa reserva, con el cliente: es de donde sale el autor. */
+    @Query("SELECT r FROM Review r JOIN FETCH r.booking b LEFT JOIN FETCH b.client "
+            + "WHERE b.id = :bookingId")
+    Optional<Review> findByBookingId(@Param("bookingId") Long bookingId);
 
     /**
      * Cuáles de esas reservas ya se calificaron. Es una sola consulta para todo un listado: con

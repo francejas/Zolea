@@ -6,20 +6,47 @@
   (close)="onClose()"
 >
   <form class="review__form" novalidate (submit)="onSubmit($event)">
-    <div>
-      <h2 id="review-title" class="z-modal__title">Calificá tu estadía</h2>
-      <p class="z-modal__body">
-        <strong class="review__resort">{{ booking().resortName }}</strong>
-        {{ stay() }}
-      </p>
+    <h2 id="review-title" class="z-modal__title review__title">
+      {{ editing() ? 'Editá tu reseña' : 'Calificá tu estadía' }}
+    </h2>
+
+    <!-- Qué se califica, en dos tarjetas: dónde y qué lugar, cuándo. -->
+    <div class="review__stay">
+      <div class="review__fact">
+        <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>
+        <div>
+          <span class="review__label">Balneario</span>
+          <strong class="review__resort">{{ booking().resortName }}</strong>
+          @if (booking().resortLocation) {
+            <span class="review__sub">{{ booking().resortLocation }}</span>
+          }
+        </div>
+      </div>
+      <div class="review__fact">
+        @if (booking().rentalUnitType === 'TENT') {
+          <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+        } @else {
+          <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+        }
+        <div>
+          <span class="review__label">Tu lugar</span>
+          <strong>{{ unit() }}</strong>
+          <span class="review__sub">{{ dates() }}</span>
+        </div>
+      </div>
     </div>
 
     @if (formError(); as message) {
       <z-alert variant="danger" [text]="message" />
     }
 
+    @if (loadingExisting()) {
+      <p class="review__loading" role="status">Trayendo tu reseña…</p>
+    }
+
     <fieldset
       class="review__rating"
+      [disabled]="loadingExisting()"
       [attr.aria-describedby]="ratingError() ? 'review-rating-error' : null"
     >
       <legend class="review__legend">¿Cuántas estrellas le das?</legend>
@@ -55,15 +82,23 @@
         id="review-comment"
         class="z-input review__comment"
         rows="4"
+        placeholder="Por ejemplo: la carpa estaba lista al llegar y la atención fue excelente."
         [formField]="reviewForm.comment"
       ></textarea>
     </z-field>
 
     <div class="z-modal__actions review__actions">
       <z-btn variant="secondary" block [disabled]="reviewForm().submitting()" (click)="cancel()">
-        Ahora no
+        {{ editing() ? 'Cancelar' : 'Ahora no' }}
       </z-btn>
-      <z-btn type="submit" block [loading]="reviewForm().submitting()">Calificar</z-btn>
+      <z-btn
+        type="submit"
+        block
+        [disabled]="loadingExisting()"
+        [loading]="reviewForm().submitting()"
+      >
+        {{ editing() ? 'Guardar cambios' : 'Calificar' }}
+      </z-btn>
     </div>
   </form>
 </dialog>

@@ -1,7 +1,9 @@
 import {
+  booleanAttribute,
   Component,
   computed,
   ElementRef,
+  inject,
   input,
   model,
   signal,
@@ -68,7 +70,12 @@ let nextId = 0;
   templateUrl: './z-date-range.html',
   styleUrl: './z-date-range.scss',
   encapsulation: ViewEncapsulation.None,
-  host: { class: 'z-date-range', '(keydown.escape)': 'close()' },
+  host: {
+    class: 'z-date-range',
+    '[class.z-date-range--floating]': 'floating()',
+    '(keydown.escape)': 'close()',
+    '(document:click)': 'onDocumentClick($event)',
+  },
 })
 export class ZDateRange {
   /** La entrada, o null si todavía no se eligió. */
@@ -79,6 +86,12 @@ export class ZDateRange {
   min = input<string>(todayIso());
   /** Si muestra debajo cuántos días son y que se cobran los dos extremos. */
   summary = input(true);
+  /**
+   * El calendario se abre flotando sobre lo que sigue, en vez de empujarlo hacia abajo: para un
+   * buscador o una fila de filtros, donde el calendario no tiene lugar propio. Un clic afuera lo
+   * cierra.
+   */
+  floating = input(false, { transform: booleanAttribute });
   /** Los rótulos de los dos campos: el Panel elige un rango, no una estadía. */
   labels = input<RangeLabels>({
     from: 'Entrada',
@@ -94,6 +107,7 @@ export class ZDateRange {
   /** El día que está bajo el mouse o tiene el foco, o null. Solo cuenta mientras se elige la salida. */
   private readonly hovered = signal<string | null>(null);
   private readonly view = signal<{ year: number; month: number } | null>(null);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly fromButton = viewChild<ElementRef<HTMLButtonElement>>('fromButton');
   private readonly toButton = viewChild<ElementRef<HTMLButtonElement>>('toButton');
 
@@ -205,6 +219,16 @@ export class ZDateRange {
     this.open.set(null);
     this.hovered.set(null);
     this.focusField(field);
+  }
+
+  /** Flotando, un clic afuera cierra el calendario, sin mover el foco: la persona ya está en otra cosa. */
+  protected onDocumentClick(event: MouseEvent): void {
+    if (!this.floating() || this.open() === null) return;
+    const target = event.target as Node | null;
+    // Un día elegido sale del DOM al volver a dibujarse el mes: ese clic no es «afuera».
+    if (!target || !target.isConnected || this.host.nativeElement.contains(target)) return;
+    this.open.set(null);
+    this.hovered.set(null);
   }
 
   protected shiftMonth(by: number): void {

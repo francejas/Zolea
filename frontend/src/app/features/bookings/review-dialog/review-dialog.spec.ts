@@ -72,10 +72,15 @@ describe('ReviewDialog', () => {
     return Array.from(page.querySelectorAll('button')).find((b) => b.textContent!.includes(text))!;
   }
 
-  it('se abre solo, con el balneario, la unidad y los días', () => {
+  it('se abre solo, con el balneario, la unidad y los días en dos tarjetas', () => {
     expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(true);
-    expect(page.textContent).toContain('Zolea Club de Playa');
-    expect(page.textContent).toContain('Sombrilla A-03 · 15 → 17 ene');
+    const cards = Array.from(page.querySelectorAll('.review__fact')).map((card) =>
+      card.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toContain('Zolea Club de Playa');
+    expect(cards[1]).toContain('Sombrilla A-03');
+    expect(cards[1]).toContain('15 → 17 ene');
   });
 
   it('las estrellas son un grupo de cinco opciones, cada una con su nombre', () => {
@@ -266,6 +271,57 @@ describe('ReviewDialog', () => {
 
       expect(saved).toEqual([review]);
       expect(closed).toBe(0);
+    });
+  });
+  describe('editar la reseña', () => {
+    const existing: Review = {
+      author: 'Santiago R.',
+      rating: 3,
+      comment: 'Lindo, pero las duchas frías.',
+      createdAt: '2026-01-20T10:00:00',
+      updatedAt: null,
+    };
+
+    beforeEach(async () => {
+      // Otro diálogo, en modo edición: el de arriba no pidió nada y se descarta.
+      fixture.destroy();
+      fixture = TestBed.createComponent(ReviewDialog);
+      fixture.componentRef.setInput('booking', aBooking({ id: 47 }));
+      fixture.componentRef.setInput('editing', true);
+      saved = [];
+      fixture.componentInstance.saved.subscribe((review) => saved.push(review));
+      page = fixture.nativeElement;
+      await fixture.whenStable();
+    });
+
+    it('trae la reseña guardada y la muestra para cambiarla', async () => {
+      const get = http.expectOne(URL);
+      expect(get.request.method).toBe('GET');
+      get.flush(existing);
+      await settle();
+
+      expect(page.querySelector('h2')!.textContent).toContain('Editá tu reseña');
+      expect(page.querySelectorAll('.review__star--on').length).toBe(3);
+      expect(page.querySelector('textarea')!.value).toBe('Lindo, pero las duchas frías.');
+      expect(button('Guardar cambios')).toBeDefined();
+    });
+
+    it('al guardar, reemplaza la reseña con PUT y avisa con la nueva', async () => {
+      http.expectOne(URL).flush(existing);
+      await settle();
+
+      await pick(5);
+      await type('Volví y arreglaron las duchas.');
+      await send();
+
+      const put = http.expectOne(URL);
+      expect(put.request.method).toBe('PUT');
+      expect(put.request.body).toEqual({ rating: 5, comment: 'Volví y arreglaron las duchas.' });
+      const edited = { ...existing, rating: 5, comment: 'Volví y arreglaron las duchas.' };
+      put.flush({ ...edited, updatedAt: '2026-01-25T09:00:00' });
+      await settle();
+
+      expect(saved).toEqual([{ ...edited, updatedAt: '2026-01-25T09:00:00' }]);
     });
   });
 });

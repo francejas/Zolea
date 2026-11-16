@@ -77,12 +77,14 @@
                     [paymentError]="payErrors()[card.booking.id] ?? null"
                     [rebook]="card.rebook"
                     [canReview]="card.canReview"
+                    [canEditReview]="card.canEditReview"
                     [reviewed]="card.reviewed"
                     [detailsLabel]="tab() === 'upcoming' ? 'Ver entradas' : 'Ver reserva'"
                     [paying]="paying() === card.booking.id"
                     [paymentDisabled]="paying() !== null"
                     (pay)="pay(card.booking)"
                     (review)="review(card.booking)"
+                    (editReview)="review(card.booking, true)"
                   />
                 </li>
               }
@@ -93,12 +95,13 @@
     }
   }
 
-  @if (reviewing(); as booking) {
+  @if (reviewing(); as current) {
     <app-review-dialog
-      [booking]="booking"
-      (saved)="onReviewed(booking, $event)"
-      (closed)="onReviewClosed(booking)"
-      (rejected)="onReviewRejected(booking)"
+      [booking]="current.booking"
+      [editing]="current.editing"
+      (saved)="onReviewed(current.booking, $event)"
+      (closed)="onReviewClosed(current.booking)"
+      (rejected)="onReviewRejected(current.booking)"
     />
   }
 </section>

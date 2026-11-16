@@ -5,6 +5,7 @@ import com.zolea.backend.dtos.review.ReviewResponse;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
 import com.zolea.backend.exceptions.booking.BookingStateException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
+import com.zolea.backend.exceptions.review.ReviewNotFoundException;
 import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.Review;
 import com.zolea.backend.repositories.BookingRepository;
@@ -71,6 +72,40 @@ public class ReviewService {
             // segundo, que recibe el mismo motivo que si hubiera llegado después.
             throw new BookingStateException(ALREADY_REVIEWED);
         }
+    }
+
+    /**
+     * La reseña de una reserva, para que su autor la vea antes de editarla.
+     *
+     * @throws BookingNotFoundException si la reserva no existe.
+     * @throws ReviewNotFoundException  si la reserva todavía no se calificó.
+     */
+    public ReviewResponse getByBooking(Long bookingId) {
+        return ReviewResponse.of(findReview(bookingId));
+    }
+
+    /**
+     * Cambia las estrellas y el comentario de una reseña. La fecha en que se calificó queda como
+     * estaba; aparte se registra cuándo se editó.
+     *
+     * @throws BookingNotFoundException si la reserva no existe.
+     * @throws ReviewNotFoundException  si la reserva todavía no se calificó: primero se califica.
+     */
+    @Transactional
+    public ReviewResponse update(Long bookingId, ReviewRequest request) {
+        Review review = findReview(bookingId);
+        review.setRating(request.rating());
+        review.setComment(blankToNull(request.comment()));
+        review.setUpdatedAt(LocalDateTime.now(clock));
+        return ReviewResponse.of(reviewRepository.saveAndFlush(review));
+    }
+
+    private Review findReview(Long bookingId) {
+        if (!bookingRepository.existsById(bookingId)) {
+            throw new BookingNotFoundException("Reserva no encontrada con el ID: " + bookingId);
+        }
+        return reviewRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ReviewNotFoundException("Esta reserva todavía no se calificó."));
     }
 
     /**
