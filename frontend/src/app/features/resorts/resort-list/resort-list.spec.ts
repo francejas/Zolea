@@ -226,10 +226,15 @@ describe('ResortList', () => {
     }
 
     async function submitFilters(): Promise<void> {
-      const panel = page.querySelector<HTMLFormElement>('#filters-panel')!;
-      panel.dispatchEvent(new Event('submit', { cancelable: true }));
+      const form = page.querySelector<HTMLFormElement>('form.search')!;
+      form.dispatchEvent(new Event('submit', { cancelable: true }));
       await fixture.whenStable();
     }
+
+    const typeInput = (type: 'TENT' | 'UMBRELLA') =>
+      page.querySelector<HTMLInputElement>(`.filters__types input[value="${type}"]`)!;
+    const amenityInputs = () =>
+      page.querySelectorAll<HTMLInputElement>('.filters__amenities .z-choice input');
 
     it('con los filtros en la dirección vuelve a pedir la lista con esos filtros', async () => {
       await arriveWith({
@@ -292,15 +297,11 @@ describe('ResortList', () => {
       await respondWith([]);
       await withAmenities();
 
-      const type = page.querySelector<HTMLSelectElement>('#f-type')!;
-      type.value = 'TENT';
-      // Un <select> real dispara los dos eventos; Signal Forms escucha `input`.
-      type.dispatchEvent(new Event('input'));
-      type.dispatchEvent(new Event('change'));
+      typeInput('TENT').click();
       const price = page.querySelector<HTMLInputElement>('#f-max-price')!;
       price.value = '20000';
       price.dispatchEvent(new Event('input'));
-      const choices = page.querySelectorAll<HTMLInputElement>('.z-choice input');
+      const choices = amenityInputs();
       choices[1].click();
       choices[0].click();
       await fixture.whenStable();
@@ -343,11 +344,10 @@ describe('ResortList', () => {
       http.expectOne(`${API}?type=UMBRELLA&maxPrice=9000&amenityIds=2`).flush([]);
       await withAmenities();
 
-      expect(page.querySelector<HTMLSelectElement>('#f-type')!.value).toBe('UMBRELLA');
+      expect(typeInput('TENT').checked).toBe(false);
+      expect(typeInput('UMBRELLA').checked).toBe(true);
       expect(page.querySelector<HTMLInputElement>('#f-max-price')!.value).toBe('9000');
-      const checked = Array.from(page.querySelectorAll<HTMLInputElement>('.z-choice input')).map(
-        (input) => input.checked,
-      );
+      const checked = Array.from(amenityInputs()).map((input) => input.checked);
       expect(checked).toEqual([false, true]);
     });
 
@@ -387,7 +387,42 @@ describe('ResortList', () => {
       await fixture.whenStable();
 
       expect(page.querySelector('.filters__amenities')).toBeNull();
-      expect(page.querySelector('#f-type')).not.toBeNull();
+      expect(page.querySelector('.filters__types')).not.toBeNull();
+    });
+
+    it('Carpa y Sombrilla son dos botones: con los dos marcados se busca cualquiera, y quedan marcados', async () => {
+      await respondWith([]);
+      await withAmenities();
+
+      typeInput('TENT').click();
+      typeInput('UMBRELLA').click();
+      await fixture.whenStable();
+      await submitFilters();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/'], {
+        queryParams: { type: 'TENT,UMBRELLA' },
+      });
+    });
+
+    it('con los dos tipos en la dirección, al backend no viaja el tipo', async () => {
+      await arriveWith({ type: 'TENT,UMBRELLA' });
+      http.expectOne(API).flush([]);
+      await fixture.whenStable();
+
+      expect(typeInput('TENT').checked).toBe(true);
+      expect(typeInput('UMBRELLA').checked).toBe(true);
+    });
+
+    it('un servicio marcado muestra el ícono de check', async () => {
+      await respondWith([]);
+      await withAmenities();
+
+      amenityInputs()[0].click();
+      await fixture.whenStable();
+
+      const check = page.querySelector('.filters__amenities .z-choice__check')!;
+      // El ícono se dibuja: no es un <svg> vacío.
+      expect(check.children.length).toBeGreaterThan(0);
     });
   });
 });

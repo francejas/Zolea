@@ -1,5 +1,8 @@
 <section class="detail">
-  <a class="detail__back" routerLink="/admin/bookings"> ← Reservas del balneario </a>
+  <a class="z-btn z-btn--ghost z-btn--compact detail__back" routerLink="/admin/bookings">
+    <svg lucideArrowLeft class="z-icon z-icon--s" aria-hidden="true"></svg>
+    Reservas del balneario
+  </a>
 
   @switch (state()) {
     @case ('loading') {
@@ -56,7 +59,13 @@
             </z-btn>
 
             @if (b.status !== 'CANCELED') {
-              <z-btn variant="danger" [disabled]="dialogOpen()" (click)="askCancel()">
+              <!-- Una estadía terminada no se cancela: el botón ya lo dice, sin abrir nada. -->
+              <z-btn
+                variant="danger"
+                [disabled]="dialogOpen() || stayEnded(b)"
+                [attr.title]="stayEnded(b) ? 'La estadía ya terminó: no se puede cancelar.' : null"
+                (click)="askCancel()"
+              >
                 Cancelar reserva
               </z-btn>
             }

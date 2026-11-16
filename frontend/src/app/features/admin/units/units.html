@@ -39,19 +39,30 @@
       }
 
       <div class="units__fields">
-        <z-field [field]="createForm.type" inputId="unit-type" label="Tipo">
-          <select
-            #control
-            id="unit-type"
-            class="z-input"
-            [formField]="createForm.type"
-            [attr.aria-invalid]="hasError(createForm.type) ? 'true' : null"
-          >
-            @for (option of typeOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </z-field>
+        <!-- Dos opciones: dos botones a la vista, sin desplegable. -->
+        <fieldset class="units__type-field">
+          <legend class="z-field__label">Tipo</legend>
+          <div class="units__type-options">
+            <label class="z-choice units__type-option">
+              <input
+                #control
+                id="unit-type"
+                type="radio"
+                value="UMBRELLA"
+                [formField]="createForm.type"
+              />
+              <svg lucideUmbrella class="z-icon z-icon--s z-choice__icon" aria-hidden="true"></svg>
+              <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg>
+              {{ typeLabel('UMBRELLA') }}
+            </label>
+            <label class="z-choice units__type-option">
+              <input id="unit-type-tent" type="radio" value="TENT" [formField]="createForm.type" />
+              <svg lucideTent class="z-icon z-icon--s z-choice__icon" aria-hidden="true"></svg>
+              <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg>
+              {{ typeLabel('TENT') }}
+            </label>
+          </div>
+        </fieldset>
 
         <z-field
           [field]="createForm.identifier"
@@ -229,30 +240,34 @@
                       data-label="Precio por día"
                       [class.is-muted]="unit.isBlocked || isRetired(unit)"
                     >
-                      @if (editingId() === unit.idRentalUnit) {
-                        <z-field
-                          [field]="priceForm.newPrice"
-                          inputId="unit-new-price"
-                          class="units__price"
-                        >
-                          <input
-                            #priceInput
-                            id="unit-new-price"
-                            class="z-input"
-                            type="number"
-                            inputmode="decimal"
-                            step="0.01"
-                            autocomplete="off"
-                            [attr.aria-label]="'Nuevo precio por día de ' + label(unit)"
-                            [formField]="priceForm.newPrice"
-                            [attr.aria-invalid]="hasError(priceForm.newPrice) ? 'true' : null"
-                            (keydown.enter)="onPriceKey($event)"
-                            (keydown.escape)="cancelPrice()"
-                          />
-                        </z-field>
-                      } @else {
-                        <span class="z-money">{{ price(unit.dailyPrice) }}</span>
-                      }
+                      <!-- El precio y su campo miden lo mismo: editar no cambia el alto de la fila
+                           ni corre a las de abajo. El error flota debajo del campo. -->
+                      <div class="units__price-cell">
+                        @if (editingId() === unit.idRentalUnit) {
+                          <z-field
+                            [field]="priceForm.newPrice"
+                            inputId="unit-new-price"
+                            class="units__price z-field--floating-error"
+                          >
+                            <input
+                              #priceInput
+                              id="unit-new-price"
+                              class="z-input"
+                              type="number"
+                              inputmode="decimal"
+                              step="0.01"
+                              autocomplete="off"
+                              [attr.aria-label]="'Nuevo precio por día de ' + label(unit)"
+                              [formField]="priceForm.newPrice"
+                              [attr.aria-invalid]="hasError(priceForm.newPrice) ? 'true' : null"
+                              (keydown.enter)="onPriceKey($event)"
+                              (keydown.escape)="cancelPrice()"
+                            />
+                          </z-field>
+                        } @else {
+                          <span class="z-money">{{ price(unit.dailyPrice) }}</span>
+                        }
+                      </div>
                     </td>
 
                     <td data-label="Estado">

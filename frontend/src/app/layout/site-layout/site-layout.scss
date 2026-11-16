@@ -2,11 +2,16 @@
    clases globales de styles/buttons.scss. */
 
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
+/* La pantalla se estira y el pie queda abajo aunque el contenido sea corto. */
 main {
   display: block;
+  flex: 1 0 auto;
 }
 
 main:focus {
@@ -204,5 +209,75 @@ main:focus {
   .z-topbar__menu-btn,
   .z-sheet {
     display: none;
+  }
+}
+
+/* --- El pie: la marca, la política de cancelación y el año --------------- */
+.z-footer {
+  border-top: var(--border);
+  background: var(--color-sand-soft);
+}
+
+.z-footer__inner {
+  display: grid;
+  gap: var(--space-4);
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-6) var(--gutter);
+}
+
+.z-footer__brand {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.z-logo--small .z-logo__word {
+  font-size: 22px;
+}
+
+.z-footer__tagline {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.z-footer__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.z-footer__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+  font: 500 15px / 1.3 var(--font-body);
+  text-decoration: none;
+}
+
+.z-footer__link:hover,
+.z-footer__link[aria-current='page'] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.z-footer__copy {
+  margin: 0;
+  font: 500 var(--text-label) / 1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .z-footer__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--space-7);
+  }
+
+  .z-footer__copy {
+    grid-column: 1 / -1;
   }
 }

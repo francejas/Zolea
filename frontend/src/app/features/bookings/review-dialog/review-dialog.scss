@@ -9,9 +9,58 @@
   gap: var(--space-5);
 }
 
-.review__resort {
-  display: block;
-  color: var(--color-text);
+.review__title {
+  margin: 0;
+}
+
+/* Qué se califica: dos tarjetas chicas, una al lado de la otra (una debajo de la otra en un
+   celular angosto). */
+.review__stay {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--space-2);
+}
+
+.review__fact {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+
+  > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .z-icon {
+    margin-top: 2px;
+    color: var(--color-ink-soft);
+  }
+
+  strong {
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+  }
+}
+
+.review__label {
+  font: 500 var(--text-label) / 1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.review__sub {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.review__loading {
+  margin: 0;
+  color: var(--color-text-muted);
 }
 
 .review__rating {

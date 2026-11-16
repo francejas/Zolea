@@ -213,6 +213,7 @@ erDiagram
         int rating
         varchar comment
         datetime created_at
+        datetime updated_at
     }
 
     AMENITY {

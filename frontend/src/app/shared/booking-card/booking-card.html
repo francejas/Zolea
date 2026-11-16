@@ -88,6 +88,11 @@
             </a>
             @if (canReview()) {
               <z-btn (click)="review.emit()">Calificar</z-btn>
+            } @else if (canEditReview()) {
+              <z-btn variant="ghost" (click)="editReview.emit()">
+                <svg lucidePencil class="z-icon z-icon--s" aria-hidden="true"></svg>
+                Editar reseña
+              </z-btn>
             }
           </div>
         }

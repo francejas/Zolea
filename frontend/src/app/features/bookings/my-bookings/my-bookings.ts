@@ -76,6 +76,8 @@ interface BookingCardData {
   rebook: boolean;
   /** Pasada, confirmada y sin calificar: lleva «Calificar». */
   canReview: boolean;
+  /** Ya calificada: lleva «Editar reseña». */
+  canEditReview: boolean;
   /** «Calificaste con 4 estrellas.», o null si no la calificó. */
   reviewed: string | null;
   /** Si está cancelada, cuánto se reintegró (14.4); si no, null. */
@@ -120,8 +122,11 @@ export class MyBookings {
    * persona la estaba mirando, con el aviso, hasta que se vuelve a cargar.
    */
   private readonly placed = signal<Readonly<Record<number, BookingTab>>>({});
-  /** La reserva que se está calificando: mientras tanto, el diálogo está abierto. */
-  protected readonly reviewing = signal<Booking | null>(null);
+  /**
+   * La reserva que se está calificando, o cuya reseña se edita: mientras tanto, el diálogo está
+   * abierto.
+   */
+  protected readonly reviewing = signal<{ booking: Booking; editing: boolean } | null>(null);
   /** Las estrellas que puso en cada reserva que calificó con la pantalla abierta. */
   private readonly ratings = signal<Readonly<Record<number, number>>>({});
   /** La hora contra la que se mira si una pendiente venció: se toma al traer las reservas. */
@@ -229,8 +234,8 @@ export class MyBookings {
     });
   }
 
-  protected review(booking: Booking): void {
-    this.reviewing.set(booking);
+  protected review(booking: Booking, editing = false): void {
+    this.reviewing.set({ booking, editing });
   }
 
   /** Calificó: la tarjeta deja el botón y dice con cuántas estrellas. */
@@ -349,6 +354,7 @@ export class MyBookings {
         booking.status === 'CONFIRMED' &&
         !booking.reviewed &&
         tabOf(booking, this.today) === 'past',
+      canEditReview: booking.status === 'CONFIRMED' && booking.reviewed,
       reviewed: this.reviewedText(booking),
       refund: refundLine(booking),
     };

@@ -46,8 +46,11 @@
       @if (resort(); as resort) {
         <div class="my-resort__layout">
           @if (account(); as account) {
-            <section class="my-resort__account" aria-labelledby="my-resort-account">
-              <h2 id="my-resort-account" class="my-resort__subtitle">Tu cuenta</h2>
+            <section class="my-resort__account my-resort__card" aria-labelledby="my-resort-account">
+              <h2 id="my-resort-account" class="my-resort__subtitle">
+                <svg lucideUser class="z-icon" aria-hidden="true"></svg>
+                Tu cuenta
+              </h2>
               <dl class="my-resort__facts">
                 <div>
                   <dt>Nombre</dt>
@@ -89,8 +92,12 @@
           </aside>
 
           <form class="my-resort__form" novalidate (submit)="onSubmit($event)">
-            <section class="my-resort__section" aria-labelledby="my-resort-data">
-              <h2 id="my-resort-data" class="my-resort__subtitle">Datos</h2>
+            <section class="my-resort__section my-resort__card" aria-labelledby="my-resort-data">
+              <h2 id="my-resort-data" class="my-resort__subtitle">
+                <svg lucideStore class="z-icon" aria-hidden="true"></svg>
+                Datos del balneario
+              </h2>
+              <p class="my-resort__hint">Lo que se lee en la Portada y en la Ficha.</p>
               <div class="my-resort__pair">
                 <z-field [field]="resortForm.name" inputId="resort-name" label="Nombre">
                   <input
@@ -149,8 +156,12 @@
               </z-field>
             </section>
 
-            <fieldset class="my-resort__section my-resort__amenities">
-              <legend class="my-resort__subtitle">Servicios que ofrece</legend>
+            <fieldset class="my-resort__section my-resort__amenities my-resort__card">
+              <legend class="z-visually-hidden">Servicios que ofrece</legend>
+              <p class="my-resort__subtitle" aria-hidden="true">
+                <svg lucideSparkles class="z-icon" aria-hidden="true"></svg>
+                Servicios que ofrece
+              </p>
               <p class="my-resort__hint">
                 Marcá los que tiene tu balneario: los clientes buscan balnearios por estos
                 servicios.
@@ -200,7 +211,11 @@
             </div>
           </form>
 
-          <section class="my-resort__section my-resort__status" aria-labelledby="my-resort-status">
+          <section
+            class="my-resort__section my-resort__status my-resort__card"
+            [class.my-resort__status--off]="!resort.active"
+            aria-labelledby="my-resort-status"
+          >
             @if (activeNotice(); as notice) {
               <div id="my-resort-active-notice" tabindex="-1">
                 <z-alert variant="success" [title]="notice.title" [text]="notice.text" />

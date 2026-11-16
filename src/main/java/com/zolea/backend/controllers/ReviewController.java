@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Reseñas", description = "El cliente califica el balneario donde estuvo; las reseñas de cada balneario son públicas.")
+@Tag(name = "Reseñas", description = "El cliente califica el balneario donde estuvo y puede editar su reseña; las reseñas de cada balneario son públicas.")
 public class ReviewController {
 
     private final ReviewService reviewService;
@@ -44,6 +44,40 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> reviewBooking(@PathVariable Long id,
                                                         @Valid @RequestBody ReviewRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewService.review(id, request));
+    }
+
+    // Las mismas reglas que calificar: la reseña es del cliente dueño de la reserva.
+    @PreAuthorize("!hasRole('ADMIN') and @bookingAccess.canAccess(#id, principal.idClient)")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/bookings/{id}/review")
+    @Operation(summary = "Ver la reseña de una reserva",
+            description = "La reseña que dejó el cliente sobre esa reserva, para editarla. Solo su dueño.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "La reseña, como se ve en el balneario"),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente, o quien pide es un administrador", content = @Content),
+            @ApiResponse(responseCode = "404", description = "No existe la reserva, o todavía no se calificó", content = @Content)
+    })
+    public ResponseEntity<ReviewResponse> getBookingReview(@PathVariable Long id) {
+        return ResponseEntity.ok(reviewService.getByBooking(id));
+    }
+
+    @PreAuthorize("!hasRole('ADMIN') and @bookingAccess.canAccess(#id, principal.idClient)")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/api/bookings/{id}/review")
+    @Operation(summary = "Editar la reseña de una reserva",
+            description = "Cambia las estrellas y el comentario de una reseña ya hecha. Conserva la fecha en que "
+                    + "se calificó y registra cuándo se editó. Solo su dueño.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "La reseña, como queda en el balneario"),
+            @ApiResponse(responseCode = "400", description = "La calificación o el comentario no son válidos", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente, o quien pide es un administrador", content = @Content),
+            @ApiResponse(responseCode = "404", description = "No existe la reserva, o todavía no se calificó", content = @Content)
+    })
+    public ResponseEntity<ReviewResponse> updateBookingReview(@PathVariable Long id,
+                                                              @Valid @RequestBody ReviewRequest request) {
+        return ResponseEntity.ok(reviewService.update(id, request));
     }
 
     @GetMapping("/api/resorts/{id}/reviews")

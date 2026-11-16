@@ -33,6 +33,7 @@
                 id="profile-first-name"
                 class="z-input"
                 type="text"
+                placeholder="Matías"
                 autocomplete="given-name"
                 [formField]="profileForm.firstName"
                 [attr.aria-invalid]="hasError(profileForm.firstName) ? 'true' : null"
@@ -44,6 +45,7 @@
                 id="profile-last-name"
                 class="z-input"
                 type="text"
+                placeholder="Fernández"
                 autocomplete="family-name"
                 [formField]="profileForm.lastName"
                 [attr.aria-invalid]="hasError(profileForm.lastName) ? 'true' : null"
@@ -65,6 +67,7 @@
               id="profile-email"
               class="z-input"
               type="email"
+              placeholder="correo@gmail.com"
               inputmode="email"
               autocomplete="email"
               autocapitalize="none"
@@ -74,17 +77,38 @@
             />
           </z-field>
 
-          <z-field [field]="profileForm.phone" inputId="profile-phone" label="Teléfono">
-            <input
-              id="profile-phone"
-              class="z-input"
-              type="tel"
-              inputmode="numeric"
-              autocomplete="tel"
-              (input)="onlyDigits($event, 'phone')"
-              [formField]="profileForm.phone"
-              [attr.aria-invalid]="hasError(profileForm.phone) ? 'true' : null"
-            />
+          <z-field
+            [field]="profileForm.phone"
+            inputId="profile-phone"
+            label="Teléfono"
+            help="El país y el número, sin el 0 ni el 15."
+          >
+            <div class="z-phone">
+              <select
+                id="profile-phone-country"
+                class="z-input z-phone__country"
+                aria-label="País del teléfono"
+                autocomplete="tel-country-code"
+                (change)="setCountry($event)"
+              >
+                @for (option of countries; track option.iso) {
+                  <option [value]="option.iso" [selected]="option.iso === country().iso">
+                    {{ option.name }} ({{ option.dial }})
+                  </option>
+                }
+              </select>
+              <input
+                id="profile-phone"
+                class="z-input"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel-national"
+                [placeholder]="country().placeholder"
+                (input)="onlyDigits($event, 'phone')"
+                [formField]="profileForm.phone"
+                [attr.aria-invalid]="hasError(profileForm.phone) ? 'true' : null"
+              />
+            </div>
           </z-field>
 
           <z-field
@@ -100,6 +124,7 @@
               inputmode="numeric"
               autocomplete="off"
               spellcheck="false"
+              placeholder="12345678"
               (input)="onlyDigits($event, 'dni')"
               [formField]="profileForm.dni"
               [attr.aria-invalid]="hasError(profileForm.dni) ? 'true' : null"

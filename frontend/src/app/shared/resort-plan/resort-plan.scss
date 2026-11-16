@@ -432,6 +432,40 @@
     gap: var(--space-2);
     padding-top: 0;
   }
+
+  /* Unidades y pasillos más chicos: así tres columnas de carpas entran en un celular de 360 px sin
+     que el plano se deslice de costado (44 + 4 + 44 por columna y 12 de pasillo). Con más
+     columnas, sigue el desplazamiento de siempre. */
+  .z-plan > * {
+    --plan-aisle: 12px;
+  }
+
+  /* La zona de carpas es un subgrid: su separación entre columnas se le suma a cada columna del
+     mapa. En el celular el aire lo da el pasillo. */
+  .z-plan__zone--columns {
+    column-gap: 0;
+  }
+
+  .z-unit:not(.z-unit--mini) {
+    min-width: 44px;
+    gap: 4px;
+    padding: 4px 0;
+  }
+
+  .z-unit:not(.z-unit--mini) .z-unit__shape {
+    width: 36px;
+    height: 36px;
+  }
+
+  .z-unit--tent:not(.z-unit--mini) .z-unit__shape {
+    width: 42px;
+    height: 34px;
+  }
+
+  .z-unit:not(.z-unit--mini) .z-unit__id {
+    padding: 2px 4px;
+    font-size: 10px;
+  }
 }
 
 /* --- Leyenda --- */

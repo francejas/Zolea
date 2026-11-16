@@ -58,18 +58,20 @@
 
     @case ('confirmed') {
       @if (booking(); as booking) {
-        <header class="result__head">
-          <svg lucideCircleCheck class="result__icon result__icon--ok" aria-hidden="true"></svg>
-          <p class="z-eyebrow">
-            Reserva <span class="z-code">{{ number() }}</span>
-          </p>
-          <h1 class="result__title">¡Pago confirmado!</h1>
-          <p class="result__text">
-            Tu lugar en {{ booking.resortName }} está reservado. Mostrá la entrada en la puerta.
-          </p>
-        </header>
+        <!-- El título, los datos y la entrada en una grilla: en la computadora la entrada va a la
+             derecha, a la altura del título; en el celular, enseguida después del título. -->
+        <div class="result__layout result__layout--confirmed">
+          <header class="result__head">
+            <svg lucideCircleCheck class="result__icon result__icon--ok" aria-hidden="true"></svg>
+            <p class="z-eyebrow">
+              Reserva <span class="z-code">{{ number() }}</span>
+            </p>
+            <h1 class="result__title">¡Pago confirmado!</h1>
+            <p class="result__text">
+              Tu lugar en {{ booking.resortName }} está reservado. Mostrá la entrada en la puerta.
+            </p>
+          </header>
 
-        <div class="result__layout">
           <div class="result__info">
             <p class="z-place">
               <svg lucideMapPin class="z-icon" aria-hidden="true"></svg>

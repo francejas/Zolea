@@ -37,6 +37,13 @@ describe('ZDirections', () => {
     expect(link.rel).toContain('noopener');
   });
 
+  it('termina con la flecha hacia arriba y a la derecha: la señal de que abre otra pestaña', () => {
+    const icons = link.querySelectorAll('svg');
+    expect(icons).toHaveLength(2);
+    expect(icons[1].classList).toContain('lucide-arrow-up-right');
+    expect(icons[1].getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('el lector de pantalla oye adónde lleva y que se abre en otra pestaña', () => {
     expect(link.getAttribute('aria-label')).toBe(
       'Cómo llegar a Zolea Club de Playa, en Google Maps (se abre en otra pestaña)',

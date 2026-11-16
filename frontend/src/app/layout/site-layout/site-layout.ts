@@ -45,6 +45,9 @@ import { SessionService } from '../../core/session/session.service';
 export class SiteLayout {
   protected readonly session = inject(SessionService);
 
+  /** El año del pie, tomado una vez al abrir. */
+  protected readonly year = new Date().getFullYear();
+
   protected readonly userMenuOpen = signal(false);
   protected readonly sheetOpen = signal(false);
 

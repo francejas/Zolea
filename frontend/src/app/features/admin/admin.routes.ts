@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { PlaceholderPage } from '../../core/placeholder-page';
 
 /**
  * Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. Ahí también se decide quién

@@ -26,7 +26,12 @@
             @if (review.comment) {
               <p class="reviews__comment">{{ review.comment }}</p>
             }
-            <p class="reviews__byline">{{ author(review) }} · {{ date(review) }}</p>
+            <p class="reviews__byline">
+              {{ author(review) }} · {{ date(review) }}
+              @if (review.updatedAt) {
+                · editada
+              }
+            </p>
           </li>
         }
       </ul>

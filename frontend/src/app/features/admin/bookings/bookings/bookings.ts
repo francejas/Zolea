@@ -10,6 +10,9 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { LucideCheck } from '@lucide/angular';
+import { RangeLabels, ZDateRange } from '../../../../shared/z-date-range/z-date-range';
+import { todayIso } from '../../../../shared/utils/days';
 import { ZAlert } from '../../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../../shared/z-empty/z-empty';
@@ -23,7 +26,7 @@ import { toUserMessage } from '../../../../core/errors/error-message';
 
 @Component({
   selector: 'app-admin-bookings',
-  imports: [RouterLink, ZAlert, ZBtn, ZEmpty, ZProblem, ZSkeleton],
+  imports: [RouterLink, LucideCheck, ZAlert, ZBtn, ZDateRange, ZEmpty, ZProblem, ZSkeleton],
   templateUrl: './bookings.html',
   styleUrl: './bookings.scss',
 })
@@ -38,18 +41,39 @@ export class Bookings {
   protected readonly loadError = signal('');
 
   protected readonly status = signal<BookingStatus | ''>('');
-  protected readonly from = signal('');
-  protected readonly to = signal('');
+  /** El período, con el mismo selector de fechas que el resto de la app. Null: sin ese límite. */
+  protected readonly from = signal<string | null>(null);
+  protected readonly to = signal<string | null>(null);
 
-  protected readonly invalidRange = computed(
-    () => !!this.from() && !!this.to() && this.from() > this.to(),
-  );
+  protected readonly statusOptions: { value: BookingStatus | ''; label: string }[] = [
+    { value: '', label: 'Todas' },
+    { value: 'PENDING', label: 'Pendientes de pago' },
+    { value: 'CONFIRMED', label: 'Confirmadas' },
+    { value: 'CANCELED', label: 'Canceladas' },
+  ];
+  protected readonly rangeLabels: RangeLabels = {
+    from: 'Desde',
+    to: 'Hasta',
+    pickFrom: 'Elegí desde qué día',
+    pickTo: 'Elegí hasta qué día',
+  };
+  /** Las reservas viejas también se buscan: el calendario no frena en hoy. */
+  protected readonly minDate = '2020-01-01';
+  protected readonly endedReason = 'La estadía ya terminó: no se puede cancelar.';
+  /** Hoy, una vez: contra esto se ve si una estadía ya terminó. */
+  private readonly today = todayIso();
+
+  protected readonly invalidRange = computed(() => {
+    const from = this.from();
+    const to = this.to();
+    return !!from && !!to && from > to;
+  });
 
   protected readonly filtered = computed(() =>
     filterBookings(this.bookings(), {
       status: this.status(),
-      from: this.from(),
-      to: this.to(),
+      from: this.from() ?? '',
+      to: this.to() ?? '',
     }),
   );
 
@@ -90,6 +114,14 @@ export class Bookings {
       });
   }
 
+  /**
+   * Una confirmada cuya estadía ya terminó no se cancela (`Booking.refundFor`), ni siquiera el
+   * balneario. El botón queda deshabilitado en vez de abrir una confirmación que no deja confirmar.
+   */
+  protected stayEnded(booking: Booking): boolean {
+    return booking.status === 'CONFIRMED' && booking.endDate < this.today;
+  }
+
   protected setStatus(value: string): void {
     if (value === '' || value === 'PENDING' || value === 'CONFIRMED' || value === 'CANCELED') {
       this.status.set(value);
@@ -98,12 +130,12 @@ export class Bookings {
 
   protected resetFilters(): void {
     this.status.set('');
-    this.from.set('');
-    this.to.set('');
+    this.from.set(null);
+    this.to.set(null);
   }
 
   protected askCancel(booking: Booking): void {
-    if (this.checking() || this.canceling()) return;
+    if (this.checking() || this.canceling() || this.stayEnded(booking)) return;
 
     this.pending.set(booking);
     this.terms.set(null);

@@ -19,7 +19,14 @@ import {
   submit,
   validate,
 } from '@angular/forms/signals';
-import { LucideCheck, LucideDynamicIcon, LucideIcon } from '@lucide/angular';
+import {
+  LucideCheck,
+  LucideDynamicIcon,
+  LucideIcon,
+  LucideSparkles,
+  LucideStore,
+  LucideUser,
+} from '@lucide/angular';
 import { catchError, firstValueFrom, forkJoin, map, of } from 'rxjs';
 import { AmenitiesApi } from '../../../core/api/amenities.api';
 import { Amenity, Resort, ResortRequest } from '../../../core/api/resort.models';
@@ -109,6 +116,9 @@ interface ActiveNotice {
   imports: [
     FormField,
     LucideCheck,
+    LucideSparkles,
+    LucideStore,
+    LucideUser,
     LucideDynamicIcon,
     ZAlert,
     ZBtn,

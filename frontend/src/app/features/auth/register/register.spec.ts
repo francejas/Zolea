@@ -49,6 +49,7 @@ describe('Register', () => {
             { path: 'register', component: Register },
             { path: 'login', component: Destination },
             { path: 'dashboard', component: Destination },
+            { path: 'book/:id', component: Destination },
             { path: '', pathMatch: 'full', component: Destination },
           ],
           withComponentInputBinding(),
@@ -129,6 +130,13 @@ describe('Register', () => {
       expect(link.getAttribute('href')).toBe('/login');
     });
 
+    it('cada campo trae un ejemplo de cómo completarlo', () => {
+      expect(input('first-name').placeholder).toBe('Matías');
+      expect(input('email').placeholder).toBe('correo@gmail.com');
+      expect(input('phone').placeholder).toBe('000 000 0000');
+      expect(input('dni').placeholder).toBe('12345678');
+    });
+
     it('al abrir no hay avisos ni errores', () => {
       expect(alerts()).toHaveLength(0);
       expect(fieldErrors()).toEqual([]);
@@ -172,14 +180,56 @@ describe('Register', () => {
       expect(input('dni').value).toBe('');
     });
 
-    it('lo que viaja al backend son solo dígitos', async () => {
-      await fill({ phone: '+54 223 512 3456', dni: '40.123.456' });
+    it('lo que viaja al backend: el teléfono con el código del país, y el DNI solo con dígitos', async () => {
+      await fill({ phone: '223 512-3456', dni: '40.123.456' });
       await submit();
 
       expect(http.expectOne(CLIENTS).request.body).toMatchObject({
-        phone: '542235123456',
+        phone: '+54 2235123456',
         dni: '40123456',
       });
+    });
+
+    it('el país arranca en Argentina y el ejemplo del número cambia con el país', async () => {
+      const country = page.querySelector<HTMLSelectElement>('#register-phone-country')!;
+      expect(country.value).toBe('AR');
+      expect(input('phone').placeholder).toBe('000 000 0000');
+
+      country.value = 'UY';
+      country.dispatchEvent(new Event('change'));
+      await harness.fixture.whenStable();
+
+      expect(input('phone').placeholder).toBe('00 000 000');
+    });
+
+    it('un teléfono con menos números de los que lleva el país no se envía', async () => {
+      await fill({ phone: '223512' });
+      await submit();
+      await harness.fixture.whenStable();
+
+      expect(fieldErrors()).toContain(
+        'El teléfono de Argentina lleva 10 números: el código de área sin el 0 y el número sin el 15.',
+      );
+      expect(document.activeElement).toBe(input('phone'));
+    });
+
+    it('con otro país, viaja su código', async () => {
+      const country = page.querySelector<HTMLSelectElement>('#register-phone-country')!;
+      country.value = 'PE';
+      country.dispatchEvent(new Event('change'));
+      await fill({ phone: '912345678' });
+      await submit();
+
+      expect(http.expectOne(CLIENTS).request.body).toMatchObject({ phone: '+51 912345678' });
+    });
+
+    it('el DNI son 7 u 8 números', async () => {
+      await fill({ dni: '123' });
+      await submit();
+      await harness.fixture.whenStable();
+
+      expect(fieldErrors()).toContain('El DNI son 7 u 8 números, sin puntos.');
+      expect(document.activeElement).toBe(input('dni'));
     });
   });
 
@@ -238,7 +288,7 @@ describe('Register', () => {
 
       const create = http.expectOne(CLIENTS);
       expect(create.request.method).toBe('POST');
-      expect(create.request.body).toEqual(newClient);
+      expect(create.request.body).toEqual({ ...newClient, phone: '+54 2235123456' });
       create.flush({ idClient: 9, ...newClient, password: undefined });
       await flushMicrotasks();
 
@@ -253,6 +303,31 @@ describe('Register', () => {
       expect(router.url).toBe('/dashboard');
       expect(session.isLoggedIn()).toBe(true);
       expect(session.user()!.firstName).toBe('Lucía');
+    });
+
+    it('si vino de Reservar, vuelve a lo que había elegido (unidad y fechas)', async () => {
+      const book = '/book/3?unit=7&from=2027-01-15&to=2027-01-17';
+      await harness.navigateByUrl(`/register?volver=${encodeURIComponent(book)}`, Register);
+      await harness.fixture.whenStable();
+      page = harness.routeNativeElement as HTMLElement;
+
+      // «Ingresar» también lleva el regreso, por si ya tenía cuenta.
+      const link = page.querySelector<HTMLAnchorElement>('.register__alt a')!;
+      expect(link.getAttribute('href')).toBe(`/login?volver=${encodeURIComponent(book)}`);
+
+      await fill();
+      await submit();
+      http.expectOne(CLIENTS).flush({ idClient: 9, ...newClient, password: undefined });
+      await flushMicrotasks();
+      http
+        .expectOne(`${AUTH}/login`)
+        .flush({ token: 'jwt-de-prueba', clientId: 9, role: 'USER' } as LoginResponse);
+      await flushMicrotasks();
+      http.expectOne(`${AUTH}/me`).flush(newMe);
+      await flushMicrotasks();
+      await harness.fixture.whenStable();
+
+      expect(router.url).toBe(book);
     });
 
     it('mientras el pedido está pendiente, el botón queda cargando y no se envía dos veces', async () => {
