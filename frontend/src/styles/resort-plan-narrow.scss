@@ -1,0 +1,59 @@
+/* El plano del balneario cuando su recuadro es angosto (menos de 520 px: un celular). Es parte de
+   shared/resort-plan, que no está encapsulado y usa estas mismas clases; vive acá, global, para que
+   la hoja del componente no pase el presupuesto de 8 kB por componente (angular.json). Como esta
+   hoja carga antes que la del componente, cada regla lleva .z-plan adelante: así le gana a la
+   regla de base del mismo nombre, como cuando estaban juntas. */
+
+/* El plano mira el ancho de su contenedor, no el de la pantalla. */
+@container (max-width: 520px) {
+  /* El contenedor no se puede consultar a sí mismo: los valores bajan desde sus hijos. */
+  .z-plan > * {
+    --plan-pad: var(--space-3);
+    --plan-lead: var(--plan-pad);
+    --zone-top: var(--space-4);
+    --zone-bottom: var(--space-5);
+    /* Pasillos más angostos: con las unidades chicas de abajo, tres columnas de carpas entran en
+       un celular de 360 px sin deslizarse (44 + 4 + 44 por columna y 12 de pasillo). */
+    --plan-aisle: 12px;
+  }
+
+  .z-plan .z-plan__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .z-plan .z-plan__row-label {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding-top: 0;
+  }
+
+  /* La zona de carpas es un subgrid: su separación entre columnas se le suma a cada columna del
+     mapa. En el celular el aire lo da el pasillo. */
+  .z-plan .z-plan__zone--columns {
+    column-gap: 0;
+  }
+
+  /* La leyenda queda fuera del recuadro: estas reglas no la alcanzan. */
+  .z-plan .z-unit {
+    min-width: 44px;
+    gap: 4px;
+    padding: 4px 0;
+  }
+
+  .z-plan .z-unit__shape {
+    width: 36px;
+    height: 36px;
+  }
+
+  .z-plan .z-unit--tent .z-unit__shape {
+    width: 42px;
+    height: 34px;
+  }
+
+  .z-plan .z-unit__id {
+    padding: 2px 4px;
+    font-size: 10px;
+  }
+}
