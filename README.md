@@ -12,12 +12,11 @@ Zolea es una plataforma completa para la administración de balnearios y la rese
 ### Sobre esta versión (v2)
 
 Este repositorio es la **segunda versión**, y lo que cambia es el backend: se reescribieron las
-reglas del negocio, los permisos, las relaciones entre entidades y el cobro, con 127 pruebas
-automáticas que los sostienen. El detalle de qué se arregló y por qué está en
+reglas del negocio, los permisos, las relaciones entre entidades y el cobro, con una batería de
+pruebas automáticas que los sostienen. El detalle de qué se arregló y por qué está en
 [docs/decisiones.md](docs/decisiones.md).
 
-**El frontend se hace en Angular 22 y vive en `frontend/`, en este mismo repositorio.** Está en
-construcción.
+**El frontend está hecho en Angular 22 y vive en `frontend/`, en este mismo repositorio.**
 
 La interfaz de la **v1 en React**, que ocupaba esa carpeta, se quitó de acá: ya no funciona contra
 este backend —cada administrador ve solo su balneario, `ResortResponse` cambió de campos, los
@@ -97,7 +96,6 @@ para el catálogo de servicios y el alta de balnearios.
 
 ### Para administradores
 - **Dashboard** con métricas en tiempo real: reservas del día, unidades libres, ingresos del mes
-- **Widget de clima** en tiempo real (Open-Meteo + Nominatim, sin API key)
 - Gestión de unidades: crear, bloquear, dar de baja, actualizar precios individualmente
 - **Reservas presenciales (walk-in)** con confirmación y QR instantáneo
 - Validación de ingreso por **código QR** o **DNI**
@@ -120,20 +118,18 @@ para el catálogo de servicios y el alta de balnearios.
 | Lombok | — | Reducción de boilerplate |
 | Docker + Docker Compose | — | Contenerización |
 
-### Frontend (en construcción)
+### Frontend
 | Tecnología | Versión | Rol |
 |---|---|---|
 | Angular | 22 | Framework de la interfaz |
 | TypeScript | — | Tipado estático |
 | SCSS | — | Estilos |
 
-### ☁️ Infraestructura (producción)
-| Servicio | Tecnología |
-|---|---|
-| Frontend | Vercel |
-| Backend | AWS EC2 (t3.micro) + Docker Compose |
-| Túnel HTTPS | ngrok (para callbacks de MercadoPago) |
-| Base de datos | MySQL 8.0 en Docker |
+### Entorno de ejecución
+
+El entorno verificado del proyecto es local: Angular corre en el puerto 4200, Spring Boot en el
+8080 y MySQL en el 3307, todos con Docker Compose salvo el frontend cuando se ejecuta con Angular
+CLI. Para probar pagos de MercadoPago en local se puede agregar un túnel HTTPS temporal con ngrok.
 
 ---
 
@@ -158,27 +154,12 @@ para el catálogo de servicios y el alta de balnearios.
  (Puerto 3307)
 ```
 
-### Producción
+### Pagos locales con ngrok
 ```
-┌──────────────────────┐
-│  Frontend (Vercel)   │  ← Usuario accede desde browser
-│  Angular             │
-└──────────┬───────────┘
-           │ HTTPS + JWT
-           ▼
-┌────────────────────────────────────────────────┐
-│  germicide-moistness-overhead.ngrok-free.dev   │  ← ngrok (HTTPS)
-│               AWS EC2 t3.micro                 │
-│                                                │
-│  ┌──────────────────┐   ┌──────────────────┐  │
-│  │  Spring Boot     │   │   MySQL 8.0      │  │
-│  │  Puerto 8080     │   │   Puerto 3307    │  │
-│  └──────────────────┘   └──────────────────┘  │
-└────────────────────────────────────────────────┘
-           │
-           ▼
-    MercadoPago API
-    (callbacks → ngrok → backend → redirect → Vercel)
+MercadoPago API
+      │ callbacks HTTPS
+      ▼
+    ngrok ─────► Spring Boot local:8080
 ```
 
 ---
@@ -296,7 +277,7 @@ esperar a que venza su token.
 ### Prerrequisitos
 
 - [Docker](https://www.docker.com/) y Docker Compose
-- [Node.js 18+](https://nodejs.org/)
+- [Node.js 24+](https://nodejs.org/)
 - [Java 21](https://adoptium.net/) + Maven (opcional, solo sin Docker)
 
 ### 1. Clonar el repositorio
@@ -347,8 +328,8 @@ docker compose up -d db     # las pruebas necesitan la base levantada
 ./mvnw test
 ```
 
-**105 pruebas de integración**, que levantan la aplicación entera contra el MySQL de
-`docker-compose` sobre un schema aparte (`zolea_test`), creado y destruido en cada corrida.
+Las pruebas de integración levantan la aplicación entera contra el MySQL de `docker-compose` sobre
+un schema aparte (`zolea_test`), creado y destruido en cada corrida.
 Los datos de demostración no se tocan.
 
 Si el contenedor está apagado, fallan con `Communications link failure`: no es una regresión,
@@ -379,32 +360,6 @@ ngrok http 8080
 
 ---
 
-## ☁️ Despliegue en producción
-
-### Backend en AWS EC2
-
-```bash
-# Conectarse al servidor
-ssh -i clave.pem ubuntu@<IP_EC2>
-
-# Clonar e instalar
-git clone https://github.com/francejas/Zolea.git
-cd Zolea
-
-# Crear .env con variables de producción y levantar contenedores
-sudo docker compose up --build -d
-
-# ngrok (mantener corriendo con nohup)
-nohup ngrok http --domain=<tu-dominio-estatico>.ngrok-free.dev 8080 &
-```
-
-### Frontend
-
-Se despliega desde `frontend/` a Vercel. Lo único que necesita de este lado es que
-`FRONTEND_URL` apunte a su dirección, para que el cliente vuelva ahí después de pagar.
-
----
-
 ## 📁 Estructura del proyecto
 
 ```
@@ -432,11 +387,11 @@ Zolea/
 │   └── data-demo.sql         # Seed de dev y demo: 5 balnearios, 26 clientes,
 │                             # 114 unidades, 74 reservas
 │
-├── src/test/                 # 127 pruebas + IntegrationTest (base y fixtures)
+├── src/test/                 # Pruebas + IntegrationTest (base y fixtures)
 ├── docs/                     # Modelo de datos, decisiones, flujo de pago y guía de frontend
 ├── .github/workflows/        # ci.yml (backend) y frontend.yml: compilan y prueban
 │
-├── frontend/                 # Interfaz en Angular 22 (en construcción)
+├── frontend/                 # Interfaz completa en Angular 22
 │
 ├── docker-compose.yml        # MySQL 8 (3307) + backend (8080, perfil demo)
 ├── Dockerfile                # Multi-stage build (Maven → JRE)
@@ -478,7 +433,7 @@ clientes ni balnearios. Cada balneario elige cuáles servicios ofrece en Mi baln
 | [docs/modelo-de-datos.md](docs/modelo-de-datos.md) | Diagrama de clases, DER y las restricciones de unicidad de la base |
 | [docs/decisiones.md](docs/decisiones.md) | Las dieciocho decisiones de arquitectura, con el problema que resolvían y lo que se paga por cada una |
 | [docs/flujo-de-pago.md](docs/flujo-de-pago.md) | El cobro paso a paso y por qué hay dos caminos de confirmación |
-| [docs/guia-frontend.md](docs/guia-frontend.md) | Para el equipo de frontend: sesión, errores, permisos y cómo generar el cliente de TypeScript |
+| [docs/guia-frontend.md](docs/guia-frontend.md) | Para el equipo de frontend: sesión, errores, permisos y tipos escritos contra Swagger |
 
 ---
 
