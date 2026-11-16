@@ -42,36 +42,46 @@ tiene despliegue propio.
 ### Cuentas de prueba
 
 La demo se recarga cada vez que arranca el backend. **Todas las cuentas usan la contraseña
-`admin123`**.
+`admin123`**. Los estados de reservas se generan relativos al día de carga.
 
-| Cuenta | Rol | Para probar |
-|---|---|---|
-| `mostrador@zolea.com` | `USER` | Cuenta técnica para reservas de mostrador |
-| `admin.mdp@zolea.com` | `ADMIN` | Panel de Mar del Plata |
-| `admin.pinamar@zolea.com` | `ADMIN` | Panel de Pinamar |
-| `admin.gesell@zolea.com` | `ADMIN` | Panel de Villa Gesell |
-| `admin.miramar@zolea.com` | `ADMIN` | Panel de Miramar |
-| `admin.necochea@zolea.com` | `ADMIN` | Panel de Necochea |
-| `santi.rodriguez@gmail.com` | `USER` | Cliente con reservas, pagos y reseñas |
-| `vale.garcia@gmail.com` | `USER` | Cliente de prueba |
-| `matias.fern@gmail.com` | `USER` | Cliente de prueba |
-| `cami.martinez@gmail.com` | `USER` | Cliente de prueba |
-| `lucho.torres@gmail.com` | `USER` | Cliente de prueba |
-| `agus.lopez@gmail.com` | `USER` | Cliente de prueba |
-| `ramiro.gomez@gmail.com` | `USER` | Cliente de prueba |
-| `flor.diaz@gmail.com` | `USER` | Cliente de prueba |
-| `eze.sanchez@gmail.com` | `USER` | Cliente de prueba |
-| `nati.romero@gmail.com` | `USER` | Cliente con reservas próximas |
-| `nacho.perez@gmail.com` | `USER` | Cliente de prueba |
-| `sofi.molina@gmail.com` | `USER` | Cliente de prueba |
-| `tomi.gut@gmail.com` | `USER` | Cliente de prueba |
-| `mice.flores@gmail.com` | `USER` | Cliente de prueba |
-| `facu.ruiz@gmail.com` | `USER` | Cliente de prueba |
-| `mili.jimenez@gmail.com` | `USER` | Cliente de prueba |
-| `nico.acosta@gmail.com` | `USER` | Cliente de prueba |
-| `rocio.villalba@gmail.com` | `USER` | Cliente de prueba |
-| `seba.medina@gmail.com` | `USER` | Cliente de prueba |
-| `zolea@zolea.com` | `ADMIN` sin balneario | Catálogo de servicios y alta de balnearios |
+#### Clientes
+
+| Cuenta | Pend. | Hoy | Próx. | Termin. | Cancel. | Reseñas |
+|---|---:|---:|---:|---:|---:|---:|
+| `santi.rodriguez@gmail.com` | 1 | 1 | 1 | 4 | 1 | 3 |
+| `nati.romero@gmail.com` | 1 | 1 | 0 | 1 | 0 | 0 |
+| `cami.martinez@gmail.com` | 1 | 1 | 1 | 2 | 0 | 1 |
+| `vale.garcia@gmail.com` | 0 | 1 | 1 | 3 | 1 | 1 |
+| `matias.fern@gmail.com` | 1 | 0 | 1 | 2 | 2 | 0 |
+| `lucho.torres@gmail.com` | 1 | 0 | 0 | 3 | 0 | 0 |
+| `nacho.perez@gmail.com` | 2 | 0 | 0 | 1 | 0 | 0 |
+| `rocio.villalba@gmail.com` | 1 | 0 | 1 | 2 | 0 | 2 |
+| `seba.medina@gmail.com` | 1 | 0 | 1 | 2 | 0 | 0 |
+| `sofi.molina@gmail.com` | 2 | 0 | 0 | 1 | 0 | 0 |
+| `nico.acosta@gmail.com` | 1 | 1 | 0 | 0 | 0 | 0 |
+| `tomi.gut@gmail.com` | 0 | 1 | 0 | 1 | 1 | 1 |
+| `mili.jimenez@gmail.com` | 0 | 1 | 0 | 1 | 1 | 0 |
+| `flor.diaz@gmail.com` | 0 | 0 | 0 | 1 | 2 | 0 |
+| `agus.lopez@gmail.com` | 0 | 0 | 0 | 3 | 0 | 2 |
+| `eze.sanchez@gmail.com` | 0 | 1 | 0 | 2 | 0 | 1 |
+| `facu.ruiz@gmail.com` | 0 | 1 | 0 | 2 | 0 | 2 |
+| `mice.flores@gmail.com` | 0 | 1 | 0 | 2 | 0 | 1 |
+| `ramiro.gomez@gmail.com` | 0 | 0 | 0 | 3 | 0 | 0 |
+| `mostrador@zolea.com` | 0 | 2 | 0 | 0 | 0 | 0 |
+
+#### Administradores
+
+| Cuenta | Balneario | Unidades activas | Reservas | Pend. | Confirm. | Cancel. |
+|---|---|---:|---:|---:|---:|---:|
+| `admin.mdp@zolea.com` | Zolea Club de Playa | 36 | 40 | 3 | 32 | 5 |
+| `admin.pinamar@zolea.com` | Ocean View Resort | 19 | 12 | 2 | 9 | 1 |
+| `admin.gesell@zolea.com` | Arena Dorada | 19 | 8 | 2 | 5 | 1 |
+| `admin.miramar@zolea.com` | Costa Sur | 19 | 7 | 2 | 4 | 1 |
+| `admin.necochea@zolea.com` | Mar del Sur | 15 | 7 | 3 | 4 | 0 |
+| `zolea@zolea.com` | Sin balneario | — | 0 | 0 | 0 | 0 |
+
+`admin.mdp@zolea.com` es la cuenta más completa para probar el panel. `zolea@zolea.com` sirve
+para el catálogo de servicios y el alta de balnearios.
 
 ---
 
@@ -449,18 +459,6 @@ El catálogo de servicios (WiFi, Estacionamiento, Pileta…) es uno solo para to
 lo administra **la cuenta de Zolea**: un `ADMIN` sin balneario asignado. Esa cuenta carga el
 catálogo de servicios y da de alta balnearios (solo por la API), y nada más: no ve reservas,
 clientes ni balnearios. Cada balneario elige cuáles servicios ofrece en Mi balneario.
-
-### Cuentas de demostración
-
-Todas con contraseña `admin123`:
-
-| Cuenta | Rol | Para qué |
-|---|---|---|
-| `santi.rodriguez@gmail.com` (y los demás `@gmail.com`) | `USER` | El recorrido de un cliente |
-| `admin.mdp@zolea.com`, `admin.pinamar@zolea.com`, `admin.gesell@zolea.com`, `admin.miramar@zolea.com`, `admin.necochea@zolea.com` | `ADMIN` | El panel de cada balneario |
-| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: el catálogo de servicios y el alta de balnearios |
-
----
 
 ## ⚙️ Variables de entorno — referencia
 
