@@ -8,7 +8,7 @@
   gap: var(--space-6);
   max-width: var(--container);
   margin: 0 auto;
-  padding: var(--space-6) var(--gutter) var(--space-8);
+  padding: var(--space-5) var(--gutter) var(--space-8);
 }
 
 .result__loading {
@@ -73,6 +73,29 @@
 .result__layout {
   display: grid;
   gap: var(--space-7);
+}
+
+/* Confirmado: el título, la entrada y los datos. En el celular la entrada va enseguida después
+   del título, que es lo que hay que mostrar en la puerta; en la computadora, a la derecha y a la
+   altura del título, no debajo de todo. */
+.result__layout--confirmed {
+  grid-template-areas:
+    'head'
+    'tickets'
+    'info';
+  gap: var(--space-6);
+
+  .result__head {
+    grid-area: head;
+  }
+
+  .result__info {
+    grid-area: info;
+  }
+
+  .result__tickets {
+    grid-area: tickets;
+  }
 }
 
 .result__info {
@@ -164,5 +187,13 @@
     grid-template-columns: minmax(0, 1fr) 340px;
     gap: var(--space-8);
     align-items: start;
+  }
+
+  .result__layout--confirmed {
+    grid-template-areas:
+      'head tickets'
+      'info tickets';
+    grid-template-rows: auto 1fr;
+    row-gap: var(--space-6);
   }
 }

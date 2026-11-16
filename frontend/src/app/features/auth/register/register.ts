@@ -1,27 +1,40 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, inject, signal, viewChildren } from '@angular/core';
 import {
-  email,
-  form,
-  FormField,
-  ReadonlyFieldTree,
-  required,
-  submit,
-} from '@angular/forms/signals';
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  signal,
+  viewChildren,
+} from '@angular/core';
+import { form, FormField, ReadonlyFieldTree, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { LucideEye, LucideEyeOff } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
 import { ClientRequest } from '../../../core/api/client.models';
+import {
+  DEFAULT_PHONE_COUNTRY,
+  joinPhone,
+  PHONE_COUNTRIES,
+  phoneCountry,
+} from '../../../shared/utils/phone';
 import { ClientsApi } from '../../../core/api/clients.api';
 import { toFieldErrors, toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZField } from '../../../shared/z-field/z-field';
+import { keepDigits, personalDataRules } from '../client-rules';
+import { backParamsOf, homeFor, resolveBackTo } from '../login/login';
+
+/** El formulario: el pedido (`ClientRequest`) más el país del teléfono, que viaja pegado al número. */
+type RegisterModel = ClientRequest & { phoneCountry: string };
 
 /**
  * Crear cuenta (9.2). El alta de un cliente: `ClientsApi.register()` y, si se crea, entra
- * directo con `SessionService.login()` y va a `/`.
+ * directo con `SessionService.login()` y va al `volver` que trajo de Ingresar (lo que eligió en la
+ * Ficha antes de que le pidieran cuenta) o, si no hay, a su Inicio.
  *
  * El backend contesta los errores de dos formas. Los datos inválidos (400 con `campos`) se pegan
  * en cada campo con `toFieldErrors`. Un email, teléfono o DNI repetido llega como mensaje general
@@ -41,23 +54,26 @@ export class Register {
   /** Los controles en el orden en que se ven: el foco va al primero con error. */
   private readonly controls = viewChildren<ElementRef<HTMLInputElement>>('control');
 
-  // Los campos se llaman igual que en el pedido al backend (`ClientRequest`).
+  /** `?volver=`, que trae de Ingresar: adonde ir después de crear la cuenta. */
+  readonly volver = input<string | string[]>();
+  protected readonly backParams = computed(() => backParamsOf(this.router, this.volver()));
+
+  protected readonly countries = PHONE_COUNTRIES;
+
+  // Los campos se llaman igual que en el pedido al backend (`ClientRequest`), así `toFieldErrors`
+  // pega cada error en su campo. `phone` son solo los números; el código sale de `phoneCountry`.
   protected readonly registerForm = form(
-    signal<ClientRequest>({
+    signal<RegisterModel>({
       firstName: '',
       lastName: '',
       email: '',
       phone: '',
+      phoneCountry: DEFAULT_PHONE_COUNTRY,
       dni: '',
       password: '',
     }),
     (path) => {
-      required(path.firstName, { message: 'Escribí tu nombre.' });
-      required(path.lastName, { message: 'Escribí tu apellido.' });
-      required(path.email, { message: 'Escribí tu email.' });
-      email(path.email, { message: 'El email no tiene un formato válido.' });
-      required(path.phone, { message: 'Escribí tu teléfono.' });
-      required(path.dni, { message: 'Escribí tu DNI.' });
+      personalDataRules(path);
       required(path.password, { message: 'Elegí una contraseña.' });
     },
   );
@@ -72,16 +88,18 @@ export class Register {
     return state.touched() && state.errors().length > 0;
   }
 
-  /**
-   * Teléfono y DNI son solo números: lo que no es un dígito se descarta al escribir o pegar. Se
-   * corrige también el valor que muestra el navegador, porque si el modelo no cambia (una letra
-   * en un campo vacío) Angular no lo vuelve a escribir.
-   */
+  /** El país elegido para el teléfono: da el ejemplo del campo. */
+  protected readonly country = computed(() =>
+    phoneCountry(this.registerForm.phoneCountry().value()),
+  );
+
+  protected setCountry(event: Event): void {
+    this.registerForm.phoneCountry().value.set((event.target as HTMLSelectElement).value);
+  }
+
+  /** Teléfono y DNI son solo números (`keepDigits`). */
   protected onlyDigits(event: Event, field: 'phone' | 'dni'): void {
-    const control = event.target as HTMLInputElement;
-    const digits = control.value.replace(/\D/g, '');
-    if (digits !== control.value) control.value = digits;
-    this.registerForm[field]().value.set(digits);
+    this.registerForm[field]().value.set(keepDigits(event));
   }
 
   protected onSubmit(event: Event): void {
@@ -95,7 +113,8 @@ export class Register {
     this.formError.set('');
 
     await submit(this.registerForm, async () => {
-      const request = this.registerForm().value();
+      const { phoneCountry: country, ...value } = this.registerForm().value();
+      const request: ClientRequest = { ...value, phone: joinPhone(country, value.phone) };
 
       try {
         await firstValueFrom(this.clientsApi.register(request));
@@ -116,8 +135,9 @@ export class Register {
         return;
       }
 
-      // El botón sigue en «cargando» hasta llegar.
-      await this.router.navigateByUrl('/');
+      // Adonde venía o al Inicio, como al ingresar. El botón sigue en «cargando» hasta llegar.
+      const backTo = resolveBackTo(this.router, this.volver());
+      await this.router.navigateByUrl(backTo ?? homeFor('USER'));
       return;
     });
 

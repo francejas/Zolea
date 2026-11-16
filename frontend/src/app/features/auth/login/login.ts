@@ -11,32 +11,39 @@ import {
 import { Router, RouterLink, UrlTree } from '@angular/router';
 import { LucideEye, LucideEyeOff } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
-import { Me, Role } from '../../../core/api/auth.models';
+import { Me } from '../../../core/api/auth.models';
+import { homeOf } from '../../../core/auth/home';
 import { toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZField } from '../../../shared/z-field/z-field';
 
-/** El inicio de cada rol: adonde se va después de ingresar si no hay un `volver` válido. */
-export function homeFor(role: Role): string {
-  return role === 'ADMIN' ? '/admin' : '/';
-}
+// `homeFor` vive en `core/auth/home.ts`; se reexporta acá, donde lo buscan el registro y las pruebas.
+export { homeFor } from '../../../core/auth/home';
 
 /**
  * El `volver` que mandó el guard (`authGuard`, tarea 8.4), resuelto con el Router, o `null` si no
  * sirve. Solo vale una ruta interna: tiene que empezar con una barra, sin espacios ni barras
  * invertidas, y no puede ser `//sitio.com`, que un navegador toma como otro dominio. Tampoco vale
- * volver al propio login, que dejaría a la persona ingresada mirando el formulario.
+ * volver al propio login ni a Crear cuenta, que dejarían a la persona ingresada mirando un
+ * formulario.
  */
 export function resolveBackTo(router: Router, volver: unknown): UrlTree | null {
   if (typeof volver !== 'string') return null;
   if (!volver.startsWith('/') || volver.startsWith('//') || /[\\\s]/.test(volver)) return null;
 
   const path = volver.split(/[?#]/)[0];
-  if (path === '/login' || path.startsWith('/login/')) return null;
+  if (['/login', '/register'].some((form) => path === form || path.startsWith(form + '/'))) {
+    return null;
+  }
 
   return router.parseUrl(volver);
+}
+
+/** `{ volver }` para pasarlo de Ingresar a Crear cuenta y al revés, o null si no hay uno válido. */
+export function backParamsOf(router: Router, volver: unknown): { volver: string } | null {
+  return resolveBackTo(router, volver) ? { volver: volver as string } : null;
 }
 
 /**
@@ -61,7 +68,10 @@ export class Login {
 
   /** `?volver=`, que manda el guard. Llega por `withComponentInputBinding()`. */
   readonly volver = input<string | string[]>();
-  /** `?motivo=`, que manda el interceptor cuando la sesión venció. */
+  /**
+   * `?motivo=`: `sesion-vencida`, que manda el interceptor, o `email-nuevo`, que manda Mi cuenta
+   * después de cambiar el email (la sesión abierta era la del email viejo).
+   */
   readonly motivo = input<string | string[]>();
 
   // Los campos se llaman igual que en el pedido al backend (`LoginRequest`).
@@ -75,6 +85,13 @@ export class Login {
   protected readonly formError = signal('');
   protected readonly showPassword = signal(false);
   protected readonly sessionExpired = computed(() => this.motivo() === 'sesion-vencida');
+  protected readonly emailChanged = computed(() => this.motivo() === 'email-nuevo');
+
+  /**
+   * El `volver` sigue de largo a Crear cuenta: quien llegó desde Reservar y todavía no tiene cuenta
+   * vuelve a lo que había elegido después de crearla (auditoría, C3).
+   */
+  protected readonly backParams = computed(() => backParamsOf(this.router, this.volver()));
 
   /** El campo mostró su error: se marca también para el lector de pantalla. */
   protected hasError(field: ReadonlyFieldTree<unknown>): boolean {
@@ -107,7 +124,7 @@ export class Login {
 
       // El botón sigue en «cargando» hasta llegar: así no se puede volver a tocar mientras navega.
       const backTo = resolveBackTo(this.router, this.volver());
-      await this.router.navigateByUrl(backTo ?? homeFor(me.role));
+      await this.router.navigateByUrl(backTo ?? homeOf(me));
     });
 
     this.focusFirstInvalid();

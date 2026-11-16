@@ -50,7 +50,8 @@ jobs:
       - name: Dar permiso de ejecución al wrapper
         run: chmod +x ./mvnw
 
-      # verify corre las pruebas y, después, el informe de cobertura de JaCoCo.
+      # verify corre las pruebas, arma el informe de cobertura de JaCoCo y falla si la cobertura
+      # de instrucciones baja del 70 % (RNF11; la regla está en el pom.xml).
       - name: Compilar, probar y medir cobertura
         run: ./mvnw -B verify
 

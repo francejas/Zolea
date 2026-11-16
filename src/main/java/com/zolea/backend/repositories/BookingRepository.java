@@ -97,6 +97,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.status = 'PENDING' AND b.createdAt <= :limitDate")
     List<Booking> findExpiredPendingBookings(@Param("limitDate") LocalDateTime limitDate);
 
+    /**
+     * Si la unidad tiene reservas por delante: pendientes o confirmadas que terminan {@code today} o
+     * después. Es lo que impide darla de baja (RF32). Una cancelada no cuenta, y una que terminó
+     * ayer ya es pasada.
+     */
+    @Query("SELECT COUNT(b) > 0 FROM Booking b "
+            + "WHERE b.rentalUnit.idRentalUnit = :idRentalUnit "
+            + "AND b.status IN ('PENDING', 'CONFIRMED') "
+            + "AND b.endDate >= :today")
+    boolean hasUpcomingBookings(@Param("idRentalUnit") Long idRentalUnit,
+                                @Param("today") LocalDate today);
+
     /** Las reservas del balneario que siguen pendientes de pago. */
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.rentalUnit.resort.idResort = :resortId AND b.status = 'PENDING'")
     long countPendingByResort(@Param("resortId") Long resortId);

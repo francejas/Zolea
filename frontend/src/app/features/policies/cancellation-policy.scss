@@ -1,0 +1,186 @@
+/* La política de cancelación: una página de lectura, angosta, con los tres tramos como una escala
+   (verde, amarilla, roja: las banderas del bañero) y los demás casos en tarjetas. */
+
+:host {
+  display: block;
+}
+
+.policy {
+  display: grid;
+  gap: var(--space-7);
+  max-width: calc(760px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--space-5) var(--gutter) var(--space-8);
+}
+
+.policy__head {
+  display: grid;
+  gap: var(--space-3);
+
+  .z-eyebrow {
+    margin: 0;
+  }
+}
+
+.policy__title {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.policy__lead {
+  max-width: 62ch;
+  margin: 0;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+.policy__section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.policy__subtitle {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.policy__steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.policy__step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: var(--border);
+  border-left-width: 6px;
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+
+  p {
+    margin: 0;
+  }
+}
+
+.policy__step--full {
+  border-left-color: var(--color-success);
+}
+
+.policy__step--half {
+  border-left-color: var(--color-warning);
+}
+
+.policy__step--none {
+  border-left-color: var(--color-danger);
+}
+
+.policy__when {
+  font-weight: 600;
+}
+
+.policy__detail {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.policy__percent {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font: 600 15px / 1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.policy__step--full .policy__percent {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.policy__step--half .policy__percent {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.policy__step--none .policy__percent {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.policy__example {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-sky);
+
+  p {
+    margin: 0;
+    font-size: var(--text-small);
+  }
+
+  .z-icon {
+    margin-top: 2px;
+  }
+}
+
+.policy__cards {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.policy__card {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  padding: var(--space-5);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+
+  h3 {
+    margin: 0;
+    font: 600 var(--text-body) / var(--leading-ui) var(--font-body);
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--text-small);
+    color: var(--color-ink-soft);
+  }
+}
+
+.policy__card-icon {
+  color: var(--color-ink);
+}
+
+.policy__foot {
+  margin: 0;
+  padding-top: var(--space-5);
+  border-top: var(--border);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+
+  .z-link {
+    margin-left: var(--space-2);
+  }
+}
+
+@media (min-width: 768px) {
+  .policy__title {
+    font-size: var(--text-display-l);
+  }
+
+  .policy__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

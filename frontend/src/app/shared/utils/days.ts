@@ -36,6 +36,40 @@ export function todayIso(): string {
   return toIsoDate(new Date());
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Las fechas que llegan en la dirección (`?from=…&to=…`), si sirven para buscar: las dos, con la
+ * forma `YYYY-MM-DD`, desde hoy y la salida no antes de la entrada. Si no, null: es lo mismo que el
+ * backend rechazaría con un 400.
+ */
+export function validRange(
+  from: unknown,
+  to: unknown,
+  today: string = todayIso(),
+): { from: string; to: string } | null {
+  if (typeof from !== 'string' || typeof to !== 'string') return null;
+  if (!ISO_DATE.test(from) || !ISO_DATE.test(to)) return null;
+  if (toIsoDate(parseIsoDate(from)) !== from || toIsoDate(parseIsoDate(to)) !== to) return null;
+  if (from < today || to < from) return null;
+  return { from, to };
+}
+
+/** Buenos Aires está tres horas detrás de UTC todo el año. */
+const RESORT_HOURS_BEHIND_UTC = 3;
+
+/**
+ * Un momento que manda la API, en milisegundos. Llega sin zona («2026-01-10T11:00:00.123456») y es
+ * la hora del balneario (decisión 17), no la de la computadora: por eso se arma en UTC y no con
+ * `new Date(texto)`, que lo tomaría en la zona de quien mira.
+ */
+export function parseResortDateTime(text: string): number {
+  const [date, time = '00:00'] = text.split('T');
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour, minute, second = 0] = time.split(':').map(Number);
+  return Date.UTC(year, month - 1, day, hour + RESORT_HOURS_BEHIND_UTC, minute, Math.floor(second));
+}
+
 function toUtc(iso: string): number {
   const [year, month, day] = iso.split('-').map(Number);
   return Date.UTC(year, month - 1, day);

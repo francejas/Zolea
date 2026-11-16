@@ -111,6 +111,14 @@ public abstract class IntegrationTest {
         return clientRepository.save(admin);
     }
 
+    /**
+     * La cuenta de Zolea: un administrador sin balneario. Es la única que carga el catálogo de
+     * servicios y da de alta balnearios (15.7); del panel de un balneario no ve nada.
+     */
+    protected Client theZoleaAccount() {
+        return anAdmin();
+    }
+
     /** El administrador de un balneario concreto: es lo que acota lo que ve y lo que puede tocar. */
     protected Client anAdminOf(Resort resort) {
         Client admin = aClient();

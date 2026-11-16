@@ -2,9 +2,12 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { provideRouter, Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { RentalUnit, Resort } from '../../../core/api/resort.models';
+import { Review } from '../../../core/api/review.models';
+import { ReviewsApi } from '../../../core/api/reviews.api';
 import { SessionService } from '../../../core/session/session.service';
 import { ResortDetail } from './resort-detail';
 
@@ -23,6 +26,7 @@ const unit = (
   dailyPrice: price,
   isBlocked: blocked,
   resortId: 1,
+  retired: false,
 });
 
 function resort(overrides: Partial<Resort> = {}): Resort {
@@ -56,6 +60,8 @@ const text = (el: Element | null | undefined) =>
 
 describe('ResortDetail', () => {
   const loggedIn = signal(false);
+  // Las reseñas tienen sus propias pruebas (resort-reviews): acá alcanza con lo que devuelvan.
+  let reviews: Review[] = [];
   let fixture: ComponentFixture<ResortDetail>;
   let http: HttpTestingController;
   let router: Router;
@@ -63,6 +69,7 @@ describe('ResortDetail', () => {
 
   beforeEach(() => {
     loggedIn.set(false);
+    reviews = [];
     TestBed.configureTestingModule({
       imports: [ResortDetail],
       providers: [
@@ -70,6 +77,7 @@ describe('ResortDetail', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SessionService, useValue: { isLoggedIn: loggedIn } },
+        { provide: ReviewsApi, useValue: { listByResort: () => of(reviews) } },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -101,9 +109,14 @@ describe('ResortDetail', () => {
     await fixture.whenStable();
   }
 
-  async function pickDates(from: string, to: string) {
+  const isOccupied = (req: { url: string }) => req.url === `${API}/1/occupied-units`;
+
+  /** Elige las fechas y responde el pedido de las ocupadas, si salió. */
+  async function pickDates(from: string, to: string, occupied: number[] = []) {
     fixture.componentInstance.from.set(from);
     fixture.componentInstance.to.set(to);
+    await fixture.whenStable();
+    for (const req of http.match(isOccupied)) req.flush(occupied);
     await fixture.whenStable();
   }
 
@@ -128,6 +141,24 @@ describe('ResortDetail', () => {
         'https://fotos.test/zolea.jpg',
       );
       expect(page.textContent).toContain('El balneario más completo de Mar del Plata.');
+    });
+
+    it('«Cómo llegar» abre Google Maps con el nombre y la ubicación, en otra pestaña', async () => {
+      await respondWith(
+        resort({ location: 'Av. Patricio Peralta Ramos 4800, Mar del Plata, Buenos Aires' }),
+      );
+
+      const link = page.querySelector<HTMLAnchorElement>('a[href*="google.com/maps"]')!;
+      expect(text(link)).toBe('Cómo llegar');
+      expect(link.href).toBe(
+        'https://www.google.com/maps/search/?api=1&query=' +
+          'Zolea%20Club%20de%20Playa%2C%20' +
+          'Av.%20Patricio%20Peralta%20Ramos%204800%2C%20Mar%20del%20Plata%2C%20Buenos%20Aires',
+      );
+      expect(link.target).toBe('_blank');
+      expect(link.getAttribute('aria-label')).toBe(
+        'Cómo llegar a Zolea Club de Playa, en Google Maps (se abre en otra pestaña)',
+      );
     });
 
     it('sin foto queda el degradado y sin descripción no hay sección', async () => {
@@ -287,6 +318,98 @@ describe('ResortDetail', () => {
     });
   });
 
+  describe('las ocupadas en las fechas', () => {
+    it('sin fechas no pide las ocupadas', async () => {
+      await respondWith(resort());
+
+      expect(http.match(isOccupied)).toEqual([]);
+    });
+
+    it('al elegir las fechas pide las ocupadas y el plano no deja elegirlas', async () => {
+      await respondWith(resort());
+      fixture.componentInstance.from.set('2027-01-15');
+      fixture.componentInstance.to.set('2027-01-17');
+      await fixture.whenStable();
+
+      const req = http.expectOne(`${API}/1/occupied-units?from=2027-01-15&to=2027-01-17`);
+      expect(req.request.method).toBe('GET');
+      req.flush([1]);
+      await fixture.whenStable();
+
+      expect(planUnit('A-01').getAttribute('aria-disabled')).toBe('true');
+      expect(planUnit('A-01').getAttribute('aria-label')).toContain('ocupada en tus fechas');
+      await pickUnit('A-01');
+      expect(fixture.componentInstance.selectedUnit()).toBeNull();
+    });
+
+    it('mientras revisa las fechas no deja reservar', async () => {
+      await respondWith(resort());
+      await pickUnit('A-01');
+      fixture.componentInstance.from.set('2027-01-15');
+      fixture.componentInstance.to.set('2027-01-17');
+      await fixture.whenStable();
+
+      const button = card().querySelector<HTMLButtonElement>('button.z-btn--primary')!;
+      expect(button.disabled).toBe(true);
+      expect(text(button)).toBe('Revisando tus fechas…');
+
+      http.expectOne(isOccupied).flush([]);
+      await fixture.whenStable();
+      expect(button.disabled).toBe(false);
+      expect(text(button)).toBe('Reservar A-01');
+    });
+
+    it('si la elegida queda ocupada al cambiar las fechas, se suelta con un aviso', async () => {
+      await respondWith(resort());
+      await pickUnit('C-01');
+      await pickDates('2027-01-15', '2027-01-17', [3]);
+
+      expect(fixture.componentInstance.selectedUnit()).toBeNull();
+      expect(text(page.querySelector('.detail__notice'))).toBe(
+        'Carpa C-01 está ocupada en esas fechas. Elegí otro lugar.',
+      );
+
+      await pickUnit('A-01');
+      expect(page.querySelector('.detail__notice')).toBeNull();
+    });
+
+    it('si no se pudo saber qué está ocupado lo avisa y deja seguir', async () => {
+      await respondWith(resort());
+      fixture.componentInstance.from.set('2027-01-15');
+      fixture.componentInstance.to.set('2027-01-17');
+      await fixture.whenStable();
+      http.expectOne(isOccupied).flush(null, { status: 500, statusText: 'Error' });
+      await fixture.whenStable();
+
+      expect(text(page.querySelector('.detail__notice'))).toContain(
+        'No pudimos ver qué lugares están ocupados',
+      );
+      await pickUnit('A-01');
+      expect(card().querySelector<HTMLButtonElement>('button.z-btn--primary')!.disabled).toBe(
+        false,
+      );
+    });
+
+    it('llega con las fechas de la Portada en la dirección y pide las ocupadas', async () => {
+      fixture.componentRef.setInput('from', '2027-01-15');
+      fixture.componentRef.setInput('to', '2027-01-17');
+      await respondWith(resort());
+
+      expect(fixture.componentInstance.from()).toBe('2027-01-15');
+      expect(fixture.componentInstance.to()).toBe('2027-01-17');
+      http.expectOne(`${API}/1/occupied-units?from=2027-01-15&to=2027-01-17`).flush([]);
+    });
+
+    it('unas fechas de la dirección que no sirven se ignoran', async () => {
+      fixture.componentRef.setInput('from', '2020-01-15');
+      fixture.componentRef.setInput('to', '2020-01-17');
+      await respondWith(resort());
+
+      expect(fixture.componentInstance.from()).toBeNull();
+      expect(http.match(isOccupied)).toEqual([]);
+    });
+  });
+
   describe('los otros estados', () => {
     it('si el balneario no existe dice «No encontramos este balneario» y vuelve a la portada', async () => {
       http.expectOne(`${API}/1`).flush(null, { status: 404, statusText: 'Not Found' });
@@ -347,6 +470,39 @@ describe('ResortDetail', () => {
 
       expect(http.expectOne(`${API}/2`).request.method).toBe('GET');
       expect(fixture.componentInstance.selectedUnit()).toBeNull();
+    });
+  });
+  describe('las reseñas', () => {
+    it('arriba, el promedio con sus estrellas y la cantidad', async () => {
+      await respondWith(resort({ averageRating: 4.5, reviewCount: 12 }));
+
+      expect(text(page.querySelector('.detail__head z-rating'))).toBe(
+        '4,5 de 5 estrellas · 12 reseñas',
+      );
+    });
+
+    it('sin reseñas, arriba no dice nada y abajo lo cuenta', async () => {
+      await respondWith(resort({ averageRating: null, reviewCount: 0 }));
+
+      expect(page.querySelector('.detail__head z-rating')).toBeNull();
+      expect(text(page)).toContain('Todavía nadie calificó este balneario.');
+    });
+
+    it('abajo, la lista de comentarios', async () => {
+      reviews = [
+        {
+          author: 'Santiago R.',
+          rating: 5,
+          comment: 'Excelente.',
+          createdAt: '2026-01-12T18:30:00',
+        },
+      ];
+      await respondWith(resort({ averageRating: 5, reviewCount: 1 }));
+
+      expect(text(page.querySelector('.reviews__comment'))).toBe('Excelente.');
+      expect(text(page.querySelector('.reviews__byline'))).toBe(
+        'Santiago R. · 12 de enero de 2026',
+      );
     });
   });
 });

@@ -27,6 +27,8 @@ const adminMe: Me = {
   role: 'ADMIN',
   idManagedResort: 7,
 };
+/** La cuenta de Zolea: un administrador sin balneario. */
+const zoleaMe: Me = { ...adminMe, idClient: 3, email: 'zolea@zolea.com', idManagedResort: null };
 
 /** Un destino cualquiera: lo que importa de estas pantallas es la URL a la que se llega. */
 @Component({ template: '' })
@@ -49,6 +51,8 @@ describe('Login', () => {
             { path: 'login', component: Login },
             { path: '', pathMatch: 'full', component: Destination },
             { path: 'admin', component: Destination },
+            { path: 'admin/amenities', component: Destination },
+            { path: 'dashboard', component: Destination },
             { path: 'my-bookings', component: Destination },
             { path: 'bookings/:id', component: Destination },
           ],
@@ -132,6 +136,24 @@ describe('Login', () => {
       expect(link.getAttribute('href')).toBe('/register');
     });
 
+    it('los campos traen un ejemplo de cómo completarlos', async () => {
+      await open();
+      expect(page.querySelector<HTMLInputElement>('#login-email')!.placeholder).toBe(
+        'correo@gmail.com',
+      );
+      expect(page.querySelector<HTMLInputElement>('#login-password')!.placeholder).toBe(
+        'Tu contraseña',
+      );
+    });
+
+    it('«Crear cuenta» lleva el regreso que mandó el guard: quien no tiene cuenta no pierde lo elegido', async () => {
+      const book = '/book/3?unit=7&from=2027-01-15&to=2027-01-17';
+      await open(`/login?volver=${encodeURIComponent(book)}`);
+
+      const link = page.querySelector<HTMLAnchorElement>('.login__alt a')!;
+      expect(link.getAttribute('href')).toBe(`/register?volver=${encodeURIComponent(book)}`);
+    });
+
     it('el modelo tiene exactamente email y contraseña, y el botón no está cargando', async () => {
       await open();
 
@@ -150,6 +172,13 @@ describe('Login', () => {
       expect(alerts()[0].compareDocumentPosition(page.querySelector('form')!)).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       );
+    });
+
+    it('con motivo=email-nuevo pide ingresar con el email nuevo (Mi cuenta)', async () => {
+      await open('/login?motivo=email-nuevo');
+
+      expect(alerts()).toHaveLength(1);
+      expect(alerts()[0].textContent).toContain('Ingresá con tu email nuevo.');
     });
 
     it('sin ese motivo no hay aviso, ni con otro valor', async () => {
@@ -238,13 +267,13 @@ describe('Login', () => {
   });
 
   describe('ingresar', () => {
-    it('el cliente, sin volver, va a /', async () => {
+    it('el cliente, sin volver, va a su Inicio', async () => {
       await open();
       await fillAndSubmit('santi.rodriguez@gmail.com', 'admin123');
       const body = await succeedAs(clientMe);
 
       expect(body).toEqual({ email: 'santi.rodriguez@gmail.com', password: 'admin123' });
-      expect(router.url).toBe('/');
+      expect(router.url).toBe('/dashboard');
       expect(session.isLoggedIn()).toBe(true);
       expect(session.token()).toBe('jwt-de-prueba');
     });
@@ -256,6 +285,14 @@ describe('Login', () => {
 
       expect(router.url).toBe('/admin');
       expect(session.isAdmin()).toBe(true);
+    });
+
+    it('la cuenta de Zolea, sin volver, va directo al catálogo de servicios', async () => {
+      await open();
+      await fillAndSubmit('zolea@zolea.com', 'admin123');
+      await succeedAs(zoleaMe);
+
+      expect(router.url).toBe('/admin/amenities');
     });
 
     it('con volver, va a esa ruta, con sus parámetros', async () => {
@@ -288,7 +325,7 @@ describe('Login', () => {
         await fillAndSubmit('santi.rodriguez@gmail.com', 'admin123');
         await succeedAs(clientMe);
 
-        expect(router.url).toBe('/');
+        expect(router.url).toBe('/dashboard');
       });
     }
 
@@ -431,7 +468,7 @@ describe('Login', () => {
       expect(alerts()).toHaveLength(0);
 
       await succeedAs(clientMe);
-      expect(router.url).toBe('/');
+      expect(router.url).toBe('/dashboard');
     });
 
     it('si falla `/me` después de guardar el token, la sesión queda limpia', async () => {
@@ -476,9 +513,9 @@ describe('Login', () => {
 });
 
 describe('homeFor', () => {
-  it('el administrador va a /admin y el cliente a /', () => {
+  it('el administrador va a /admin y el cliente a su Inicio', () => {
     expect(homeFor('ADMIN')).toBe('/admin');
-    expect(homeFor('USER')).toBe('/');
+    expect(homeFor('USER')).toBe('/dashboard');
   });
 });
 
@@ -521,5 +558,10 @@ describe('resolveBackTo', () => {
     expect(url('/login')).toBeNull();
     expect(url('/login?motivo=sesion-vencida')).toBeNull();
     expect(url('/login/otra')).toBeNull();
+  });
+
+  it('rechaza volver a Crear cuenta', () => {
+    expect(url('/register')).toBeNull();
+    expect(url('/register?volver=/my-bookings')).toBeNull();
   });
 });

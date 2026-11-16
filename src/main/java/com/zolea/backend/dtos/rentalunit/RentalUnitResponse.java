@@ -10,6 +10,9 @@ public record RentalUnitResponse(
         Boolean isBlocked,
         // Sin esto no se puede saber de qué balneario es una unidad, así que ningún consumidor
         // podía agrupar ni filtrar por balneario aunque quisiera.
-        Long resortId
+        Long resortId,
+        // Dada de baja (RF32): definitiva, a diferencia del bloqueo. Solo se ve en el listado del
+        // administrador; la ficha pública ya no la trae.
+        boolean retired
 ) {
 }

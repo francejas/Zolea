@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideChevronDown,
+  LucideHouse,
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMenu,
@@ -26,6 +27,7 @@ import { SessionService } from '../../core/session/session.service';
     RouterLinkActive,
     RouterOutlet,
     LucideChevronDown,
+    LucideHouse,
     LucideLayoutDashboard,
     LucideLogOut,
     LucideMenu,
@@ -42,6 +44,9 @@ import { SessionService } from '../../core/session/session.service';
 })
 export class SiteLayout {
   protected readonly session = inject(SessionService);
+
+  /** El año del pie, tomado una vez al abrir. */
+  protected readonly year = new Date().getFullYear();
 
   protected readonly userMenuOpen = signal(false);
   protected readonly sheetOpen = signal(false);

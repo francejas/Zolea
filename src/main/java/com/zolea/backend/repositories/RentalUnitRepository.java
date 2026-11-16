@@ -45,8 +45,8 @@ public interface RentalUnitRepository extends JpaRepository<RentalUnit, Long> {
      * Los balnearios activos que tienen lugar para una búsqueda, con cuántas unidades cumplen cada
      * uno. Un balneario sin ninguna unidad que cumpla no aparece.
      *
-     * <p>Cuenta las unidades no bloqueadas que cumplen todos los filtros que vinieron. Un filtro en
-     * {@code null} no restringe nada:
+     * <p>Cuenta las unidades no bloqueadas ni dadas de baja que cumplen todos los filtros que
+     * vinieron. Un filtro en {@code null} no restringe nada:
      * <ul>
      *   <li>{@code pattern}: el nombre o la ubicación del balneario, ya en minúsculas y con los
      *       comodines escapados con {@code !};</li>
@@ -70,6 +70,7 @@ public interface RentalUnitRepository extends JpaRepository<RentalUnit, Long> {
             + "FROM RentalUnit u JOIN u.resort r "
             + "WHERE r.isActive = true "
             + "AND COALESCE(u.isBlocked, false) = false "
+            + "AND u.retired = false "
             + "AND (:pattern IS NULL "
             + "     OR LOWER(r.name) LIKE :pattern ESCAPE '!' "
             + "     OR LOWER(r.location) LIKE :pattern ESCAPE '!') "
@@ -92,7 +93,11 @@ public interface RentalUnitRepository extends JpaRepository<RentalUnit, Long> {
                                                         @Param("from") LocalDate from,
                                                         @Param("to") LocalDate to);
 
-    /** Cuántas unidades del balneario se pueden usar hoy: las que no están bloqueadas. */
-    @Query("SELECT COUNT(u) FROM RentalUnit u WHERE u.resort.idResort = :resortId AND u.isBlocked = false")
+    /**
+     * Cuántas unidades del balneario se pueden usar hoy: las que no están bloqueadas ni se dieron de
+     * baja. Una dada de baja no es capacidad del balneario, así que no cuenta para la ocupación.
+     */
+    @Query("SELECT COUNT(u) FROM RentalUnit u WHERE u.resort.idResort = :resortId "
+            + "AND u.isBlocked = false AND u.retired = false")
     long countActiveUnitsByResort(@Param("resortId") Long resortId);
 }

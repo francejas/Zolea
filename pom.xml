@@ -163,9 +163,12 @@
 				Mide qué porción del código ejecutan las pruebas. El informe queda en
 				target/site/jacoco/index.html después de `mvnw verify`.
 
-				No hay umbral mínimo configurado a propósito: un porcentaje obligatorio empuja a
-				escribir pruebas que tocan código sin afirmar nada sobre él, que es peor que no
-				tenerlas. El número sirve para encontrar qué quedó sin cubrir, no como nota.
+				El RNF11 pide que la cobertura se controle en cada envío: `verify` falla si la
+				cobertura de instrucciones baja del 70 %, y como el CI corre `./mvnw -B verify`, lo
+				controla en cada push y en cada pull request. Al sumar la regla (15.5) daba 87 %.
+				El piso es bajo a propósito: un porcentaje alto empuja a escribir pruebas que tocan
+				código sin afirmar nada sobre él. Está para que una tanda de código sin probar no
+				pase de largo, no como nota.
 
 				Ruido conocido: corriendo con un JDK más nuevo que JaCoCo —el 26, que es el único
 				instalado en la máquina de desarrollo— el agente intenta instrumentar clases
@@ -207,6 +210,27 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.70</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

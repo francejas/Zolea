@@ -9,7 +9,10 @@ export interface GuestSummary {
   idGuest: number;
   fullName: string;
   dni: string | null;
+  /** Si entró hoy. El código sirve para entrar todas las veces que haga falta durante la estadía. */
   isEntryValidated: boolean;
+  /** Cuándo entró por última vez (`YYYY-MM-DDTHH:mm:ss`, hora de Buenos Aires); `null` si nunca entró. */
+  lastEntryAt: string | null;
   qrToken: string;
 }
 
@@ -34,6 +37,11 @@ export interface Booking {
   resortName: string;
   resortLocation: string;
   resortCoverPhotoUrl: string | null;
+  canceledAt: string | null;
+  canceledBy: 'CLIENT' | 'ADMIN' | 'SYSTEM' | null;
+  refundAmount: number | null;
+  reviewed: boolean;
+  payments: PaymentSummary[];
 }
 
 /** La dirección de MercadoPago para pagar una reserva pendiente. */
@@ -57,8 +65,45 @@ export interface BookingRequest {
   guests: GuestRequest[];
 }
 
+/**
+ * El pedido de `POST /api/bookings/walkin`, la reserva en mostrador: va sin `clientId` (con uno, el
+ * backend responde 400) y con el nombre y el DNI de quien está en el mostrador, que no tiene cuenta.
+ * El titular no va en `guests`: el backend le arma su entrada con `walkInName` y `walkInDni`.
+ */
+export interface WalkInBookingRequest {
+  startDate: string;
+  endDate: string;
+  rentalUnitId: number;
+  walkInName: string;
+  walkInDni: string;
+  guests: GuestRequest[];
+}
+
+/** Lo que devuelve la reserva en mostrador: ya confirmada, con la entrada de cada persona. */
+export interface WalkInBookingResponse {
+  message: string;
+  booking: Booking;
+}
+
 /** Lo que devuelve crear una reserva: la reserva pendiente y adónde mandar a pagar. */
 export interface BookingCheckout {
   booking: Booking;
   paymentUrl: string;
+}
+
+/** Condiciones calculadas por el servidor antes de confirmar la cancelación. */
+export interface CancellationResponse {
+  canCancel: boolean;
+  refundAmount: number | null;
+  refundPercent: number | null;
+  reason: string | null;
+}
+
+/** Un cobro registrado de la reserva. */
+export interface PaymentSummary {
+  gatewayPaymentId: string;
+  amount: number;
+  status: string;
+  /** Hora de Buenos Aires informada por el servidor. */
+  paidAt: string | null;
 }

@@ -1,0 +1,69 @@
+<article class="policy" aria-labelledby="policy-title">
+  <header class="policy__head">
+    <p class="z-eyebrow">Políticas de Zolea</p>
+    <h1 id="policy-title" class="policy__title">Cancelaciones y reintegros</h1>
+    <p class="policy__lead">
+      Podés cancelar una reserva desde <a class="z-link" routerLink="/my-bookings">Mis reservas</a>,
+      en el detalle de la reserva. Antes de confirmar te mostramos cuánto te devolvemos: depende de
+      cuántos días faltan para la entrada.
+    </p>
+  </header>
+
+  <section class="policy__section" aria-labelledby="policy-paid">
+    <h2 id="policy-paid" class="policy__subtitle">Reservas pagas</h2>
+    <ol class="policy__steps">
+      @for (step of steps; track step.when) {
+        <li class="policy__step policy__step--{{ step.tone }}">
+          <div>
+            <p class="policy__when">{{ step.when }}</p>
+            <p class="policy__detail">{{ step.detail }}</p>
+          </div>
+          <strong class="policy__percent">{{ step.percent }}</strong>
+        </li>
+      }
+    </ol>
+
+    <div class="policy__example">
+      <svg lucideInfo class="z-icon" aria-hidden="true"></svg>
+      <p>
+        <strong>Por ejemplo:</strong> si entrás el sábado 10, cancelando hasta el jueves 8 te
+        devolvemos el 100 %; el viernes 9, el 50 %; desde el sábado 10 ya no se puede cancelar. Se
+        cuentan días, no horas: la reserva no tiene horario.
+      </p>
+    </div>
+  </section>
+
+  <section class="policy__section" aria-labelledby="policy-other">
+    <h2 id="policy-other" class="policy__subtitle">Otros casos</h2>
+    <ul class="policy__cards">
+      <li class="policy__card">
+        <svg lucideClock class="z-icon policy__card-icon" aria-hidden="true"></svg>
+        <h3>Reserva pendiente de pago</h3>
+        <p>
+          Se cancela sin cargo: como no la pagaste, no hay nada que reintegrar. Si no la pagás
+          dentro de la hora, se cancela sola y el lugar vuelve a quedar libre.
+        </p>
+      </li>
+      <li class="policy__card">
+        <svg lucideHouse class="z-icon policy__card-icon" aria-hidden="true"></svg>
+        <h3>Si cancela el balneario</h3>
+        <p>
+          Te devolvemos el 100 % de lo que pagaste, sea antes de la entrada o durante la estadía.
+        </p>
+      </li>
+      <li class="policy__card">
+        <svg lucideCalendarX class="z-icon policy__card-icon" aria-hidden="true"></svg>
+        <h3>Estadía terminada</h3>
+        <p>
+          Una estadía que ya terminó no se cancela, ni por vos ni por el balneario. Sí la podés
+          calificar desde Mis reservas.
+        </p>
+      </li>
+    </ul>
+  </section>
+
+  <p class="policy__foot">
+    El reintegro se calcula sobre el total de la reserva y lo ves en la reserva cancelada.
+    <a class="z-link" routerLink="/">Volver a la portada</a>
+  </p>
+</article>

@@ -70,6 +70,38 @@
   <router-outlet />
 </main>
 
+<footer class="z-footer">
+  <div class="z-footer__inner">
+    <div class="z-footer__brand">
+      <a class="z-logo z-logo--small" routerLink="/">
+        <img class="z-emblem" src="emblema.svg" alt="" width="28" height="28" />
+        <span class="z-logo__word" translate="no">Zolea</span>
+      </a>
+      <p class="z-footer__tagline">Tu carpa o sombrilla en la costa, sin llamar ni hacer cola.</p>
+    </div>
+
+    <nav class="z-footer__nav" aria-label="Información">
+      <a
+        class="z-footer__link"
+        routerLink="/"
+        routerLinkActive
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+        >Balnearios</a
+      >
+      <a
+        class="z-footer__link"
+        routerLink="/cancellation-policy"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+        >Cancelaciones y reintegros</a
+      >
+    </nav>
+
+    <p class="z-footer__copy">© {{ year }} Zolea</p>
+  </div>
+</footer>
+
 <!-- Lo mismo en el menú de la computadora y en el del celular. -->
 <ng-template #account let-user>
   <li class="z-menu__head">
@@ -86,6 +118,12 @@
       </a>
     </li>
   } @else {
+    <li>
+      <a class="z-menu__item" routerLink="/dashboard" routerLinkActive ariaCurrentWhenActive="page">
+        <svg lucideHouse class="z-icon" aria-hidden="true"></svg>
+        Inicio
+      </a>
+    </li>
     <li>
       <a
         class="z-menu__item"

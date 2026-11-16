@@ -177,6 +177,11 @@ public class ResortService {
         return "%" + escaped + "%";
     }
 
+    /** Un texto vacío o con solo espacios es «sin texto»: null, como si nunca se hubiera cargado. */
+    private static String blankToNull(String text) {
+        return text == null || text.isBlank() ? null : text.trim();
+    }
+
     /**
      * El promedio y la cantidad de reseñas de esos balnearios, en una sola consulta para todo el
      * listado. Un balneario sin reseñas no queda en el mapa.
@@ -189,8 +194,13 @@ public class ResortService {
                 .collect(Collectors.toMap(ResortRating::resortId, Function.identity()));
     }
 
+    /**
+     * La ficha pública de un balneario. Uno desactivado responde como si no existiera (RF30): no se
+     * ofrece. Su administrador lo sigue viendo con {@link #getMyResort}.
+     */
     public ResortResponse getResortById(Long id) {
         Resort resort = resortRepository.findById(id)
+                .filter(Resort::isActive)
                 .orElseThrow(() -> new ResortNotFoundException("Resort with id " + id + " not found"));
 
         return mapToResponse(resort);
@@ -272,6 +282,11 @@ public class ResortService {
         applyChanges(resort, request);
         resort.setAdminEmail(emailOriginal);
 
+        // Mi balneario manda siempre el formulario entero: una descripción o una foto vacías son las
+        // que el administrador borró, no las que faltan. El PUT con el id sigue conservándolas.
+        resort.setDescription(blankToNull(request.description()));
+        resort.setCoverPhotoUrl(blankToNull(request.coverPhotoUrl()));
+
         return mapToResponse(resortRepository.save(resort));
     }
 
@@ -337,7 +352,7 @@ public class ResortService {
             occupancyByDay.add(new OccupancyDayStats(current, occupied, totalUnits));
         }
 
-        // 3. Ingresos: cada reserva suma entera en el mes en que empieza
+        // 3. Ingresos: cada reserva suma el importe conservado en el mes en que empieza.
         List<IncomeMonthStats> incomeByMonth = new ArrayList<>();
         YearMonth startMonth = YearMonth.from(from);
         YearMonth endMonth = YearMonth.from(to);
@@ -345,7 +360,7 @@ public class ResortService {
             final YearMonth currentMonth = m;
             BigDecimal income = bookings.stream()
                     .filter(b -> YearMonth.from(b.getStartDate()).equals(currentMonth))
-                    .map(Booking::getTotalPrice)
+                    .map(Booking::keptAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             incomeByMonth.add(new IncomeMonthStats(currentMonth.toString(), income.setScale(2, RoundingMode.HALF_UP)));
         }
@@ -385,7 +400,7 @@ public class ResortService {
                 .flatMap(b -> b.getGuests().stream())
                 .toList();
         long checkedIn = guests.stream()
-                .filter(g -> Boolean.TRUE.equals(g.getIsEntryValidated()))
+                .filter(g -> g.enteredOn(today))
                 .count();
         long occupiedUsable = active.stream()
                 .map(Booking::getRentalUnit)
@@ -405,14 +420,17 @@ public class ResortService {
         return mapToResponse(r, rating, null);
     }
 
-    // MAPPER interno: Se encarga de transformar las listas anidadas de Resort a DTOs de Amenity y RentalUnit
+    // MAPPER interno: Se encarga de transformar las listas anidadas de Resort a DTOs de Amenity y RentalUnit.
+    // Las unidades dadas de baja no van: la ficha y el plano ya no las ofrecen (RF32). El administrador
+    // las ve en GET /api/rental-units.
     private ResortResponse mapToResponse(Resort r, ResortRating rating, Long availableUnits) {
         List<AmenityResponse> amenities = (r.getAmenities() != null) ? r.getAmenities().stream()
                                                                        .map(a -> new AmenityResponse(a.getIdAmenity(), a.getName()))
                                                                        .toList() : List.of();
 
         List<RentalUnitResponse> units = (r.getRentalUnits() != null) ? r.getRentalUnits().stream()
-                                                                        .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort()))
+                                                                        .filter(u -> !u.isRetired())
+                                                                        .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort(), false))
                                                                         .toList() : List.of();
 
         return new ResortResponse(

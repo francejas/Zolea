@@ -1,0 +1,46 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.reviews__loading {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.reviews__none {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.reviews__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reviews__item {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+}
+
+.reviews__item:first-child {
+  padding-top: 0;
+}
+
+.reviews__item + .reviews__item {
+  border-top: var(--border);
+}
+
+.reviews__comment {
+  margin: 0;
+  max-width: 65ch;
+}
+
+.reviews__byline {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}

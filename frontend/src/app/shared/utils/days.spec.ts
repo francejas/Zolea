@@ -1,4 +1,4 @@
-import { occupiedDays, parseIsoDate, toIsoDate, totalPrice } from './days';
+import { occupiedDays, parseIsoDate, toIsoDate, totalPrice, validRange } from './days';
 
 describe('occupiedDays', () => {
   it('cuenta los dos extremos: del 15 al 17 son tres días', () => {
@@ -47,5 +47,32 @@ describe('toIsoDate y parseIsoDate', () => {
     const date = new Date(2027, 0, 5);
     expect(toIsoDate(date)).toBe('2027-01-05');
     expect(parseIsoDate('2027-01-05').getTime()).toBe(date.getTime());
+  });
+});
+
+describe('validRange', () => {
+  const today = '2027-01-10';
+
+  it('devuelve las dos fechas si sirven para buscar', () => {
+    expect(validRange('2027-01-15', '2027-01-17', today)).toEqual({
+      from: '2027-01-15',
+      to: '2027-01-17',
+    });
+    expect(validRange('2027-01-10', '2027-01-10', today)).not.toBeNull();
+  });
+
+  it('con una sola fecha, o ninguna, es null', () => {
+    expect(validRange('2027-01-15', undefined, today)).toBeNull();
+    expect(validRange(undefined, undefined, today)).toBeNull();
+  });
+
+  it('con una fecha mal escrita o que no existe es null', () => {
+    expect(validRange('15/01/2027', '2027-01-17', today)).toBeNull();
+    expect(validRange('2027-02-30', '2027-03-01', today)).toBeNull();
+  });
+
+  it('con la entrada antes de hoy o la salida antes de la entrada es null', () => {
+    expect(validRange('2027-01-09', '2027-01-12', today)).toBeNull();
+    expect(validRange('2027-01-17', '2027-01-15', today)).toBeNull();
   });
 });

@@ -39,6 +39,40 @@ tiene despliegue propio.
 | Frontend de la v1 — despliegue viejo, queda como muestra de las pantallas | [beach-g.vercel.app](https://beach-g.vercel.app) |
 | API Swagger (local) | `http://localhost:8080/swagger-ui/index.html` |
 
+### Cuentas de prueba
+
+La demo se recarga cada vez que arranca el backend. **Todas las cuentas usan la contraseña
+`admin123`**.
+
+| Cuenta | Rol | Para probar |
+|---|---|---|
+| `mostrador@zolea.com` | `USER` | Cuenta técnica para reservas de mostrador |
+| `admin.mdp@zolea.com` | `ADMIN` | Panel de Mar del Plata |
+| `admin.pinamar@zolea.com` | `ADMIN` | Panel de Pinamar |
+| `admin.gesell@zolea.com` | `ADMIN` | Panel de Villa Gesell |
+| `admin.miramar@zolea.com` | `ADMIN` | Panel de Miramar |
+| `admin.necochea@zolea.com` | `ADMIN` | Panel de Necochea |
+| `santi.rodriguez@gmail.com` | `USER` | Cliente con reservas, pagos y reseñas |
+| `vale.garcia@gmail.com` | `USER` | Cliente de prueba |
+| `matias.fern@gmail.com` | `USER` | Cliente de prueba |
+| `cami.martinez@gmail.com` | `USER` | Cliente de prueba |
+| `lucho.torres@gmail.com` | `USER` | Cliente de prueba |
+| `agus.lopez@gmail.com` | `USER` | Cliente de prueba |
+| `ramiro.gomez@gmail.com` | `USER` | Cliente de prueba |
+| `flor.diaz@gmail.com` | `USER` | Cliente de prueba |
+| `eze.sanchez@gmail.com` | `USER` | Cliente de prueba |
+| `nati.romero@gmail.com` | `USER` | Cliente con reservas próximas |
+| `nacho.perez@gmail.com` | `USER` | Cliente de prueba |
+| `sofi.molina@gmail.com` | `USER` | Cliente de prueba |
+| `tomi.gut@gmail.com` | `USER` | Cliente de prueba |
+| `mice.flores@gmail.com` | `USER` | Cliente de prueba |
+| `facu.ruiz@gmail.com` | `USER` | Cliente de prueba |
+| `mili.jimenez@gmail.com` | `USER` | Cliente de prueba |
+| `nico.acosta@gmail.com` | `USER` | Cliente de prueba |
+| `rocio.villalba@gmail.com` | `USER` | Cliente de prueba |
+| `seba.medina@gmail.com` | `USER` | Cliente de prueba |
+| `zolea@zolea.com` | `ADMIN` sin balneario | Catálogo de servicios y alta de balnearios |
+
 ---
 
 ## ✨ Características
@@ -54,7 +88,7 @@ tiene despliegue propio.
 ### Para administradores
 - **Dashboard** con métricas en tiempo real: reservas del día, unidades libres, ingresos del mes
 - **Widget de clima** en tiempo real (Open-Meteo + Nominatim, sin API key)
-- Gestión de unidades: crear, bloquear, actualizar precios individualmente
+- Gestión de unidades: crear, bloquear, dar de baja, actualizar precios individualmente
 - **Reservas presenciales (walk-in)** con confirmación y QR instantáneo
 - Validación de ingreso por **código QR** o **DNI**
 - Historial completo de todas las reservas del balneario
@@ -194,23 +228,23 @@ http://localhost:8080/swagger-ui/index.html
 | `POST` | `/api/auth/login` | — | Obtener JWT |
 | `POST` | `/api/clients` | — | Registrar cliente |
 | `GET` | `/api/clients` | ADMIN | Los clientes de su balneario, con su historial ahí |
-| `GET` | `/api/clients/{id}` | DUEÑO o ADMIN | Perfil del cliente |
-| `PUT` | `/api/clients/{id}` | DUEÑO o ADMIN | Actualizar perfil |
+| `GET` | `/api/clients/{id}` | DUEÑO | Perfil del cliente (un admin, solo el suyo) |
+| `PUT` | `/api/clients/{id}` | DUEÑO | Actualizar perfil (un admin, solo el suyo) |
 | `GET` | `/api/resorts` | — | Listar balnearios; con filtros, los que tienen lugar (`q`, `from`, `to`, `type`, `maxPrice`, `amenityIds`) |
 | `GET` | `/api/resorts/{id}` | — | Detalle + unidades del balneario |
 | `GET` | `/api/resorts/{id}/occupied-units` | — | Unidades ocupadas entre `from` y `to` |
 | `GET` | `/api/resorts/my` | ADMIN | Mi balneario |
 | `PUT` | `/api/resorts/my` | ADMIN | Actualizar datos del balneario |
-| `POST` | `/api/resorts` | ADMIN | Crear balneario |
-| `PUT` | `/api/resorts/{id}` | ADMIN | Actualizar balneario por ID |
-| `PUT` | `/api/resorts/{id}/inactive` | ADMIN | Desactivar balneario |
-| `PUT` | `/api/resorts/{id}/active` | ADMIN | Activar balneario |
-| `POST` | `/api/bookings` | AUTH | Crear reserva (flujo MercadoPago) |
+| `POST` | `/api/resorts` | Cuenta de Zolea | Dar de alta un balneario. El administrador de un balneario recibe `403` |
+| `PUT` | `/api/resorts/{id}` | ADMIN del balneario | Actualizar balneario por ID |
+| `PUT` | `/api/resorts/{id}/inactive` | ADMIN del balneario | Desactivar balneario |
+| `PUT` | `/api/resorts/{id}/active` | ADMIN del balneario | Activar balneario |
+| `POST` | `/api/bookings` | CLIENTE | Crear reserva a su nombre (flujo MercadoPago); un admin usa el mostrador |
 | `POST` | `/api/bookings/{id}/pay` | DUEÑO o ADMIN | Reintentar pago (reserva PENDING) |
-| `POST` | `/api/bookings/walkin` | ADMIN | Reserva presencial instantánea |
+| `POST` | `/api/bookings/walkin` | ADMIN del balneario | Reserva presencial instantánea, en una unidad de su balneario |
 | `GET` | `/api/bookings` | ADMIN | Reservas del balneario del admin |
 | `GET` | `/api/bookings/{id}` | DUEÑO o ADMIN | Detalle de reserva |
-| `GET` | `/api/bookings/client/{id}` | DUEÑO o ADMIN | Reservas de un cliente |
+| `GET` | `/api/bookings/client/{id}` | DUEÑO | Reservas de un cliente (el admin ve a sus clientes en `GET /api/clients`) |
 | `PATCH` | `/api/bookings/{id}/cancel` | DUEÑO o ADMIN | Cancelar reserva |
 | `GET` | `/api/bookings/success` | — | Retorno de pago exitoso (MercadoPago) |
 | `GET` | `/api/bookings/pending` | — | Retorno de pago pendiente (MercadoPago) |
@@ -220,13 +254,17 @@ http://localhost:8080/swagger-ui/index.html
 | `POST` | `/api/rental-units` | ADMIN | Crear unidad |
 | `PATCH` | `/api/rental-units/{id}/price` | ADMIN | Actualizar precio |
 | `PATCH` | `/api/rental-units/{id}/block` | ADMIN | Bloquear / desbloquear |
+| `PATCH` | `/api/rental-units/{id}/retire` | ADMIN | Dar de baja (definitiva; sin reservas por delante) |
 | `POST` | `/api/guests/validate/{token}` | — | Validar QR |
 | `POST` | `/api/guests/validate/dni/{dni}` | — | Validar por DNI |
 | `GET` | `/api/amenities`, `/api/amenities/{id}` | — | Servicios del balneario |
-| `POST`, `PUT`, `DELETE` | `/api/amenities` | ADMIN | Administrar servicios |
+| `POST`, `PUT`, `DELETE` | `/api/amenities` | Cuenta de Zolea | Administrar el catálogo de servicios. El administrador de un balneario recibe `403`: elige los suyos en `PUT /api/resorts/my` |
 
-**DUEÑO o ADMIN** quiere decir que el recurso solo lo ve quien es su titular; un administrador
-también, dentro de su balneario. Los endpoints de MercadoPago son públicos porque quien los
+**DUEÑO o ADMIN** quiere decir que el recurso solo lo ve quien es su titular, o el administrador
+del balneario de la reserva; el de otro balneario recibe `403` (RNF03). **DUEÑO** es solo el
+titular, también cuando quien pide es un administrador. La matriz de accesos cruzados
+(`CrossAccessMatrixTest`) prueba cada una de estas operaciones sin token, con un cliente ajeno, con
+el administrador de otro balneario y con quien sí puede. Los endpoints de MercadoPago son públicos porque quien los
 llama no tiene el token de la aplicación — y por eso no le creen a lo que les llega.
 
 ### Autenticación
@@ -312,6 +350,9 @@ Para medir además la cobertura:
 ./mvnw verify                          # el informe queda en target/site/jacoco/index.html
 ```
 
+`verify` falla si la cobertura de instrucciones baja del 70 % (RNF11), así que el CI la controla en
+cada envío.
+
 Todo esto corre solo en cada push a `main` o `develop` y en cada pull request, salvo que el cambio
 sea solo del frontend: ver [.github/workflows/ci.yml](.github/workflows/ci.yml). El frontend tiene
 el suyo, [.github/workflows/frontend.yml](.github/workflows/frontend.yml).
@@ -378,8 +419,8 @@ Zolea/
 │   ├── application.properties            # común + perfil por defecto (dev)
 │   ├── application-dev.properties
 │   ├── application-demo.properties
-│   └── data-demo.sql         # Seed de dev y demo: 5 balnearios, 25 clientes,
-│                             # 100 unidades, 47 reservas
+│   └── data-demo.sql         # Seed de dev y demo: 5 balnearios, 26 clientes,
+│                             # 114 unidades, 74 reservas
 │
 ├── src/test/                 # 127 pruebas + IntegrationTest (base y fixtures)
 ├── docs/                     # Modelo de datos, decisiones, flujo de pago y guía de frontend
@@ -404,6 +445,21 @@ Zolea/
 
 Un admin solo puede gestionar **su propio balneario** (el asignado en la base de datos).
 
+El catálogo de servicios (WiFi, Estacionamiento, Pileta…) es uno solo para todos los balnearios y
+lo administra **la cuenta de Zolea**: un `ADMIN` sin balneario asignado. Esa cuenta carga el
+catálogo de servicios y da de alta balnearios (solo por la API), y nada más: no ve reservas,
+clientes ni balnearios. Cada balneario elige cuáles servicios ofrece en Mi balneario.
+
+### Cuentas de demostración
+
+Todas con contraseña `admin123`:
+
+| Cuenta | Rol | Para qué |
+|---|---|---|
+| `santi.rodriguez@gmail.com` (y los demás `@gmail.com`) | `USER` | El recorrido de un cliente |
+| `admin.mdp@zolea.com`, `admin.pinamar@zolea.com`, `admin.gesell@zolea.com`, `admin.miramar@zolea.com`, `admin.necochea@zolea.com` | `ADMIN` | El panel de cada balneario |
+| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: el catálogo de servicios y el alta de balnearios |
+
 ---
 
 ## ⚙️ Variables de entorno — referencia
@@ -422,7 +478,7 @@ Un admin solo puede gestionar **su propio balneario** (el asignado en la base de
 | Documento | Qué contiene |
 |---|---|
 | [docs/modelo-de-datos.md](docs/modelo-de-datos.md) | Diagrama de clases, DER y las restricciones de unicidad de la base |
-| [docs/decisiones.md](docs/decisiones.md) | Las trece decisiones de arquitectura, con el problema que resolvían y lo que se paga por cada una |
+| [docs/decisiones.md](docs/decisiones.md) | Las dieciocho decisiones de arquitectura, con el problema que resolvían y lo que se paga por cada una |
 | [docs/flujo-de-pago.md](docs/flujo-de-pago.md) | El cobro paso a paso y por qué hay dos caminos de confirmación |
 | [docs/guia-frontend.md](docs/guia-frontend.md) | Para el equipo de frontend: sesión, errores, permisos y cómo generar el cliente de TypeScript |
 

@@ -1,0 +1,144 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.detail {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.detail__back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+
+.detail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.detail__head > div {
+  min-width: 0;
+}
+
+h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+h2 {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+p {
+  margin: 0;
+}
+
+.detail__head p {
+  margin: var(--space-2) 0;
+}
+
+.detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.detail__overview {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-5);
+}
+
+.detail__stack,
+.detail__card {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  align-content: start;
+}
+
+.detail__card {
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.detail__muted {
+  color: var(--color-text-muted);
+}
+
+.detail__code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.detail__count {
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.detail__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-m);
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+dl > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+dt {
+  color: var(--color-text-muted);
+}
+
+dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail__total {
+  border-top: var(--border);
+  padding-top: var(--space-4);
+  font-weight: 600;
+}
+
+.z-table td > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .detail__overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detail__card {
+    padding: var(--space-4);
+  }
+
+  dl > div {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+}

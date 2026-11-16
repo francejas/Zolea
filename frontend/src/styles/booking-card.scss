@@ -1,0 +1,79 @@
+/* El bloque Tarjeta de reserva de Zolea-docs/diseno/componentes.css, con los mismos nombres de
+   clase. Es global porque lo usan varias pantallas: Mis reservas la tarjeta entera, y el detalle y
+   la vuelta del pago los datos y el total (z-facts, z-total), que hoy todavía tienen su copia. */
+
+.z-booking-card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+}
+
+.z-booking-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.z-booking-card__title {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.z-booking-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border);
+}
+
+/* La reserva de hoy: lo más importante del día, en cielo. */
+.z-booking-card--today {
+  background: var(--color-sky);
+  border-color: transparent;
+  gap: var(--space-5);
+}
+
+.z-booking-card--today .z-eyebrow {
+  color: var(--color-ink);
+}
+
+.z-facts {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.z-facts li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.z-facts .z-icon {
+  flex: none;
+  color: var(--color-ink-soft);
+}
+
+.z-total {
+  display: grid;
+  gap: 2px;
+}
+
+.z-total span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.z-total strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}

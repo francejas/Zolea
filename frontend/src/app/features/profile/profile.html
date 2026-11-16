@@ -1,0 +1,196 @@
+<section class="profile">
+  <header class="profile__head">
+    <h1 class="profile__title">Mi cuenta</h1>
+    <p class="profile__lead">Tus datos para reservar y para entrar al balneario.</p>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="profile__card" aria-busy="true" aria-label="Cargando tus datos">
+        <z-skeleton width="40%" height="26px" />
+        <z-skeleton height="56px" />
+        <z-skeleton height="56px" />
+        <z-skeleton height="56px" />
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer tus datos" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      <form class="profile__card" novalidate (submit)="onSubmit($event)">
+        @if (formError(); as message) {
+          <z-alert variant="danger" title="No se pudo guardar" [text]="message" />
+        }
+
+        <fieldset class="profile__block">
+          <legend class="profile__subtitle">Tus datos</legend>
+
+          <div class="profile__pair">
+            <z-field [field]="profileForm.firstName" inputId="profile-first-name" label="Nombre">
+              <input
+                id="profile-first-name"
+                class="z-input"
+                type="text"
+                placeholder="Matías"
+                autocomplete="given-name"
+                [formField]="profileForm.firstName"
+                [attr.aria-invalid]="hasError(profileForm.firstName) ? 'true' : null"
+              />
+            </z-field>
+
+            <z-field [field]="profileForm.lastName" inputId="profile-last-name" label="Apellido">
+              <input
+                id="profile-last-name"
+                class="z-input"
+                type="text"
+                placeholder="Fernández"
+                autocomplete="family-name"
+                [formField]="profileForm.lastName"
+                [attr.aria-invalid]="hasError(profileForm.lastName) ? 'true' : null"
+              />
+            </z-field>
+          </div>
+
+          <z-field
+            [field]="profileForm.email"
+            inputId="profile-email"
+            label="Email"
+            [help]="
+              emailChanges()
+                ? 'Es con lo que ingresás: al guardar vas a tener que ingresar de nuevo con este email.'
+                : 'Es con lo que ingresás.'
+            "
+          >
+            <input
+              id="profile-email"
+              class="z-input"
+              type="email"
+              placeholder="correo@gmail.com"
+              inputmode="email"
+              autocomplete="email"
+              autocapitalize="none"
+              spellcheck="false"
+              [formField]="profileForm.email"
+              [attr.aria-invalid]="hasError(profileForm.email) ? 'true' : null"
+            />
+          </z-field>
+
+          <z-field
+            [field]="profileForm.phone"
+            inputId="profile-phone"
+            label="Teléfono"
+            help="El país y el número, sin el 0 ni el 15."
+          >
+            <div class="z-phone">
+              <select
+                id="profile-phone-country"
+                class="z-input z-phone__country"
+                aria-label="País del teléfono"
+                autocomplete="tel-country-code"
+                (change)="setCountry($event)"
+              >
+                @for (option of countries; track option.iso) {
+                  <option [value]="option.iso" [selected]="option.iso === country().iso">
+                    {{ option.name }} ({{ option.dial }})
+                  </option>
+                }
+              </select>
+              <input
+                id="profile-phone"
+                class="z-input"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel-national"
+                [placeholder]="country().placeholder"
+                (input)="onlyDigits($event, 'phone')"
+                [formField]="profileForm.phone"
+                [attr.aria-invalid]="hasError(profileForm.phone) ? 'true' : null"
+              />
+            </div>
+          </z-field>
+
+          <z-field
+            [field]="profileForm.dni"
+            inputId="profile-dni"
+            label="DNI"
+            help="Sin puntos. Te sirve para entrar al balneario si no tenés el código QR a mano."
+          >
+            <input
+              id="profile-dni"
+              class="z-input"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="12345678"
+              (input)="onlyDigits($event, 'dni')"
+              [formField]="profileForm.dni"
+              [attr.aria-invalid]="hasError(profileForm.dni) ? 'true' : null"
+            />
+          </z-field>
+        </fieldset>
+
+        <fieldset class="profile__block profile__block--password">
+          <legend class="profile__subtitle">Cambiar la contraseña</legend>
+          <p class="profile__hint">Si no la querés cambiar, dejá los dos campos vacíos.</p>
+
+          <z-field
+            [field]="profileForm.password"
+            inputId="profile-password"
+            label="Contraseña nueva"
+          >
+            <div class="z-input-wrap">
+              <input
+                id="profile-password"
+                class="z-input"
+                autocomplete="new-password"
+                [type]="showPassword() ? 'text' : 'password'"
+                [formField]="profileForm.password"
+                [attr.aria-invalid]="hasError(profileForm.password) ? 'true' : null"
+              />
+              <button
+                class="z-icon-btn"
+                type="button"
+                aria-controls="profile-password profile-password-repeat"
+                [attr.aria-label]="showPassword() ? 'Ocultar contraseñas' : 'Mostrar contraseñas'"
+                [attr.aria-pressed]="showPassword()"
+                (click)="showPassword.set(!showPassword())"
+              >
+                @if (showPassword()) {
+                  <svg lucideEyeOff class="z-icon" aria-hidden="true"></svg>
+                } @else {
+                  <svg lucideEye class="z-icon" aria-hidden="true"></svg>
+                }
+              </button>
+            </div>
+          </z-field>
+
+          <z-field
+            [field]="profileForm.passwordRepeat"
+            inputId="profile-password-repeat"
+            label="Repetí la contraseña nueva"
+          >
+            <input
+              id="profile-password-repeat"
+              class="z-input"
+              autocomplete="new-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              [formField]="profileForm.passwordRepeat"
+              [attr.aria-invalid]="hasError(profileForm.passwordRepeat) ? 'true' : null"
+            />
+          </z-field>
+        </fieldset>
+
+        @if (saved() && !changed()) {
+          <z-alert variant="success" title="Guardamos tus datos" text="Ya quedaron en tu cuenta." />
+        }
+
+        <z-btn type="submit" block [loading]="profileForm().submitting()">
+          {{ emailChanges() ? 'Guardar y volver a ingresar' : 'Guardar cambios' }}
+        </z-btn>
+      </form>
+    }
+  }
+</section>

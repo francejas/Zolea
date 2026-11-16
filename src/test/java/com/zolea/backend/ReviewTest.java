@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -220,6 +221,38 @@ class ReviewTest extends IntegrationTest {
     }
 
     @Test
+    @DisplayName("un admin con una reserva terminada a su nombre tampoco califica: 403, y no se guarda nada")
+    void adminWithOwnBooking_forbidden() throws Exception {
+        Resort resort = aResort();
+        Client admin = anAdminOf(resort);
+        Booking booking = stayEnded(1, admin, resort, Status.CONFIRMED);
+
+        review(booking, admin, """
+                {"rating": 5}""")
+                .andExpect(status().isForbidden());
+        assertThat(reviewRepository.existsByBooking_Id(booking.getId())).isFalse();
+    }
+
+    @Test
+    @DisplayName("la reserva de mostrador no lleva clientId: 400, y no se crea nada")
+    void walkInWithClientId_rejected() throws Exception {
+        Resort resort = aResort();
+        Client admin = anAdminOf(resort);
+        var unit = aUnitIn(resort, 10_000.0);
+        syncWithDatabase();
+        long before = bookingRepository.count();
+
+        mockMvc.perform(post("/api/bookings/walkin")
+                        .header("Authorization", bearer(admin))
+                        .contentType("application/json")
+                        .content("""
+                                {"startDate":"%s","endDate":"%s","clientId":%d,"rentalUnitId":%d}
+                                """.formatted(today(), today(), admin.getIdClient(), unit.getIdRentalUnit())))
+                .andExpect(status().isBadRequest());
+        assertThat(bookingRepository.count()).isEqualTo(before);
+    }
+
+    @Test
     @DisplayName("sin token: 401")
     void withoutToken_unauthorized() throws Exception {
         Booking booking = endedYesterday(aClient());
@@ -357,6 +390,126 @@ class ReviewTest extends IntegrationTest {
         mockMvc.perform(get("/api/bookings/client/" + client.getIdClient())
                         .header("Authorization", bearer(client)))
                 .andExpect(jsonPath("$[0].reviewed").value(true));
+    }
+
+    // ---------------------------------------------------------------------
+    // Ver y editar la reseña propia
+    // ---------------------------------------------------------------------
+
+    private ResultActions edit(Booking booking, Client client, String body) throws Exception {
+        return mockMvc.perform(put("/api/bookings/" + booking.getId() + "/review")
+                .header("Authorization", bearer(client))
+                .contentType("application/json")
+                .content(body));
+    }
+
+    @Test
+    @DisplayName("el autor ve su reseña para editarla")
+    void ownReview_read() throws Exception {
+        Client client = aClient();
+        Booking booking = endedYesterday(client);
+        aReview(booking, 3, "Bien, pero las duchas frías.", now().minusDays(1));
+        syncWithDatabase();
+
+        mockMvc.perform(get("/api/bookings/" + booking.getId() + "/review")
+                        .header("Authorization", bearer(client)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating").value(3))
+                .andExpect(jsonPath("$.comment").value("Bien, pero las duchas frías."))
+                .andExpect(jsonPath("$.updatedAt").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("editar la reseña cambia las estrellas y el comentario, y conserva cuándo se calificó")
+    void ownReview_edited() throws Exception {
+        Client client = aClient();
+        Booking booking = endedYesterday(client);
+        LocalDateTime calificada = now().minusDays(1);
+        aReview(booking, 3, "Bien, pero las duchas frías.", calificada);
+        syncWithDatabase();
+
+        edit(booking, client, """
+                {"rating": 5, "comment": "Volví a ir y arreglaron las duchas."}""")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating").value(5))
+                .andExpect(jsonPath("$.comment").value("Volví a ir y arreglaron las duchas."))
+                .andExpect(jsonPath("$.createdAt").value("2026-01-09T10:00:00"))
+                .andExpect(jsonPath("$.updatedAt").value("2026-01-10T10:00:00"));
+
+        syncWithDatabase();
+        assertThat(reviewRepository.findAll())
+                .filteredOn(r -> r.getBooking().getId().equals(booking.getId()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getRating()).isEqualTo(5);
+                    assertThat(r.getCreatedAt()).isEqualTo(calificada);
+                    assertThat(r.getUpdatedAt()).isEqualTo(now());
+                });
+    }
+
+    @Test
+    @DisplayName("editar con el comentario en blanco lo borra")
+    void ownReview_blankCommentRemoved() throws Exception {
+        Client client = aClient();
+        Booking booking = endedYesterday(client);
+        aReview(booking, 4, "Muy lindo.", now().minusDays(1));
+        syncWithDatabase();
+
+        edit(booking, client, """
+                {"rating": 4, "comment": "   "}""")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comment").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("una reserva que todavía no se calificó no tiene reseña que ver ni editar: 404")
+    void notReviewedYet_notFound() throws Exception {
+        Client client = aClient();
+        Booking booking = endedYesterday(client);
+
+        mockMvc.perform(get("/api/bookings/" + booking.getId() + "/review")
+                        .header("Authorization", bearer(client)))
+                .andExpect(status().isNotFound());
+        edit(booking, client, """
+                {"rating": 5}""")
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("la edición valida igual que calificar: 400 con campos")
+    void edit_invalidFields_rejected() throws Exception {
+        Client client = aClient();
+        Booking booking = endedYesterday(client);
+        aReview(booking, 4, null, now().minusDays(1));
+        syncWithDatabase();
+
+        edit(booking, client, """
+                {"rating": 9}""")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.rating").exists());
+    }
+
+    @Test
+    @DisplayName("la reseña de otro cliente no se ve ni se edita: 403, y no cambia")
+    void anotherClientsReview_forbidden() throws Exception {
+        Client owner = aClient();
+        Client other = aClient();
+        Booking booking = endedYesterday(owner);
+        aReview(booking, 2, "Flojo.", now().minusDays(1));
+        syncWithDatabase();
+
+        mockMvc.perform(get("/api/bookings/" + booking.getId() + "/review")
+                        .header("Authorization", bearer(other)))
+                .andExpect(status().isForbidden());
+        edit(booking, other, """
+                {"rating": 5}""")
+                .andExpect(status().isForbidden());
+
+        syncWithDatabase();
+        assertThat(reviewRepository.findAll())
+                .filteredOn(r -> r.getBooking().getId().equals(booking.getId()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getRating()).isEqualTo(2));
     }
 
     /** El 10 de enero de 2026 a las 10 de la mañana, en la zona del balneario. */

@@ -1,18 +1,37 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { Me } from '../../core/api/auth.models';
 import { SessionService } from '../../core/session/session.service';
 import { AdminLayout } from './admin-layout';
 
 const MY_RESORT = `${environment.apiUrl}/api/resorts/my`;
+
+const resortAdmin: Me = {
+  idClient: 2,
+  firstName: 'Admin',
+  lastName: 'Mar del Plata',
+  email: 'admin.mdp@zolea.com',
+  role: 'ADMIN',
+  idManagedResort: 1,
+};
+/** La cuenta de Zolea: un administrador sin balneario. */
+const zoleaAccount: Me = {
+  ...resortAdmin,
+  idClient: 3,
+  email: 'zolea@zolea.com',
+  idManagedResort: null,
+};
 
 describe('AdminLayout', () => {
   let fixture: ComponentFixture<AdminLayout>;
   let page: HTMLElement;
   let http: HttpTestingController;
   let logout: ReturnType<typeof vi.fn>;
+  const user = signal<Me | null>(resortAdmin);
 
   beforeEach(async () => {
     // jsdom no trae matchMedia ni los métodos de <dialog>.
@@ -28,21 +47,27 @@ describe('AdminLayout', () => {
       this.removeAttribute('open');
     };
     logout = vi.fn();
+    user.set(resortAdmin);
     await TestBed.configureTestingModule({
       imports: [AdminLayout],
       providers: [
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: SessionService, useValue: { logout } },
+        { provide: SessionService, useValue: { user, logout } },
       ],
     }).compileComponents();
+    http = TestBed.inject(HttpTestingController);
+    create();
+  });
+
+  /** Arma el marco con la sesión que haya en `user`. */
+  function create(): void {
     fixture = TestBed.createComponent(AdminLayout);
     page = fixture.nativeElement;
-    http = TestBed.inject(HttpTestingController);
     // Hace salir el pedido del balneario; whenStable() esperaría su respuesta.
     TestBed.tick();
-  });
+  }
 
   afterEach(() => {
     http.verify();
@@ -75,14 +100,14 @@ describe('AdminLayout', () => {
     );
   });
 
-  it('lista las secciones del panel, y abajo volver al sitio y salir', async () => {
+  const items = (within: ParentNode = sidebar()) =>
+    Array.from(within.querySelectorAll('.z-sidebar__item')).map((item) => item.textContent!.trim());
+
+  it('lista las secciones del panel, sin el catálogo, y abajo volver al sitio y salir', async () => {
     http.expectOne(MY_RESORT).flush({ name: 'Zolea Club de Playa', location: 'Mar del Plata' });
     await fixture.whenStable();
 
-    const items = Array.from(sidebar().querySelectorAll('.z-sidebar__item')).map((item) =>
-      item.textContent!.trim(),
-    );
-    expect(items).toEqual([
+    expect(items()).toEqual([
       'Panel',
       'Mostrador',
       'Validar ingreso',
@@ -90,10 +115,39 @@ describe('AdminLayout', () => {
       'Mis clientes',
       'Unidades',
       'Mi balneario',
-      'Catálogo de servicios',
       'Ver el sitio público',
       'Salir',
     ]);
+    expect(page.querySelector('.z-logo')!.getAttribute('href')).toBe('/admin');
+  });
+
+  describe('la cuenta de Zolea', () => {
+    beforeEach(async () => {
+      // El marco del administrador de un balneario ya pidió el suyo: se responde y se rearma.
+      http.expectOne(MY_RESORT).flush({ name: 'Zolea Club de Playa', location: 'Mar del Plata' });
+      fixture.destroy();
+      user.set(zoleaAccount);
+      create();
+      await fixture.whenStable();
+    });
+
+    it('no pide un balneario y arriba dice «Zolea · Catálogo de servicios»', () => {
+      http.expectNone(MY_RESORT);
+      const resort = sidebar().querySelector('.z-sidebar__resort')!.textContent;
+      expect(resort).toContain('Zolea · Catálogo de servicios');
+      expect(resort).not.toContain('Sin balneario asignado');
+    });
+
+    it('su barra lleva solo el catálogo, volver al sitio y salir, también en el cajón', () => {
+      const expected = ['Catálogo de servicios', 'Ver el sitio público', 'Salir'];
+      expect(items()).toEqual(expected);
+      expect(items(page.querySelector('dialog')!)).toEqual(expected);
+      expect(sidebar().getAttribute('aria-label')).toBe('Panel de Zolea');
+    });
+
+    it('el logo la lleva a su catálogo', () => {
+      expect(page.querySelector('.z-logo')!.getAttribute('href')).toBe('/admin/amenities');
+    });
   });
 
   it('Salir cierra la sesión', async () => {

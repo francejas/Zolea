@@ -8,6 +8,7 @@ export function aGuest(overrides: Partial<GuestSummary> = {}): GuestSummary {
     fullName: 'Santiago Rodríguez',
     dni: '38456912',
     isEntryValidated: false,
+    lastEntryAt: null,
     qrToken: 'f3a1c2d4-0000-4000-8000-000000000001',
     ...overrides,
   };
@@ -32,6 +33,11 @@ export function aBooking(overrides: Partial<Booking> = {}): Booking {
     resortName: 'Zolea Club de Playa',
     resortLocation: 'Mar del Plata, Buenos Aires',
     resortCoverPhotoUrl: null,
+    canceledAt: null,
+    canceledBy: null,
+    refundAmount: null,
+    reviewed: false,
+    payments: [],
     ...overrides,
   };
 }

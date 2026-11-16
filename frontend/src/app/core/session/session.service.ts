@@ -81,6 +81,11 @@ export class SessionService {
     void this.router.navigateByUrl('/');
   }
 
+  /** Vuelve a pedir `/me`: después de editar Mi cuenta, la barra muestra el nombre nuevo. */
+  reloadUser(): Observable<Me> {
+    return this.loadMe();
+  }
+
   private loadMe(): Observable<Me> {
     return this.http.get<Me>(`${this.authUrl}/me`).pipe(tap((me) => this.currentUser.set(me)));
   }

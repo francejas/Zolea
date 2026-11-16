@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
  * lo comprueba antes para responder con un mensaje claro, pero si dos pedidos llegan a la vez, el
  * segundo no entra.
  *
- * <p>Quién puede calificar es una regla de la reserva: {@link Booking#canBeReviewed}.
+ * <p>Quién puede calificar es una regla de la reserva: {@link Booking#canBeReviewed}. Una vez
+ * guardada, su autor la puede editar (las estrellas y el comentario) cuando quiera.
  */
 @Table(name = "review", uniqueConstraints =
         @UniqueConstraint(name = "uk_resena_de_reserva", columnNames = "id_booking"))
@@ -48,4 +49,11 @@ public class Review {
     /** Cuándo se calificó. Sale del reloj inyectado, no del reloj de la máquina. */
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    /**
+     * Cuándo la editó su autor por última vez, o null si nunca la cambió. La reseña conserva su
+     * fecha de creación: editarla no la mueve en la lista del balneario.
+     */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

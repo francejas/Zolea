@@ -28,7 +28,7 @@ public record BookingRequest(
 
         // Sin @NotNull ni @Positive a propósito: la reserva de mostrador llega con cero.
         // Ver la anotación @HolderRequired de arriba.
-        @Schema(description = "Quién reserva. Tiene que ser el usuario del token; un administrador puede omitirlo para cargar una reserva de mostrador", example = "7")
+        @Schema(description = "Quién reserva. Tiene que ser el usuario del token; la reserva de mostrador va sin él", example = "7")
         Long clientId,
 
         @Schema(description = "La carpa o sombrilla que se reserva", example = "12")
@@ -37,13 +37,13 @@ public record BookingRequest(
         Long rentalUnitId,
 
         @Schema(description = "Los acompañantes. El titular no va acá: se agrega solo, con su propio código QR")
-        List<GuestRequest> guests,
+        List<@NotNull(message = "La lista de huéspedes no puede tener elementos vacíos") GuestRequest> guests,
 
         // El titular de una reserva de mostrador, que no tiene cuenta. Que venga uno de los dos
         // —cliente o titular a mano— lo comprueba @HolderRequired.
-        @Schema(description = "Titular de una reserva de mostrador, para alguien que no tiene cuenta", example = "Marta Gómez")
+        @Schema(description = "Titular de una reserva de mostrador, para alguien que no tiene cuenta. La reserva web no lo acepta", example = "Marta Gómez")
         String walkInName,
-        @Schema(description = "DNI del titular de mostrador", example = "31222333")
+        @Schema(description = "DNI del titular de mostrador. La reserva web no lo acepta", example = "31222333")
         String walkInDni
 ) {
 }

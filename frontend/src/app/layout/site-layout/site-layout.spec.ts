@@ -87,6 +87,7 @@ describe('SiteLayout', () => {
     expect(userButton().getAttribute('aria-expanded')).toBe('true');
     expect(page.querySelector('#menu-usuario')!.hasAttribute('hidden')).toBe(false);
     expect(texts('#menu-usuario .z-menu__item')).toEqual([
+      'Inicio',
       'Mis reservas',
       'Mi cuenta',
       'Cerrar sesión',

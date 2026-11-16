@@ -1,0 +1,224 @@
+<section class="walkin">
+  <header class="walkin__head z-no-print">
+    <h1 class="walkin__h1">Reserva en mostrador</h1>
+    <p class="walkin__lead">
+      Para quien llega sin cuenta. Se confirma en el acto y se cobra acá: no pasa por MercadoPago.
+    </p>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="walkin__loading" aria-busy="true" aria-label="Cargando el balneario">
+        @for (line of skeletonLines; track line) {
+          <z-skeleton height="56px" />
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem
+        title="No pudimos traer tu balneario"
+        text="Revisá tu conexión y probá de nuevo."
+        (retry)="reload()"
+      />
+    }
+
+    @case ('no-resort') {
+      <z-empty
+        title="No tenés un balneario asignado"
+        text="Para reservar en el mostrador, tu cuenta tiene que administrar un balneario."
+      />
+    }
+
+    @case ('ready') {
+      @if (confirmed(); as booking) {
+        <div class="walkin__done">
+          <div class="walkin__done-head z-no-print">
+            <z-alert
+              variant="success"
+              [title]="'Reserva ' + confirmedNumber() + ' confirmada'"
+              [text]="'Cobrá ' + confirmedTotal() + ' en el mostrador y entregá las entradas.'"
+            />
+            <div class="walkin__done-actions">
+              <z-btn (click)="print()">
+                <svg lucidePrinter class="z-icon z-icon--s" aria-hidden="true"></svg>
+                Imprimir
+              </z-btn>
+              <z-btn variant="secondary" (click)="newBooking()">
+                <svg lucideUserPlus class="z-icon z-icon--s" aria-hidden="true"></svg>
+                Nueva reserva
+              </z-btn>
+            </div>
+          </div>
+
+          <!-- Lo único que sale al imprimir: los estilos de impresión ocultan todo lo demás. -->
+          <div class="walkin__tickets z-print-area" aria-label="Entradas">
+            @for (guest of booking.guests; track guest.idGuest) {
+              <app-guest-qr [guest]="guest" [booking]="booking" />
+            }
+          </div>
+        </div>
+      } @else if (resort(); as resort) {
+        <form class="walkin__layout" novalidate (submit)="onSubmit($event)">
+          <div class="walkin__steps">
+            <section class="walkin__section" aria-labelledby="walkin-holder">
+              <h2 id="walkin-holder" class="walkin__subtitle">Titular</h2>
+              <p class="walkin__hint">Quien está en el mostrador. No necesita tener cuenta.</p>
+              <div class="walkin__pair">
+                <z-field
+                  [field]="walkInForm.walkInName"
+                  inputId="walkin-name"
+                  label="Nombre completo"
+                >
+                  <input
+                    class="z-input"
+                    type="text"
+                    autocomplete="off"
+                    id="walkin-name"
+                    [formField]="walkInForm.walkInName"
+                  />
+                </z-field>
+                <z-field [field]="walkInForm.walkInDni" inputId="walkin-dni" label="DNI">
+                  <input
+                    class="z-input"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    id="walkin-dni"
+                    [formField]="walkInForm.walkInDni"
+                  />
+                </z-field>
+              </div>
+            </section>
+
+            <section class="walkin__section" aria-labelledby="walkin-dates">
+              <h2 id="walkin-dates" class="walkin__subtitle">Fechas</h2>
+              <z-date-range [(from)]="startDate" [(to)]="endDate" />
+            </section>
+
+            <section class="walkin__section" aria-labelledby="walkin-unit">
+              <h2 id="walkin-unit" class="walkin__subtitle">Unidad</h2>
+              <p class="walkin__hint">Tocá una sombrilla o una carpa libre de {{ resort.name }}.</p>
+              @if (notice(); as message) {
+                <z-alert variant="warning" [text]="message" />
+              }
+              @if (occupiedError()) {
+                <z-alert
+                  variant="warning"
+                  text="No pudimos ver qué unidades están ocupadas en esas fechas. Si elegís una tomada, te avisamos al confirmar."
+                />
+              }
+              <z-resort-plan
+                [units]="resort.rentalUnits"
+                [occupiedIds]="occupiedIds()"
+                [(selectedId)]="selectedId"
+                (unitSelected)="onUnitSelected()"
+              />
+            </section>
+
+            <section class="walkin__section" aria-labelledby="walkin-guests">
+              <h2 id="walkin-guests" class="walkin__subtitle">Acompañantes</h2>
+              <p class="walkin__hint">
+                La entrada del titular sale sola. Sumá a quienes lo acompañan, cada uno con la suya.
+              </p>
+
+              @for (guest of walkInForm.guests; track $index; let i = $index) {
+                <div class="walkin__guest" role="group" [attr.aria-labelledby]="'guest-title-' + i">
+                  <p class="walkin__guest-title" [id]="'guest-title-' + i">
+                    Acompañante {{ i + 1 }}
+                  </p>
+                  <z-field
+                    [field]="guest.fullName"
+                    [inputId]="'guest-name-' + i"
+                    label="Nombre completo"
+                  >
+                    <input
+                      class="z-input"
+                      type="text"
+                      autocomplete="off"
+                      [id]="'guest-name-' + i"
+                      [formField]="guest.fullName"
+                    />
+                  </z-field>
+                  <z-field [field]="guest.dni" [inputId]="'guest-dni-' + i" label="DNI">
+                    <input
+                      class="z-input"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      [id]="'guest-dni-' + i"
+                      [formField]="guest.dni"
+                    />
+                  </z-field>
+                  <button
+                    class="z-btn z-btn--ghost z-btn--small walkin__remove"
+                    type="button"
+                    [attr.aria-label]="'Quitar al acompañante ' + (i + 1)"
+                    (click)="removeGuest(i)"
+                  >
+                    <svg lucideTrash2 class="z-icon z-icon--s" aria-hidden="true"></svg>
+                    Quitar
+                  </button>
+                </div>
+              }
+
+              <div>
+                <z-btn variant="secondary" (click)="addGuest()">
+                  <svg lucidePlus class="z-icon z-icon--s" aria-hidden="true"></svg>
+                  Agregar acompañante
+                </z-btn>
+              </div>
+            </section>
+          </div>
+
+          <!-- Al costado en la computadora; en el celular, al final. -->
+          <aside class="walkin__summary" aria-labelledby="walkin-summary">
+            <h2 id="walkin-summary" class="walkin__subtitle">A cobrar</h2>
+
+            <dl class="walkin__lines">
+              <div>
+                <dt>Unidad</dt>
+                <dd>{{ unitName() }}</dd>
+              </div>
+              <div>
+                <dt>Precio por día</dt>
+                <dd class="z-money">{{ dailyPrice() }}</dd>
+              </div>
+              <div>
+                <dt>Días</dt>
+                <dd>{{ days() > 0 ? daysLabel() + ' · se cobran los dos extremos' : '—' }}</dd>
+              </div>
+              <div>
+                <dt>Personas</dt>
+                <dd>{{ people() }}</dd>
+              </div>
+            </dl>
+
+            <div class="walkin__total">
+              <span>Total</span>
+              <strong class="z-money">{{ total() }}</strong>
+            </div>
+
+            @if (missingChoice() && !canBook()) {
+              <z-alert variant="warning" text="Elegí la unidad y las fechas para reservar." />
+            }
+
+            @if (formError(); as message) {
+              <z-alert variant="danger" title="No se pudo reservar" [text]="message" />
+            }
+
+            <z-btn
+              type="submit"
+              size="large"
+              block
+              [loading]="walkInForm().submitting()"
+              [disabled]="walkInForm().submitting()"
+            >
+              {{ walkInForm().submitting() ? 'Confirmando…' : 'Confirmar y cobrar' }}
+            </z-btn>
+          </aside>
+        </form>
+      }
+    }
+  }
+</section>

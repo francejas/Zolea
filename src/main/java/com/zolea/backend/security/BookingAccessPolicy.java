@@ -50,4 +50,38 @@ public class BookingAccessPolicy {
                         && idClient.equals(booking.getClient().getIdClient()))
                 .orElse(true); // no existe: que el endpoint devuelva 404
     }
+
+    /**
+     * Si esa reserva es de una unidad de ese balneario. Mismo criterio que {@link #canAccess}: lo
+     * que no existe pasa, para que el endpoint devuelva su 404. Un administrador sin balneario
+     * asignado no alcanza ninguna.
+     */
+    @Transactional(readOnly = true)
+    public boolean inResort(Long bookingId, Long idResort) {
+        if (bookingId == null || idResort == null) {
+            return false;
+        }
+        return bookingRepository.findById(bookingId)
+                .map(booking -> booking.getRentalUnit() != null
+                        && booking.getRentalUnit().getResort() != null
+                        && idResort.equals(booking.getRentalUnit().getResort().getIdResort()))
+                .orElse(true); // no existe: que el endpoint devuelva 404
+    }
+
+    /**
+     * Quién puede ver una reserva y operar sobre ella (RNF03): el cliente dueño, o el administrador
+     * del balneario de la reserva. Hasta la 15.5 alcanzaba con ser administrador, de cualquier
+     * balneario: el de Mar del Plata leía las reservas de Ocean View, con sus códigos QR.
+     *
+     * <p>Un administrador se mide solo por su balneario, aunque la reserva figure a su nombre.
+     */
+    @Transactional(readOnly = true)
+    public boolean canRead(Long bookingId, UserPrincipal principal) {
+        if (principal == null) {
+            return false;
+        }
+        return principal.isAdmin()
+                ? inResort(bookingId, principal.idManagedResort())
+                : canAccess(bookingId, principal.idClient());
+    }
 }

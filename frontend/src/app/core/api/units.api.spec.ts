@@ -14,6 +14,7 @@ const unit: RentalUnit = {
   dailyPrice: 14500,
   isBlocked: false,
   resortId: 1,
+  retired: false,
 };
 
 describe('UnitsApi', () => {
@@ -80,5 +81,16 @@ describe('UnitsApi', () => {
     const unblock = http.expectOne((r) => r.url === `${URL}/7/block`);
     expect(unblock.request.params.get('isBlocked')).toBe('false');
     unblock.flush(unit);
+  });
+
+  it('retire hace PATCH /{id}/retire sin cuerpo y devuelve la unidad dada de baja', () => {
+    let result: RentalUnit | undefined;
+    api.retire(7).subscribe((r) => (result = r));
+
+    const req = http.expectOne(`${URL}/7/retire`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toBeNull();
+    req.flush({ ...unit, retired: true });
+    expect(result?.retired).toBe(true);
   });
 });

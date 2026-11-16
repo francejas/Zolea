@@ -8,7 +8,8 @@
       [attr.aria-controls]="id + '-calendario'"
       (click)="toggle('from')"
     >
-      <span>Entrada</span><strong>{{ fromLabel() }}</strong>
+      <span>{{ labels().from }}</span
+      ><strong>{{ fromLabel() }}</strong>
     </button>
     <button
       #toButton
@@ -18,7 +19,8 @@
       [attr.aria-controls]="id + '-calendario'"
       (click)="toggle('to')"
     >
-      <span>Salida</span><strong>{{ toLabel() }}</strong>
+      <span>{{ labels().to }}</span
+      ><strong>{{ toLabel() }}</strong>
     </button>
   </div>
 
@@ -27,7 +29,7 @@
       class="z-cal"
       role="group"
       [id]="id + '-calendario'"
-      [attr.aria-label]="open() === 'from' ? 'Elegí la entrada' : 'Elegí la salida'"
+      [attr.aria-label]="open() === 'from' ? labels().pickFrom : labels().pickTo"
     >
       <div class="z-cal__head">
         <button
@@ -45,7 +47,11 @@
         </button>
       </div>
 
-      <div class="z-cal__grid">
+      <div
+        class="z-cal__grid"
+        [class.is-previewing]="previewTo() !== null"
+        (mouseleave)="hover(null)"
+      >
         @for (weekday of weekdays; track weekday) {
           <span class="z-cal__dow" aria-hidden="true">{{ weekday }}</span>
         }
@@ -59,6 +65,8 @@
             [class.is-past]="day.past"
             [class.is-today]="day.today"
             [class.is-in-range]="day.inRange"
+            [class.is-preview]="day.preview"
+            [class.is-preview-end]="day.previewEnd"
             [class.is-start]="day.start"
             [class.is-end]="day.end"
             [class.is-single]="day.start && day.end"
@@ -66,6 +74,9 @@
             [attr.aria-label]="day.label"
             [disabled]="day.past"
             (click)="pick(day)"
+            (mouseenter)="hover(day)"
+            (focus)="hover(day)"
+            (blur)="hover(null)"
           >
             <span>{{ day.day }}</span>
           </button>

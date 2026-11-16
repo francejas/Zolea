@@ -27,6 +27,7 @@ function unit(overrides: Partial<RentalUnit> = {}): RentalUnit {
     dailyPrice: 8500,
     isBlocked: false,
     resortId: 7,
+    retired: false,
     ...overrides,
   };
 }
@@ -34,6 +35,7 @@ function unit(overrides: Partial<RentalUnit> = {}): RentalUnit {
 const sombrilla = unit();
 const carpa = unit({ idRentalUnit: 2, type: 'TENT', identifier: 'C-01', dailyPrice: 14500 });
 const bloqueada = unit({ idRentalUnit: 3, identifier: 'A-08', isBlocked: true });
+const dadaDeBaja = unit({ idRentalUnit: 4, identifier: 'A-09', retired: true });
 
 describe('Units', () => {
   let fixture: ComponentFixture<Units>;
@@ -115,7 +117,8 @@ describe('Units', () => {
   }
 
   async function fillCreate(identifier: string, price: string, kind = 'TENT'): Promise<void> {
-    type('#unit-type', kind);
+    // El tipo son dos botones a la vista: se toca el que corresponde.
+    page.querySelector<HTMLInputElement>(`.units__type-option input[value="${kind}"]`)!.click();
     type('#unit-identifier', identifier);
     type('#unit-price', price);
     await fixture.whenStable();
@@ -457,6 +460,211 @@ describe('Units', () => {
         'La unidad es de otro balneario',
       );
       expect(rowOf('A-01').querySelector('.z-status')!.textContent).toContain('Disponible');
+    });
+  });
+  describe('filtrar', () => {
+    beforeEach(async () => {
+      await respondWith([sombrilla, carpa, bloqueada, dadaDeBaja]);
+    });
+
+    const identifiers = () => rows().map((row) => cells(row)[0]);
+    function choose(id: string, value: string): void {
+      const select = page.querySelector<HTMLSelectElement>(`#${id}`)!;
+      select.value = value;
+      select.dispatchEvent(new Event('change'));
+    }
+
+    const summary = () => page.querySelector('.units__summary')!;
+
+    it('por defecto muestra disponibles y bloqueadas, sin las dadas de baja', () => {
+      expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
+      expect(page.querySelector<HTMLSelectElement>('#filter-type')!.value).toBe('ALL');
+      expect(page.querySelector<HTMLSelectElement>('#filter-status')!.value).toBe('ACTIVE');
+      expect(summary().getAttribute('role')).toBe('status');
+      expect(summary().textContent).toContain('3 de 4 unidades · 1 bloqueada · 1 dada de baja');
+    });
+
+    it('con el filtro por defecto, Quitar los filtros está deshabilitado', () => {
+      expect(button('Quitar los filtros')!.disabled).toBe(true);
+    });
+
+    it('por tipo, y el resumen dice cuántas muestra de cuántas hay', async () => {
+      choose('filter-type', 'TENT');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['C-01']);
+      expect(summary().textContent).toContain('1 de 4 unidades');
+      expect(button('Quitar los filtros')!.disabled).toBe(false);
+
+      choose('filter-type', 'UMBRELLA');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-01', 'A-08']);
+    });
+
+    it('por estado: disponibles, bloqueadas, dadas de baja o todas', async () => {
+      choose('filter-status', 'AVAILABLE');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-01', 'C-01']);
+
+      choose('filter-status', 'BLOCKED');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-08']);
+
+      choose('filter-status', 'RETIRED');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-09']);
+
+      choose('filter-status', 'ALL');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-01', 'A-08', 'A-09', 'C-01']);
+    });
+
+    it('si nada coincide lo dice y Quitar los filtros vuelve al listado', async () => {
+      choose('filter-type', 'TENT');
+      choose('filter-status', 'BLOCKED');
+      await fixture.whenStable();
+
+      expect(page.querySelector('table')).toBeNull();
+      expect(page.querySelector('z-empty')!.textContent).toContain(
+        'Ninguna unidad coincide con los filtros',
+      );
+
+      page.querySelector<HTMLButtonElement>('z-empty button')!.click();
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
+      expect(page.querySelector<HTMLSelectElement>('#filter-type')!.value).toBe('ALL');
+      expect(page.querySelector<HTMLSelectElement>('#filter-status')!.value).toBe('ACTIVE');
+    });
+
+    it('el botón de los filtros vuelve al filtro por defecto', async () => {
+      choose('filter-status', 'RETIRED');
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-09']);
+
+      button('Quitar los filtros')!.click();
+      await fixture.whenStable();
+      expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
+      expect(button('Quitar los filtros')!.disabled).toBe(true);
+    });
+
+    it('la dada de baja va en neutro, sin acciones y con su nombre', async () => {
+      choose('filter-status', 'RETIRED');
+      await fixture.whenStable();
+
+      const row = rowOf('A-09');
+      expect(row.querySelector('.z-status')!.textContent).toContain('Dada de baja');
+      expect(row.querySelector('.z-status')!.classList).toContain('z-status--neutral');
+      expect(row.querySelectorAll('button')).toHaveLength(0);
+    });
+  });
+
+  describe('dar de baja', () => {
+    beforeEach(async () => {
+      await respondWith([sombrilla, carpa]);
+    });
+
+    const retireDialog = () =>
+      page.querySelector<HTMLDialogElement>('dialog[aria-labelledby="retire-title"]')!;
+
+    async function ask(identifier: string): Promise<void> {
+      Array.from(rowOf(identifier).querySelectorAll('button'))
+        .find((b) => b.textContent!.includes('Dar de baja'))!
+        .click();
+      await fixture.whenStable();
+    }
+
+    const confirm = () =>
+      Array.from(retireDialog().querySelectorAll('button'))
+        .filter((b) => b.textContent!.includes('Dar de baja'))
+        .at(-1)!;
+
+    it('pide confirmación, avisa que es definitivo y, si se vuelve atrás, no manda nada', async () => {
+      await ask('A-01');
+
+      expect(retireDialog().hasAttribute('open')).toBe(true);
+      expect(retireDialog().textContent).toContain('¿Das de baja la Sombrilla A-01?');
+      expect(retireDialog().textContent).toContain('Es definitivo');
+
+      Array.from(retireDialog().querySelectorAll('button'))
+        .find((b) => b.textContent!.includes('Dejarla como está'))!
+        .click();
+      await fixture.whenStable();
+
+      expect(retireDialog().hasAttribute('open')).toBe(false);
+      http.expectNone((r) => r.url.endsWith('/retire'));
+    });
+
+    it('confirmado, hace PATCH /retire y la fila pasa a dada de baja', async () => {
+      await ask('A-01');
+      confirm().click();
+
+      const req = http.expectOne(`${API}/1/retire`);
+      expect(req.request.method).toBe('PATCH');
+      req.flush({ ...sombrilla, retired: true });
+      await fixture.whenStable();
+
+      // Sale de la tabla por defecto, que no muestra las dadas de baja.
+      expect(rows().map((row) => cells(row)[0])).toEqual(['C-01']);
+      expect(retireDialog().hasAttribute('open')).toBe(false);
+      expect(page.querySelector('z-alert')!.textContent).toContain(
+        'La Sombrilla A-01 se dio de baja',
+      );
+      expect(page.querySelector('.units__summary')!.textContent).toContain(
+        '1 de 2 unidades · 1 dada de baja',
+      );
+      // La fila del botón se fue: el foco queda en el resumen, no en el body.
+      expect(document.activeElement).toBe(page.querySelector('.units__summary'));
+    });
+
+    it('usa la unidad tal como la devuelve el backend', async () => {
+      await ask('A-01');
+      confirm().click();
+      http.expectOne(`${API}/1/retire`).flush({ ...sombrilla, retired: false });
+      await fixture.whenStable();
+
+      expect(rows().map((row) => cells(row)[0])).toEqual(['A-01', 'C-01']);
+    });
+
+    it('con reservas por delante (400) muestra el motivo en la confirmación y no cambia la fila', async () => {
+      await ask('A-01');
+      confirm().click();
+
+      http
+        .expectOne(`${API}/1/retire`)
+        .flush(
+          { error: 'Tiene reservas por delante: cancelalas o esperá a que terminen.' },
+          { status: 400, statusText: 'x' },
+        );
+      await fixture.whenStable();
+
+      expect(retireDialog().hasAttribute('open')).toBe(true);
+      expect(retireDialog().querySelector('z-alert')!.textContent).toContain(
+        'Tiene reservas por delante: cancelalas o esperá a que terminen.',
+      );
+      expect(rows()).toHaveLength(2);
+      expect(rowOf('A-01').querySelector('.z-status')!.textContent).toContain('Disponible');
+    });
+
+    it('también se puede dar de baja una bloqueada', async () => {
+      http.verify();
+      fixture = TestBed.createComponent(Units);
+      page = fixture.nativeElement;
+      fixture.detectChanges();
+      await respondWith([bloqueada]);
+
+      await ask('A-08');
+      confirm().click();
+      http.expectOne(`${API}/3/retire`).flush({ ...bloqueada, retired: true });
+      await fixture.whenStable();
+
+      // Sin unidades en servicio, el vacío lo dice y deja ver las dadas de baja.
+      expect(page.querySelector('z-empty')!.textContent).toContain(
+        'No te quedan unidades en servicio',
+      );
+      expect(button('Quitar los filtros')!.disabled).toBe(true);
+
+      button('Ver las dadas de baja')!.click();
+      await fixture.whenStable();
+      expect(rows().map((row) => cells(row)[0])).toEqual(['A-08']);
     });
   });
 });

@@ -16,7 +16,7 @@ docker compose up -d db     # MySQL en el puerto 3307
 ./mvnw spring-boot:run      # backend en el 8080, perfil dev
 ```
 
-Arranca con la base de demostración cargada: 5 balnearios, 100 unidades y 47 reservas, con las
+Arranca con la base de demostración cargada: 5 balnearios, 114 unidades y 74 reservas, con las
 fechas recalculadas relativas a hoy. **Se recarga en cada arranque**, así que lo que se ensucie
 probando se limpia solo al reiniciar.
 
@@ -26,6 +26,7 @@ Cuentas, todas con contraseña `admin123`:
 |---|---|---|
 | `santi.rodriguez@gmail.com` | `USER` | El recorrido de un cliente |
 | `admin.mdp@zolea.com` | `ADMIN` | El panel del balneario de Mar del Plata |
+| `zolea@zolea.com` | `ADMIN`, sin balneario | La cuenta de Zolea: carga el catálogo de servicios y da de alta balnearios |
 
 **CORS ya está abierto** para cualquier origen, así que `ng serve` en el 4200 funciona sin
 configurar nada.
@@ -116,12 +117,17 @@ a los controles del formulario.
 
 | Código | Qué pasó | Qué hacer en el frontend |
 |---|---|---|
-| **400** | Una regla rechazó el pedido | Mostrar `error`, y marcar los controles de `campos` si viene |
+| **400** | Una regla rechazó el pedido, o el pedido está mal armado | Mostrar `error`, y marcar los controles de `campos` si viene |
 | **401** | Falta el token o venció | Limpiar la sesión e ir al login |
 | **403** | El recurso existe, pero no es tuyo | Mostrar «no tenés permiso». **No** desloguear |
 | **404** | No existe | Pantalla de «no encontrado» |
 | **409** | Era válido al comprobarlo y dejó de serlo al guardar | Mostrar `error`: alguien se adelantó |
 | **502** | MercadoPago no respondió | Ofrecer reintentar el pago |
+
+Un pedido mal armado nunca responde `500` (RNF06): un id que no es un número
+(`GET /api/bookings/abc`), un cuerpo que no es JSON válido, un parámetro obligatorio que falta o un
+valor fuera de una lista cerrada (`"type": "CABANA"`) responden `400` con el motivo en `error`; si
+es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre un error nuestro.
 
 ---
 
@@ -133,7 +139,33 @@ a los controles del formulario.
 - Un **administrador** ve y toca solo **su** balneario: sus unidades, las reservas hechas en ellas y
   los clientes que reservaron ahí. **No existe un administrador que vea todo**: si una cuenta con rol
   ADMIN no tiene balneario asignado, esos tres listados responden `403` con el motivo, en vez de
-  devolver el sistema entero.
+  devolver el sistema entero. Lo mismo al tocar algo por id: editar, desactivar o reactivar otro
+  balneario, ver una reserva de otro balneario, sus condiciones de cancelación o su link de pago, y
+  la reserva de mostrador sobre una unidad ajena responden `403`.
+- El **catálogo de servicios** (`POST`, `PUT` y `DELETE` en `/api/amenities`) lo administra solo
+  **la cuenta de Zolea**: el ADMIN sin balneario (`zolea@zolea.com` en la demo). El administrador
+  de un balneario recibe `403` con el motivo «Los servicios los carga Zolea. Elegí los tuyos en Mi
+  balneario.», y elige los que ofrece en `PUT /api/resorts/my`, con `amenityIds`. Listar el
+  catálogo sigue siendo público.
+- **Mi balneario** (`PUT /api/resorts/my`) manda el formulario entero: la descripción y la foto se
+  reemplazan siempre, y vacías se borran. `PUT /api/resorts/{id}` es parcial: lo que llega vacío
+  o no viene se conserva.
+- **Dar de alta un balneario** (`POST /api/resorts`) también es solo de la cuenta de Zolea, y solo
+  por la API: no tiene pantalla. El administrador de un balneario recibe `403` con el motivo «Los
+  balnearios los da de alta Zolea.». Esa cuenta carga el catálogo y da de alta balnearios, y nada
+  más: el panel le sigue respondiendo `403`.
+- En el frontend, la cuenta de Zolea se reconoce por `/me` con `role: ADMIN` e `idManagedResort`
+  vacío. Al ingresar va directo a `/admin/amenities`, su barra lateral solo tiene el catálogo, y
+  cualquier otra pantalla de `/admin` la devuelve ahí. El administrador de un balneario no ve el
+  catálogo: `/admin/amenities` lo lleva a su Panel (`adminAreaGuard`).
+- Un administrador **no reserva por `POST /api/bookings`**, ni a su nombre: usa la de mostrador. Y
+  por `GET /api/clients/{id}`, `PUT /api/clients/{id}` y `GET /api/bookings/client/{id}` solo llega
+  a **su propio** perfil: a sus clientes los ve en `GET /api/clients`.
+- **Mi cuenta** (`PUT /api/clients/{id}`) lleva todos los datos; la contraseña, solo si se cambia
+  (sin ella, queda la que había). Un email, teléfono o DNI que ya es de otra cuenta responde `409`
+  con el campo en `campos` (`email`, `phone` o `dni`), así `toFieldErrors` lo marca debajo. El
+  token es del email: si el email cambia, la sesión abierta deja de valer y hay que volver a
+  ingresar.
 - `GET /api/clients` devuelve **los clientes de su balneario**, cada uno con su historial en ese
   balneario. Incluye a quienes reservaron por mostrador: esos no tienen cuenta, así que vienen con
   `walkIn: true` y sin `idClient`, `email` ni `phone`. El importe `totalSpent` ya viene sumado por el
@@ -184,6 +216,10 @@ Los rechazos responden `400` con el motivo en `error`: una sola de las dos fecha
 `occupied-units` van siempre las dos), `from` después de `to`, `from` antes de hoy, un `type` que
 no existe o una fecha que no viene como `AAAA-MM-DD`. Un balneario que no existe, `404`.
 
+Un balneario **desactivado** no aparece en la portada y su ficha, `GET /api/resorts/{id}`, responde
+`404` como si no existiera; su administrador lo sigue viendo con `GET /api/resorts/my`. Las unidades
+**dadas de baja** no vienen en la ficha ni cuentan en `availableUnits`.
+
 ### Reservar
 
 ```
@@ -212,6 +248,18 @@ demorado.
 Si el pago falla, el cliente vuelve por `/failure`; para reintentar hay
 `POST /api/bookings/{id}/pay`, que genera una dirección de pago nueva para la misma reserva.
 
+Además de los datos inválidos y de la unidad bloqueada u ocupada, reservar —por la web o por
+mostrador— responde `400` con el motivo en `error` cuando:
+
+| Caso | Mensaje |
+|---|---|
+| El inicio es anterior a hoy (el día de Buenos Aires). Hoy todavía se puede | «No se puede reservar para una fecha que ya pasó.» |
+| El balneario está desactivado | «Este balneario no está tomando reservas.» |
+| La unidad está dada de baja | «La unidad D-01 fue dada de baja.» |
+
+Las reservas que un balneario ya tenía antes de desactivarse siguen como siempre: se pagan, se
+cancelan y se validan en la entrada.
+
 ### Cancelar con reintegro
 
 El reintegro es **simulado**: no se toca MercadoPago. La política se cuenta por días:
@@ -238,6 +286,21 @@ Si no se puede, `canCancel` es `false` y `reason` dice por qué. Después,
 `refundAmount` (`null` si no estaba pagada). El administrador solo cancela reservas de su
 balneario: las de otro responden `403`.
 
+### El pago en el detalle
+
+`GET /api/bookings/{id}` trae `payments`: cada cobro registrado, el más nuevo primero, y la lista
+vacía si no hubo ninguno (una pendiente, una de mostrador).
+
+```
+"payments": [
+  { "gatewayPaymentId": "1234567890", "amount": 25500.00, "status": "approved", "paidAt": "2026-01-10T10:15:00" }
+]
+```
+
+`status` es el de MercadoPago, sin traducir, y `paidAt` puede venir en `null` si la pasarela no lo
+informó. Si una reserva está **cancelada y tiene un pago aprobado** —el pago que llegó después de
+que venciera—, el administrador tiene que reintegrarlo a mano: conviene marcarlo en el detalle.
+
 ### Calificar la estadía
 
 Una reseña por reserva, de 1 a 5 y con un comentario opcional de hasta 500 caracteres. Se califica
@@ -247,11 +310,25 @@ Mis reservas muestra «Calificar» en las terminadas que lo tienen en `false`.
 
 ```
 POST /api/bookings/{id}/review     { "rating": 5, "comment": "..." }
-→ 201 { "author": "Santiago R.", "rating": 5, "comment": "...", "createdAt": "2026-01-12T18:30:00" }
+→ 201 { "author": "Santiago R.", "rating": 5, "comment": "...", "createdAt": "2026-01-12T18:30:00", "updatedAt": null }
 ```
 
-Solo la califica su dueño: la de otro cliente responde `403`, también para el administrador del
-balneario. Los rechazos:
+Después, su autor la puede **editar**: Mis reservas muestra «Editar reseña» en las que tienen
+`reviewed` en `true`. El diálogo trae la reseña guardada y la reemplaza; la fecha en que se calificó
+no cambia y `updatedAt` dice cuándo se editó (el balneario la muestra como «editada»):
+
+```
+GET /api/bookings/{id}/review
+→ 200 { "author": "Santiago R.", "rating": 3, "comment": "...", "createdAt": "...", "updatedAt": null }
+
+PUT /api/bookings/{id}/review      { "rating": 5, "comment": "..." }
+→ 200 { ..., "rating": 5, "updatedAt": "2026-01-14T09:15:00" }
+```
+
+Las dos responden `404` si la reserva todavía no se calificó, y validan igual que calificar.
+
+Solo la califica su dueño, y solo si es un cliente: la de otro cliente responde `403`, también para
+el administrador del balneario, y un administrador recibe `403` aunque la reserva figure a su nombre. Los rechazos:
 
 | Caso | Respuesta |
 |---|---|
@@ -270,6 +347,28 @@ Del autor sale solo el nombre y la inicial del apellido, y `comment` es `null` s
 comentario. Cada balneario (`GET /api/resorts` y `GET /api/resorts/{id}`) trae además
 `averageRating`, el promedio con un decimal (`null` si todavía no tiene reseñas), y
 `reviewCount`.
+
+### Unidades: bloquear y dar de baja (administrador)
+
+El **bloqueo** es temporal (`PATCH /api/rental-units/{id}/block?isBlocked=true`) y la **baja** es
+definitiva:
+
+```
+PATCH /api/rental-units/{id}/retire
+→ 200 { "idRentalUnit": 23, "identifier": "D-01", ..., "isBlocked": false, "retired": true }
+```
+
+Una unidad dada de baja:
+
+- no aparece en la ficha pública ni en el plano, y no se puede reservar;
+- no se puede bloquear, desbloquear ni cambiarle el precio: `400`;
+- sigue en `GET /api/rental-units` del administrador con `retired: true` (conviene mostrarla aparte
+  o atenuada, sin los botones de bloquear y de precio), y sus reservas pasadas quedan como estaban;
+- su identificador sigue ocupado: crear otra con el mismo responde `400`.
+
+No se puede dar de baja mientras tenga reservas pendientes o confirmadas que terminan hoy o después:
+`400` «Tiene reservas por delante: cancelalas o esperá a que terminen.». Solo la da de baja el
+administrador de su balneario; el de otro recibe `403`. Darla de baja otra vez no hace nada.
 
 ### Detalles que ahorran errores
 
@@ -303,9 +402,31 @@ Sin token responde `401`; con una cuenta de cliente, o con el código de una res
 balneario, `403`. Por DNI busca solo entre las reservas de su balneario: un DNI que tiene reserva en
 otro responde `404`, igual que uno que no existe.
 
-El ingreso **se marca como usado**: el mismo código no sirve dos veces, y el segundo intento
-devuelve 400 con el motivo. Los mensajes de error están escritos para que el operador los lea tal
-cual («la reserva todavía no comenzó, el ingreso se habilita el 20/01/2026»).
+El código —y el DNI— sirven para entrar **todas las veces que haga falta mientras dura la
+estadía**: responde `200` cada vez que la reserva está confirmada y hoy (el día de Buenos Aires)
+está entre la fecha de inicio y la de fin, las dos incluidas. Volver a escanear el mismo QR, el
+mismo día o al siguiente, sale en verde.
+
+Responde `400` con el motivo cuando la reserva no está pagada, todavía no empezó o ya terminó; `404`
+si el código no existe. Los mensajes de error están escritos para que el operador los lea tal cual
+(«la reserva todavía no comenzó, el ingreso se habilita el 20/01/2026»).
+
+Cada ingreso guarda la fecha y la hora. En la reserva, cada persona de `guests` trae:
+
+```
+{
+  "idGuest": 12,
+  "fullName": "Lucía Gutiérrez",
+  "dni": "40123456",
+  "isEntryValidated": true,                  ← entró HOY
+  "lastEntryAt": "2026-01-10T10:00:00",      ← la última vez, en hora de Buenos Aires; null si nunca entró
+  "qrToken": "…"
+}
+```
+
+`isEntryValidated` quiere decir **«entró hoy»**: al día siguiente vuelve a `false` hasta que se
+valide de nuevo, y `lastEntryAt` sigue con el último ingreso. En el Panel, `today.checkedIn` cuenta a
+las personas que entraron hoy.
 
 ---
 

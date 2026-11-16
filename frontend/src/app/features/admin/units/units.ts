@@ -18,7 +18,7 @@ import {
   submit,
   ValidationError,
 } from '@angular/forms/signals';
-import { LucideLock, LucidePlus, LucideTent, LucideUmbrella } from '@lucide/angular';
+import { LucideCheck, LucideLock, LucidePlus, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
 import { RentalUnit, RentalUnitRequest, UnitType } from '../../../core/api/resort.models';
 import { UnitsApi } from '../../../core/api/units.api';
@@ -46,6 +46,14 @@ interface PriceDraft {
   newPrice: number | null;
 }
 
+/** Qué estados muestra la tabla. Por defecto, las que están en servicio: disponibles y bloqueadas. */
+const STATUS_FILTERS = ['ACTIVE', 'AVAILABLE', 'BLOCKED', 'RETIRED', 'ALL'] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+type TypeFilter = 'ALL' | UnitType;
+
+const DEFAULT_TYPE_FILTER: TypeFilter = 'ALL';
+const DEFAULT_STATUS_FILTER: StatusFilter = 'ACTIVE';
+
 const EMPTY_DRAFT: UnitDraft = { type: 'UMBRELLA', identifier: '', dailyPrice: null };
 
 /** El precio tiene que ser mayor que cero; con centavos, el mínimo es un centavo. */
@@ -54,8 +62,9 @@ const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
 
 /**
  * Las unidades del balneario (12.1): las carpas y las sombrillas del administrador. Se listan, se
- * crean, se les cambia el precio desde la fila y se bloquean o desbloquean. Una unidad no se borra:
- * bloquearla es darla de baja, y se puede deshacer.
+ * crean, se les cambia el precio desde la fila y se bloquean o desbloquean (se deshace). Dar de baja
+ * es otra cosa: es definitivo, así que pide confirmación y no deja acciones en la fila. Una unidad
+ * no se borra. La tabla se filtra por tipo y por estado; por defecto no muestra las dadas de baja.
  *
  * Los errores del backend se pegan en su campo. El precio que no es mayor que cero llega en `campos`
  * y va por `toFieldErrors`. El identificador repetido llega como mensaje general (400, y 409 si dos
@@ -65,6 +74,7 @@ const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
   selector: 'app-units',
   imports: [
     FormField,
+    LucideCheck,
     LucideLock,
     LucidePlus,
     LucideTent,
@@ -97,13 +107,45 @@ export class Units {
     { value: 'TENT', label: UNIT_TYPE_LABEL.TENT },
   ];
 
+  protected readonly typeFilter = signal<TypeFilter>(DEFAULT_TYPE_FILTER);
+  protected readonly statusFilter = signal<StatusFilter>(DEFAULT_STATUS_FILTER);
+
+  /** Si el filtro se movió del de por defecto: si no, «Quitar los filtros» no tiene nada que hacer. */
+  protected readonly hasFilters = computed(
+    () =>
+      this.typeFilter() !== DEFAULT_TYPE_FILTER || this.statusFilter() !== DEFAULT_STATUS_FILTER,
+  );
+
+  /** Las unidades que pasan los dos filtros. */
+  protected readonly visibleUnits = computed(() => {
+    const type = this.typeFilter();
+    const status = this.statusFilter();
+    return this.units().filter(
+      (unit) => (type === 'ALL' || unit.type === type) && matchesStatus(unit, status),
+    );
+  });
+
+  /** Si quedan unidades en servicio. Si no, el filtro por defecto no muestra nada y se dice eso. */
+  protected readonly hasInService = computed(() => this.units().some((unit) => !isRetired(unit)));
+
+  /**
+   * Cuántas muestra el filtro de cuántas hay, como en Reservas, y después cuántas bloqueadas y
+   * cuántas dadas de baja, sin importar el filtro.
+   */
   protected readonly summary = computed(() => {
     const all = this.units();
-    const blocked = all.filter((unit) => unit.isBlocked).length;
-    const total = `${all.length} ${all.length === 1 ? 'unidad' : 'unidades'}`;
-    if (blocked === 0) return total;
-    return `${total} · ${blocked} ${blocked === 1 ? 'bloqueada' : 'bloqueadas'}`;
+    const retired = all.filter(isRetired).length;
+    const blocked = all.filter((unit) => !isRetired(unit) && unit.isBlocked).length;
+    const parts = [
+      `${this.visibleUnits().length} de ${all.length} ${all.length === 1 ? 'unidad' : 'unidades'}`,
+    ];
+    if (blocked > 0) parts.push(`${blocked} ${blocked === 1 ? 'bloqueada' : 'bloqueadas'}`);
+    if (retired > 0) parts.push(`${retired} ${retired === 1 ? 'dada de baja' : 'dadas de baja'}`);
+    return parts.join(' · ');
   });
+
+  /** El resumen: al confirmar la baja, la fila sale de la tabla y el foco viene acá. */
+  private readonly summaryEl = viewChild<ElementRef<HTMLElement>>('summaryEl');
 
   // --- Alta -------------------------------------------------------------------------------
 
@@ -138,6 +180,15 @@ export class Units {
   protected readonly pendingBlock = signal<{ unit: RentalUnit; block: boolean } | null>(null);
   protected readonly blocking = signal(false);
   private readonly blockDialog = viewChild<ElementRef<HTMLDialogElement>>('blockDialog');
+
+  // --- Dar de baja ------------------------------------------------------------------------
+
+  /** La unidad que espera confirmación de la baja. */
+  protected readonly pendingRetire = signal<RentalUnit | null>(null);
+  protected readonly retiring = signal(false);
+  /** Por qué no se pudo dar de baja (por ejemplo, reservas por delante): va dentro de la confirmación. */
+  protected readonly retireError = signal('');
+  private readonly retireDialog = viewChild<ElementRef<HTMLDialogElement>>('retireDialog');
 
   constructor() {
     this.load();
@@ -177,6 +228,31 @@ export class Units {
 
   protected typeLabel(type: UnitType): string {
     return UNIT_TYPE_LABEL[type];
+  }
+
+  protected isRetired(unit: RentalUnit): boolean {
+    return isRetired(unit);
+  }
+
+  protected setTypeFilter(value: string): void {
+    if (value === 'ALL' || value === 'TENT' || value === 'UMBRELLA') this.typeFilter.set(value);
+  }
+
+  protected setStatusFilter(value: string): void {
+    if ((STATUS_FILTERS as readonly string[]).includes(value)) {
+      this.statusFilter.set(value as StatusFilter);
+    }
+  }
+
+  protected clearFilters(): void {
+    this.typeFilter.set(DEFAULT_TYPE_FILTER);
+    this.statusFilter.set(DEFAULT_STATUS_FILTER);
+  }
+
+  /** Sin unidades en servicio: deja ver las que se dieron de baja. */
+  protected showRetired(): void {
+    this.typeFilter.set(DEFAULT_TYPE_FILTER);
+    this.statusFilter.set('RETIRED');
   }
 
   protected price(amount: number): string {
@@ -263,6 +339,7 @@ export class Units {
   /** Al enviar con errores, el foco va al primer campo con error (sistema de diseño, «Campo»). */
   private focusFirstInvalid(): void {
     const fields = this.createForm;
+    // El tipo siempre tiene un valor; su primer botón es el primero de los controles.
     const ordered = [fields.type, fields.identifier, fields.dailyPrice];
     const index = ordered.findIndex((field) => this.hasError(field));
     if (index >= 0) this.controls()[index]?.nativeElement.focus();
@@ -355,10 +432,72 @@ export class Units {
     });
   }
 
+  // --- Dar de baja ------------------------------------------------------------------------
+
+  protected askRetire(unit: RentalUnit): void {
+    this.notice.set('');
+    this.actionError.set('');
+    this.retireError.set('');
+    this.pendingRetire.set(unit);
+    this.retireDialog()?.nativeElement.showModal();
+  }
+
+  protected closeRetire(): void {
+    this.retireDialog()?.nativeElement.close();
+    this.pendingRetire.set(null);
+    this.retireError.set('');
+  }
+
+  protected confirmRetire(): void {
+    const unit = this.pendingRetire();
+    if (!unit || this.retiring()) return;
+    this.retiring.set(true);
+    this.retireError.set('');
+
+    this.unitsApi.retire(unit.idRentalUnit).subscribe({
+      next: (updated) => {
+        // Si justo se estaba editando su precio, ya no hay nada que editar.
+        if (this.editingId() === updated.idRentalUnit) this.editingId.set(null);
+        this.replace(updated);
+        this.retiring.set(false);
+        this.closeRetire();
+        this.notice.set(`La ${this.label(updated)} se dio de baja. Ya no se puede reservar.`);
+        // La fila del botón que se apretó sale de la tabla: el foco no puede volver ahí. Va al
+        // resumen, que dice cómo quedó la tabla; el aviso de arriba se anuncia solo.
+        this.summaryEl()?.nativeElement.focus();
+      },
+      error: (error: HttpErrorResponse) => {
+        // La confirmación sigue abierta: el motivo se lee ahí, junto al botón que se apretó.
+        this.retiring.set(false);
+        this.retireError.set(toUserMessage(error));
+      },
+    });
+  }
+
   private replace(updated: RentalUnit): void {
     this.units.update((units) =>
       units.map((unit) => (unit.idRentalUnit === updated.idRentalUnit ? updated : unit)),
     );
+  }
+}
+
+function isRetired(unit: RentalUnit): boolean {
+  return unit.retired;
+}
+
+function matchesStatus(unit: RentalUnit, status: StatusFilter): boolean {
+  const retired = isRetired(unit);
+  switch (status) {
+    case 'ACTIVE':
+      return !retired;
+    case 'AVAILABLE':
+      return !retired && !unit.isBlocked;
+    case 'BLOCKED':
+      return !retired && unit.isBlocked;
+    case 'RETIRED':
+      return retired;
+    case 'ALL':
+      return true;
   }
 }
 

@@ -174,6 +174,19 @@ public class Booking {
     }
 
     /**
+     * Lo mismo que {@link #validateDateRange()}, y además que no empiece en un día que ya pasó
+     * (RF13). Hoy todavía se puede: es el día de quien llega a la playa sin reserva.
+     *
+     * @param today hoy, con el reloj de la aplicación: el día de Buenos Aires, no el de la máquina.
+     */
+    public void validateDateRange(LocalDate today) {
+        validateDateRange();
+        if (startDate.isBefore(today)) {
+            throw new InvalidBookingRangeException("No se puede reservar para una fecha que ya pasó.");
+        }
+    }
+
+    /**
      * Confirma el pago de la reserva.
      *
      * <p>Es <b>idempotente</b>: confirmar una reserva ya confirmada no hace nada y no falla. Tiene
@@ -260,6 +273,26 @@ public class Booking {
     }
 
     /**
+     * Importe pagado que el balneario conservó.
+     *
+     * <p>Una cancelada con {@code refundAmount == null} se interpreta como no pagada, según el
+     * modelo de cancelación. Por eso no suma, igual que una pendiente. La regla vive en la reserva
+     * para que el listado de clientes y el Panel no calculen ingresos distintos.
+     */
+    public BigDecimal keptAmount() {
+        if (totalPrice == null) {
+            return BigDecimal.ZERO.setScale(MONEY_SCALE);
+        }
+        if (status == Status.CONFIRMED) {
+            return totalPrice;
+        }
+        if (status == Status.CANCELED && refundAmount != null) {
+            return totalPrice.subtract(refundAmount);
+        }
+        return BigDecimal.ZERO.setScale(MONEY_SCALE);
+    }
+
+    /**
      * Si la reserva se puede calificar {@code today}: solo una confirmada cuya estadía ya terminó.
      * El último día todavía es parte de la estadía, así que se califica desde el día siguiente. Una
      * pendiente nunca se pagó y una cancelada no se usó: ninguna de las dos se califica.
@@ -296,7 +329,6 @@ public class Booking {
         guest.setFullName(fullName);
         guest.setDni(dni);
         guest.setQrToken(UUID.randomUUID().toString());
-        guest.setIsEntryValidated(false);
         if (guests == null) {
             guests = new ArrayList<>();
         }

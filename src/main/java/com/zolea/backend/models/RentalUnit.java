@@ -1,5 +1,6 @@
 package com.zolea.backend.models;
 
+import com.zolea.backend.exceptions.rentalunit.RentalUnitRetiredException;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -42,8 +43,30 @@ public class RentalUnit {
 
     private Boolean isBlocked;
 
+    /**
+     * Si la unidad se dio de baja (RF32). Es definitivo y distinto del bloqueo, que es temporal: una
+     * unidad dada de baja no se ofrece ni se reserva, pero la fila queda para que sus reservas pasadas
+     * sigan apuntando a algo y su identificador siga ocupado.
+     *
+     * <p>El valor por defecto va en la columna para que las filas que ya existían, y los
+     * {@code INSERT} de la demostración que no la nombran, queden como unidades en servicio.
+     */
+    @Column(nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private boolean retired;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_resort")
     @ToString.Exclude
     private Resort resort;
+
+    /**
+     * Rechaza cualquier cambio sobre una unidad dada de baja: bloquearla, desbloquearla o cambiarle
+     * el precio no tiene sentido para algo que ya no se ofrece.
+     */
+    public void requireInService() {
+        if (retired) {
+            throw new RentalUnitRetiredException(
+                    "La unidad " + identifier + " está dada de baja.");
+        }
+    }
 }

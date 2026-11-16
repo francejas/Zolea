@@ -10,6 +10,8 @@
       <z-alert variant="danger" [text]="message" />
     } @else if (sessionExpired()) {
       <z-alert variant="info" text="Tu sesión venció. Volvé a ingresar." />
+    } @else if (emailChanged()) {
+      <z-alert variant="info" text="Ingresá con tu email nuevo." />
     }
 
     <form class="login__form" novalidate (submit)="onSubmit($event)">
@@ -19,6 +21,7 @@
           id="login-email"
           class="z-input"
           type="email"
+          placeholder="correo@gmail.com"
           inputmode="email"
           autocomplete="email"
           autocapitalize="none"
@@ -35,6 +38,7 @@
             id="login-password"
             class="z-input"
             autocomplete="current-password"
+            placeholder="Tu contraseña"
             [type]="showPassword() ? 'text' : 'password'"
             [formField]="loginForm.password"
             [attr.aria-invalid]="hasError(loginForm.password) ? 'true' : null"
@@ -62,7 +66,8 @@
     </form>
 
     <p class="login__alt">
-      ¿Todavía no tenés cuenta? <a class="z-link" routerLink="/register">Crear cuenta</a>
+      ¿Todavía no tenés cuenta?
+      <a class="z-link" routerLink="/register" [queryParams]="backParams()">Crear cuenta</a>
     </p>
   </div>
 </section>

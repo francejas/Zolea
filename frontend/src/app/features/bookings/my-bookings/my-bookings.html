@@ -1,0 +1,107 @@
+<section class="my-bookings">
+  <h1 class="my-bookings__title">Mis reservas</h1>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="my-bookings__list" aria-busy="true" aria-label="Cargando tus reservas">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="z-booking-card">
+            <z-skeleton width="70%" height="26px" />
+            <z-skeleton width="55%" height="15px" />
+            <z-skeleton width="65%" height="15px" />
+            <z-skeleton width="35%" height="34px" />
+          </div>
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer tus reservas" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (bookings().length === 0) {
+        <z-empty
+          title="Todavía no reservaste"
+          text="Elegí un balneario y reservá una carpa o una sombrilla para los días que quieras."
+          actionLabel="Buscar balnearios"
+          (action)="goToResorts()"
+        />
+      } @else {
+        <div class="z-tabs my-bookings__tabs" role="tablist" aria-label="Qué reservas ver">
+          @for (t of tabs; track t) {
+            <button
+              #tabButton
+              class="z-tab"
+              type="button"
+              role="tab"
+              [id]="'my-bookings-tab-' + t"
+              aria-controls="my-bookings-panel"
+              [attr.aria-selected]="tab() === t"
+              [tabindex]="tab() === t ? 0 : -1"
+              (click)="selectTab(t)"
+              (keydown)="onTabKeydown($event)"
+            >
+              {{ tabLabel[t] }}
+              <span class="my-bookings__count">{{ counts()[t] }}</span>
+            </button>
+          }
+        </div>
+
+        <div
+          class="my-bookings__panel"
+          id="my-bookings-panel"
+          role="tabpanel"
+          [attr.aria-labelledby]="'my-bookings-tab-' + tab()"
+        >
+          @if (cards().length === 0) {
+            <div class="my-bookings__none">
+              <p>{{ emptyText() }}</p>
+              @if (tab() === 'upcoming') {
+                <a class="z-btn z-btn--secondary" routerLink="/">Buscar balnearios</a>
+              }
+            </div>
+          } @else {
+            <ul class="my-bookings__list">
+              @for (card of cards(); track card.booking.id) {
+                <li>
+                  <app-booking-card
+                    [booking]="card.booking"
+                    [status]="card.status"
+                    [unit]="card.unit"
+                    [days]="card.days"
+                    [total]="card.total"
+                    [today]="card.today"
+                    [notice]="card.notice"
+                    [refund]="card.refund"
+                    [paymentError]="payErrors()[card.booking.id] ?? null"
+                    [rebook]="card.rebook"
+                    [canReview]="card.canReview"
+                    [canEditReview]="card.canEditReview"
+                    [reviewed]="card.reviewed"
+                    [detailsLabel]="tab() === 'upcoming' ? 'Ver entradas' : 'Ver reserva'"
+                    [paying]="paying() === card.booking.id"
+                    [paymentDisabled]="paying() !== null"
+                    (pay)="pay(card.booking)"
+                    (review)="review(card.booking)"
+                    (editReview)="review(card.booking, true)"
+                  />
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    }
+  }
+
+  @if (reviewing(); as current) {
+    <app-review-dialog
+      [booking]="current.booking"
+      [editing]="current.editing"
+      (saved)="onReviewed(current.booking, $event)"
+      (closed)="onReviewClosed(current.booking)"
+      (rejected)="onReviewRejected(current.booking)"
+    />
+  }
+</section>

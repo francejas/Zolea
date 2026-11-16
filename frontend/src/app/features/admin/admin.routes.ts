@@ -1,17 +1,29 @@
 import { Routes } from '@angular/router';
-import { PlaceholderPage } from '../../core/placeholder-page';
 
-/** Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. */
+/**
+ * Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. Ahí también se decide quién
+ * ve qué: `amenities` es solo de la cuenta de Zolea y el resto, del administrador de un balneario.
+ */
 export const adminRoutes: Routes = [
-  { path: '', component: PlaceholderPage, data: { title: 'Panel' } },
-  { path: 'resort', component: PlaceholderPage, data: { title: 'Mi balneario' } },
+  { path: '', loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard) },
+  { path: 'resort', loadComponent: () => import('./resort/my-resort').then((m) => m.MyResort) },
   { path: 'units', loadComponent: () => import('./units/units').then((m) => m.Units) },
   {
     path: 'amenities',
     loadComponent: () => import('./amenities/amenities').then((m) => m.Amenities),
   },
-  { path: 'bookings', component: PlaceholderPage, data: { title: 'Reservas' } },
-  { path: 'bookings/:id', component: PlaceholderPage, data: { title: 'Detalle de reserva' } },
-  { path: 'clients', component: PlaceholderPage, data: { title: 'Mis clientes' } },
-  { path: 'walkin', component: PlaceholderPage, data: { title: 'Reserva en mostrador' } },
+  {
+    path: 'bookings',
+    loadComponent: () => import('./bookings/bookings/bookings').then((m) => m.Bookings),
+  },
+  {
+    path: 'bookings/:id',
+    loadComponent: () =>
+      import('./bookings/booking-detail/booking-detail').then((m) => m.AdminBookingDetail),
+  },
+  {
+    path: 'clients',
+    loadComponent: () => import('./clients/clients/clients').then((m) => m.Clients),
+  },
+  { path: 'walkin', loadComponent: () => import('./walkin/walkin').then((m) => m.WalkIn) },
 ];

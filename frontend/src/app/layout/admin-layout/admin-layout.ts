@@ -20,6 +20,7 @@ import {
 import { filter } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Resort } from '../../core/api/resort.models';
+import { isZoleaAccount, ZOLEA_HOME } from '../../core/auth/home';
 import { SessionService } from '../../core/session/session.service';
 
 /**
@@ -52,8 +53,19 @@ import { SessionService } from '../../core/session/session.service';
 export class AdminLayout {
   private readonly session = inject(SessionService);
 
-  /** El balneario que administra: cada admin ve solo el suyo. */
-  protected readonly resort = httpResource<Resort>(() => `${environment.apiUrl}/api/resorts/my`);
+  /**
+   * La cuenta de Zolea (12.9): no tiene balneario y del panel solo usa el catálogo de servicios.
+   * Su barra lleva solo eso, y el administrador de un balneario ve todo lo demás.
+   */
+  protected readonly zolea = computed(() => isZoleaAccount(this.session.user()));
+
+  /** Adonde lleva el logo: el inicio del panel de cada uno. */
+  protected readonly home = computed(() => (this.zolea() ? ZOLEA_HOME : '/admin'));
+
+  /** El balneario que administra: cada admin ve solo el suyo. La cuenta de Zolea no lo pide. */
+  protected readonly resort = httpResource<Resort>(() =>
+    this.zolea() ? undefined : `${environment.apiUrl}/api/resorts/my`,
+  );
 
   /** El 404 de `/api/resorts/my` es un administrador sin balneario asignado. */
   protected readonly withoutResort = computed(() => {

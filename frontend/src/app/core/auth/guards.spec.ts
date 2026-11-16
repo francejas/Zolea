@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   ActivatedRouteSnapshot,
+  CanActivateChildFn,
   CanActivateFn,
   provideRouter,
   Router,
@@ -10,6 +11,7 @@ import {
 } from '@angular/router';
 import { Me } from '../api/auth.models';
 import { SessionService } from '../session/session.service';
+import { adminAreaGuard } from './admin-area.guard';
 import { authGuard } from './auth.guard';
 import { roleGuard } from './role.guard';
 
@@ -28,6 +30,8 @@ const admin: Me = {
   role: 'ADMIN',
   idManagedResort: 7,
 };
+/** La cuenta de Zolea: un administrador sin balneario. */
+const zolea: Me = { ...admin, idClient: 3, email: 'zolea@zolea.com', idManagedResort: null };
 
 describe('guards', () => {
   const user = signal<Me | null>(null);
@@ -47,7 +51,7 @@ describe('guards', () => {
     router = TestBed.inject(Router);
   });
 
-  function run(guard: CanActivateFn, url: string) {
+  function run(guard: CanActivateFn | CanActivateChildFn, url: string) {
     return TestBed.runInInjectionContext(() =>
       guard({} as ActivatedRouteSnapshot, { url } as RouterStateSnapshot),
     );
@@ -102,6 +106,38 @@ describe('guards', () => {
 
       expect((result as UrlTree).queryParams).toEqual({ volver: '/admin' });
       expect(target(result)).toMatch(/^\/login\?/);
+    });
+
+    it('manda a la cuenta de Zolea que pide una ruta de cliente a su catálogo', () => {
+      user.set(zolea);
+      expect(target(run(roleGuard('USER'), '/my-bookings'))).toBe('/admin/amenities');
+    });
+  });
+
+  describe('adminAreaGuard', () => {
+    it('deja a la cuenta de Zolea en el catálogo', () => {
+      user.set(zolea);
+      expect(run(adminAreaGuard, '/admin/amenities')).toBe(true);
+      expect(run(adminAreaGuard, '/admin/amenities?x=1')).toBe(true);
+    });
+
+    it('devuelve a la cuenta de Zolea al catálogo desde otra pantalla del panel', () => {
+      user.set(zolea);
+      for (const url of ['/admin', '/admin/units', '/admin/bookings/4', '/admin/validate']) {
+        expect(target(run(adminAreaGuard, url))).toBe('/admin/amenities');
+      }
+    });
+
+    it('deja al administrador de un balneario en el resto del panel', () => {
+      user.set(admin);
+      for (const url of ['/admin', '/admin/units', '/admin/bookings/4', '/admin/validate']) {
+        expect(run(adminAreaGuard, url)).toBe(true);
+      }
+    });
+
+    it('devuelve al administrador de un balneario del catálogo a su Panel', () => {
+      user.set(admin);
+      expect(target(run(adminAreaGuard, '/admin/amenities'))).toBe('/admin');
     });
   });
 });

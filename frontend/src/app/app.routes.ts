@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
+import { adminAreaGuard } from './core/auth/admin-area.guard';
 import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
-import { PlaceholderPage } from './core/placeholder-page';
 import { AdminLayout } from './layout/admin-layout/admin-layout';
 import { SiteLayout } from './layout/site-layout/site-layout';
 
@@ -12,10 +12,13 @@ import { SiteLayout } from './layout/site-layout/site-layout';
  */
 export const routes: Routes = [
   // El panel del administrador: los guards del rol van en el padre y cubren todo lo de adentro.
+  // `adminAreaGuard` reparte las pantallas: el catálogo es de la cuenta de Zolea y el resto, de
+  // cada balneario.
   {
     path: 'admin',
     component: AdminLayout,
     canActivate: [authGuard, roleGuard('ADMIN')],
+    canActivateChild: [adminAreaGuard],
     children: [
       {
         path: 'validate',
@@ -46,7 +49,16 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/bookings/bookings.routes').then((m) => m.bookingsRoutes),
       },
-      { path: '**', component: PlaceholderPage, data: { title: 'No encontramos esta página' } },
+      {
+        path: 'cancellation-policy',
+        loadComponent: () =>
+          import('./features/policies/cancellation-policy').then((m) => m.CancellationPolicy),
+      },
+      // Lo que no es ninguna de las anteriores: la página 404.
+      {
+        path: '**',
+        loadComponent: () => import('./features/not-found/not-found').then((m) => m.NotFound),
+      },
     ],
   },
 ];

@@ -70,17 +70,88 @@
   gap: var(--space-3);
 }
 
+/* Los filtros, como en Reservas: cada etiqueta envuelve su lista y el botón cierra la fila. */
+.units__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.units__filters label {
+  display: grid;
+  flex: 1 1 180px;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.units__filters select {
+  width: 100%;
+  min-width: 0;
+}
+
+/* El resumen recibe el foco tras la baja; no hace falta el anillo en un texto que no se toca. */
+.units__summary:focus {
+  outline: none;
+}
+
+.units__none {
+  color: var(--color-text-muted);
+}
+
 .units__type {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-/* El campo del precio dentro de la fila: angosto, alineado a la derecha como el número. */
+/* El tipo de la unidad nueva: dos botones, como el filtro de la Portada. */
+.units__type-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: 6px;
+    padding: 0;
+  }
+}
+
+.units__type-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.units__type-option {
+  height: var(--control);
+  padding-inline: 14px 18px;
+}
+
+/* La celda del precio mide lo mismo con el número que con el campo: abrir «Precio» no estira la
+   fila ni corre a las de abajo. */
+.units__price-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: var(--control-small);
+}
+
+/* El campo del precio dentro de la fila: angosto, del alto de los botones de la fila. */
 .units__price {
-  width: 180px;
+  width: 160px;
   max-width: 100%;
   text-align: left;
+}
+
+.units__price .z-input {
+  height: var(--control-small);
+  padding-inline: 10px;
+  font-size: 15px;
 }
 
 /* El esqueleto tiene la forma de la tabla: una cabecera y cinco filas. */
@@ -102,9 +173,28 @@
   border-top: var(--border);
 }
 
+/* En el celular la fila es una tarjeta y los controles miden 44 px para el dedo: la celda también. */
+@media (max-width: 767px) {
+  .units__price-cell {
+    min-height: var(--touch-min);
+  }
+
+  .units__price .z-input {
+    height: var(--touch-min);
+  }
+}
+
 @media (max-width: 479px) {
   .units__create-actions z-btn {
     flex: 1 1 100%;
+  }
+
+  .units__filters label {
+    flex-basis: 100%;
+  }
+
+  .units__filters z-btn {
+    width: 100%;
   }
 }
 
@@ -114,6 +204,6 @@
   }
 
   .units__fields {
-    grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
   }
 }

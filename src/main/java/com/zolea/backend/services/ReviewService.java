@@ -5,12 +5,14 @@ import com.zolea.backend.dtos.review.ReviewResponse;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
 import com.zolea.backend.exceptions.booking.BookingStateException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
+import com.zolea.backend.exceptions.review.ReviewNotFoundException;
 import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.Review;
 import com.zolea.backend.repositories.BookingRepository;
 import com.zolea.backend.repositories.ResortRepository;
 import com.zolea.backend.repositories.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +23,15 @@ import java.util.List;
 
 /**
  * Las reseñas, el primero de los requisitos del TFI: una por reserva, de 1 a 5 y con un comentario
- * opcional. Que el que califica sea el dueño de la reserva lo comprueba el endpoint, con
- * {@code @bookingAccess}.
+ * opcional. Que el que califica sea un cliente y el dueño de la reserva lo comprueba el endpoint,
+ * con {@code hasRole('USER')} y {@code @bookingAccess}.
  */
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ReviewService {
+
+    private static final String ALREADY_REVIEWED = "Ya calificaste esta reserva.";
 
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
@@ -49,7 +53,7 @@ public class ReviewService {
 
         // Primero esta: una reserva ya calificada también terminó, y el motivo que importa es otro.
         if (reviewRepository.existsByBooking_Id(bookingId)) {
-            throw new BookingStateException("Ya calificaste esta reserva.");
+            throw new BookingStateException(ALREADY_REVIEWED);
         }
         if (!booking.canBeReviewed(LocalDate.now(clock))) {
             throw new BookingStateException("Vas a poder calificar cuando termine tu estadía.");
@@ -60,7 +64,48 @@ public class ReviewService {
         review.setRating(request.rating());
         review.setComment(blankToNull(request.comment()));
         review.setCreatedAt(LocalDateTime.now(clock));
-        return ReviewResponse.of(reviewRepository.save(review));
+        try {
+            // saveAndFlush para que la restricción de la base salte acá y no al cerrar la transacción.
+            return ReviewResponse.of(reviewRepository.saveAndFlush(review));
+        } catch (DataIntegrityViolationException ex) {
+            // Dos pedidos a la vez pasan los dos el chequeo de arriba; uk_resena_de_reserva frena al
+            // segundo, que recibe el mismo motivo que si hubiera llegado después.
+            throw new BookingStateException(ALREADY_REVIEWED);
+        }
+    }
+
+    /**
+     * La reseña de una reserva, para que su autor la vea antes de editarla.
+     *
+     * @throws BookingNotFoundException si la reserva no existe.
+     * @throws ReviewNotFoundException  si la reserva todavía no se calificó.
+     */
+    public ReviewResponse getByBooking(Long bookingId) {
+        return ReviewResponse.of(findReview(bookingId));
+    }
+
+    /**
+     * Cambia las estrellas y el comentario de una reseña. La fecha en que se calificó queda como
+     * estaba; aparte se registra cuándo se editó.
+     *
+     * @throws BookingNotFoundException si la reserva no existe.
+     * @throws ReviewNotFoundException  si la reserva todavía no se calificó: primero se califica.
+     */
+    @Transactional
+    public ReviewResponse update(Long bookingId, ReviewRequest request) {
+        Review review = findReview(bookingId);
+        review.setRating(request.rating());
+        review.setComment(blankToNull(request.comment()));
+        review.setUpdatedAt(LocalDateTime.now(clock));
+        return ReviewResponse.of(reviewRepository.saveAndFlush(review));
+    }
+
+    private Review findReview(Long bookingId) {
+        if (!bookingRepository.existsById(bookingId)) {
+            throw new BookingNotFoundException("Reserva no encontrada con el ID: " + bookingId);
+        }
+        return reviewRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ReviewNotFoundException("Esta reserva todavía no se calificó."));
     }
 
     /**
