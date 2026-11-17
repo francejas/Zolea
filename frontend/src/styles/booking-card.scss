@@ -77,3 +77,34 @@
   font-size: 18px;
   font-variant-numeric: tabular-nums;
 }
+
+/* El pie: el total a la izquierda y las acciones a la derecha. La tarjeta es un contenedor, así el
+   pie mira su propio ancho y no el de la pantalla: con dos acciones («Ver reserva» y «Calificar» o
+   «Editar reseña») en una tarjeta angosta, el total va arriba y los botones abajo, en fila y del
+   mismo ancho, en vez de salirse de la tarjeta. */
+.z-booking-card {
+  container: booking-card / inline-size;
+}
+
+@container booking-card (max-width: 400px) {
+  .z-booking-card__foot:has(.z-booking-card__actions > :nth-child(2)) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .z-booking-card__foot:has(.z-booking-card__actions > :nth-child(2)) .z-booking-card__actions {
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  /* Base 50 % y no 0: con 0, el enlace arranca con su relleno y le saca ancho al otro botón. */
+  .z-booking-card__actions > * {
+    flex: 1 1 50%;
+    min-width: max-content;
+  }
+
+  .z-booking-card__actions .z-btn {
+    width: 100%;
+    padding-inline: var(--space-4);
+  }
+}

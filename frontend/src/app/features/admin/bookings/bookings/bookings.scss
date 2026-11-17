@@ -36,7 +36,7 @@ h1 {
 }
 
 .bookings__dates {
-  flex: 0 1 340px;
+  flex: 0 1 300px;
 }
 
 .bookings__label {
@@ -45,10 +45,33 @@ h1 {
   font: 600 var(--text-small) / var(--leading-ui) var(--font-body);
 }
 
+/* Estado: las cuatro opciones dentro de un solo recuadro, con el borde, las esquinas y el alto de
+   un campo de fecha (z-range__field, 64 px), así los dos filtros se leen como una fila pareja. Solo
+   acá: el resto de las opciones de la app siguen en pastilla. */
 .bookings__choices {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: 4px;
+  min-height: 64px;
+  padding: 4px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.bookings__choices .z-choice {
+  flex: 1 1 auto;
+  justify-content: center;
+  height: auto;
+  min-height: 54px;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: var(--radius-s);
+}
+
+/* «Limpiar filtros» al medio del alto de los filtros, no pegado abajo. */
+.bookings__filters > z-btn {
+  margin-bottom: 8px;
 }
 
 /* El titular lleva al detalle: se lee como un dato, en tinta y sin subrayar; el subrayado aparece

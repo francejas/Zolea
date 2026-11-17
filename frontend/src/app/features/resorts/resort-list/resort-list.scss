@@ -80,6 +80,9 @@
 
 .hero__submit {
   height: 56px;
+  /* Las mismas esquinas que el campo del balneario y las fechas: el buscador se lee como una sola
+     pieza. Solo este botón; los demás de la app siguen en pastilla. */
+  border-radius: var(--radius-m);
   font-size: 16px;
 }
 
@@ -170,6 +173,19 @@
   }
 }
 
+/* El precio, con la forma y el alto de los botones de tipo y servicios que tiene al lado. Solo este
+   campo: los de los formularios siguen rectangulares. */
+.filters__price {
+  gap: var(--space-2);
+}
+
+.filters__price .z-input {
+  height: var(--control-compact);
+  padding-inline: 16px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+}
+
 .filters__error {
   margin: 0;
   font: 500 var(--text-small) / 1.4 var(--font-body);
@@ -207,6 +223,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.resorts-section {
+  /* Al bajar con «Buscar», un respiro arriba de las tarjetas. */
+  scroll-margin-top: var(--space-4);
 }
 
 .resorts-grid {

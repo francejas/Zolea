@@ -109,6 +109,7 @@ export class ResortList {
   private amenitiesApi = inject(AmenitiesApi);
   private router = inject(Router);
   private searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
+  private results = viewChild.required<ElementRef<HTMLElement>>('results');
 
   protected readonly amenityIcon = amenityIcon;
   protected readonly typeOptions = TYPE_OPTIONS;
@@ -323,6 +324,19 @@ export class ResortList {
     void submit(this.filterForm, async () => {
       this.filtersOpen.set(false);
       await this.router.navigate(['/'], { queryParams: toQueryParams(this.draft()) });
+      this.showResults();
+    });
+  }
+
+  /**
+   * Después de «Buscar», la pantalla baja hasta los balnearios: es lo que la persona quiere ver.
+   * Sin animación si pidió menos movimiento.
+   */
+  private showResults(): void {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    this.results().nativeElement.scrollIntoView?.({
+      behavior: reduce ? 'auto' : 'smooth',
+      block: 'start',
     });
   }
 
