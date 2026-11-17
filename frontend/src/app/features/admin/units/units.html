@@ -42,8 +42,8 @@
         <!-- Dos opciones: dos botones a la vista, sin desplegable. -->
         <fieldset class="units__type-field">
           <legend class="z-field__label">Tipo</legend>
-          <div class="units__type-options">
-            <label class="z-choice units__type-option">
+          <div class="units__segmented">
+            <label class="z-choice">
               <input
                 #control
                 id="unit-type"
@@ -55,7 +55,7 @@
               <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg>
               {{ typeLabel('UMBRELLA') }}
             </label>
-            <label class="z-choice units__type-option">
+            <label class="z-choice">
               <input id="unit-type-tent" type="radio" value="TENT" [formField]="createForm.type" />
               <svg lucideTent class="z-icon z-icon--s z-choice__icon" aria-hidden="true"></svg>
               <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg>
@@ -148,20 +148,42 @@
         />
       } @else {
         <div class="units__filters" role="group" aria-label="Filtrar las unidades">
-          <label for="filter-type">
-            Tipo
-            <select
-              #typeInput
-              id="filter-type"
-              class="z-input"
-              [value]="typeFilter()"
-              (change)="setTypeFilter(typeInput.value)"
-            >
-              <option value="ALL">Todos los tipos</option>
-              <option value="TENT">Carpas</option>
-              <option value="UMBRELLA">Sombrillas</option>
-            </select>
-          </label>
+          <!-- Dos opciones que se marcan y desmarcan: ninguna o las dos, se ven todas. -->
+          <fieldset class="units__type-filter">
+            <legend>Tipo</legend>
+            <div class="units__segmented">
+              @for (option of typeFilterOptions; track option.value) {
+                <label class="z-choice">
+                  <input
+                    type="checkbox"
+                    name="filter-type"
+                    [value]="option.value"
+                    [checked]="typeFilter().includes(option.value)"
+                    (change)="toggleTypeFilter(option.value)"
+                  />
+                  @if (option.value === 'TENT') {
+                    <svg
+                      lucideTent
+                      class="z-icon z-icon--s z-choice__icon"
+                      aria-hidden="true"
+                    ></svg>
+                  } @else {
+                    <svg
+                      lucideUmbrella
+                      class="z-icon z-icon--s z-choice__icon"
+                      aria-hidden="true"
+                    ></svg>
+                  }
+                  <svg
+                    lucideCheck
+                    class="z-icon z-icon--s z-choice__check"
+                    aria-hidden="true"
+                  ></svg>
+                  {{ option.label }}
+                </label>
+              }
+            </div>
+          </fieldset>
 
           <label for="filter-status">
             Estado

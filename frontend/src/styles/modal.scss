@@ -1,8 +1,9 @@
 /* El bloque Modal de Zolea-docs/diseno/componentes.css, sobre <dialog>. Es global, como los botones,
    porque lo usan la confirmación de bloquear una unidad y la de cancelar en el detalle de la reserva.
 
-   Los <z-btn> de las acciones llevan `block`: en la computadora miden lo que su texto y el botón
-   ocupa eso mismo; debajo de 480 px cada uno pasa a ocupar toda la fila y el botón lo sigue. */
+   Los <z-btn> de las acciones llevan `block`: en la computadora van en fila y se reparten el ancho
+   por partes iguales (si el texto de los dos no entra, cada uno pasa a su renglón); debajo de
+   480 px cada uno ocupa toda la fila y el botón lo sigue. */
 
 .z-modal {
   width: min(440px, calc(100% - 2 * var(--gutter)));
@@ -35,8 +36,21 @@
   margin-top: var(--space-6);
 }
 
+/* Con dos acciones; una sola (Cerrar historial) mide lo que su texto. */
+.z-modal__actions:has(> z-btn + z-btn) > z-btn {
+  flex: 1 1 0;
+  min-width: max-content;
+}
+
+/* Un poco menos de aire a los costados: «Dejarla bloqueada» y «Desbloquear unidad» entran juntos. */
+.z-modal__actions .z-btn {
+  padding-inline: var(--space-5);
+}
+
 @media (max-width: 479px) {
-  .z-modal__actions z-btn {
+  .z-modal__actions z-btn,
+  .z-modal__actions:has(> z-btn + z-btn) > z-btn {
     flex: 1 1 100%;
+    min-width: 0;
   }
 }

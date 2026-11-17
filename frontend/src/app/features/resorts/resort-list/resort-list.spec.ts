@@ -390,6 +390,18 @@ describe('ResortList', () => {
       expect(page.querySelector('.filters__types')).not.toBeNull();
     });
 
+    it('después de Buscar, la pantalla baja hasta los balnearios', async () => {
+      await respondWith([]);
+      const scroll = vi.fn();
+      const results = page.querySelector<HTMLElement>('.resorts-section')!;
+      results.scrollIntoView = scroll;
+
+      await submitFilters();
+      await fixture.whenStable();
+
+      expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
+    });
+
     it('Carpa y Sombrilla son dos botones: con los dos marcados se busca cualquiera, y quedan marcados', async () => {
       await respondWith([]);
       await withAmenities();

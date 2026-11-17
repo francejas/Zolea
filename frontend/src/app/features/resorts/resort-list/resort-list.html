@@ -100,7 +100,12 @@
           </div>
         </fieldset>
 
-        <z-field [field]="filterForm.maxPrice" inputId="f-max-price" label="Precio máximo por día">
+        <z-field
+          class="filters__price"
+          [field]="filterForm.maxPrice"
+          inputId="f-max-price"
+          label="Precio máximo por día"
+        >
           <input
             id="f-max-price"
             class="z-input"
@@ -156,7 +161,7 @@
     </div>
   </form>
 
-  <section class="resorts-section" aria-labelledby="resorts-title">
+  <section #results class="resorts-section" aria-labelledby="resorts-title">
     <h2 id="resorts-title" class="z-visually-hidden">Balnearios</h2>
 
     <!-- Un texto corto aparte: el lector anuncia la cantidad, no las tarjetas enteras. -->
