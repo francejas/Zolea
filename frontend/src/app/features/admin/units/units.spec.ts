@@ -118,7 +118,7 @@ describe('Units', () => {
 
   async function fillCreate(identifier: string, price: string, kind = 'TENT'): Promise<void> {
     // El tipo son dos botones a la vista: se toca el que corresponde.
-    page.querySelector<HTMLInputElement>(`.units__type-option input[value="${kind}"]`)!.click();
+    page.querySelector<HTMLInputElement>(`.units__type-field input[value="${kind}"]`)!.click();
     type('#unit-identifier', identifier);
     type('#unit-price', price);
     await fixture.whenStable();
@@ -475,10 +475,13 @@ describe('Units', () => {
     }
 
     const summary = () => page.querySelector('.units__summary')!;
+    const typeInput = (type: 'TENT' | 'UMBRELLA') =>
+      page.querySelector<HTMLInputElement>(`.units__type-filter input[value="${type}"]`)!;
+    const typesChecked = () => [typeInput('TENT').checked, typeInput('UMBRELLA').checked];
 
     it('por defecto muestra disponibles y bloqueadas, sin las dadas de baja', () => {
       expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
-      expect(page.querySelector<HTMLSelectElement>('#filter-type')!.value).toBe('ALL');
+      expect(typesChecked()).toEqual([false, false]);
       expect(page.querySelector<HTMLSelectElement>('#filter-status')!.value).toBe('ACTIVE');
       expect(summary().getAttribute('role')).toBe('status');
       expect(summary().textContent).toContain('3 de 4 unidades · 1 bloqueada · 1 dada de baja');
@@ -489,15 +492,27 @@ describe('Units', () => {
     });
 
     it('por tipo, y el resumen dice cuántas muestra de cuántas hay', async () => {
-      choose('filter-type', 'TENT');
+      expect(page.querySelector('#filter-type')).toBeNull();
+
+      typeInput('TENT').click();
       await fixture.whenStable();
       expect(identifiers()).toEqual(['C-01']);
       expect(summary().textContent).toContain('1 de 4 unidades');
       expect(button('Quitar los filtros')!.disabled).toBe(false);
 
-      choose('filter-type', 'UMBRELLA');
+      typeInput('TENT').click();
+      typeInput('UMBRELLA').click();
       await fixture.whenStable();
       expect(identifiers()).toEqual(['A-01', 'A-08']);
+    });
+
+    it('Carpas y Sombrillas se marcan juntas: con las dos se ven todas', async () => {
+      typeInput('TENT').click();
+      typeInput('UMBRELLA').click();
+      await fixture.whenStable();
+
+      expect(typesChecked()).toEqual([true, true]);
+      expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
     });
 
     it('por estado: disponibles, bloqueadas, dadas de baja o todas', async () => {
@@ -519,7 +534,7 @@ describe('Units', () => {
     });
 
     it('si nada coincide lo dice y Quitar los filtros vuelve al listado', async () => {
-      choose('filter-type', 'TENT');
+      typeInput('TENT').click();
       choose('filter-status', 'BLOCKED');
       await fixture.whenStable();
 
@@ -531,7 +546,7 @@ describe('Units', () => {
       page.querySelector<HTMLButtonElement>('z-empty button')!.click();
       await fixture.whenStable();
       expect(identifiers()).toEqual(['A-01', 'A-08', 'C-01']);
-      expect(page.querySelector<HTMLSelectElement>('#filter-type')!.value).toBe('ALL');
+      expect(typesChecked()).toEqual([false, false]);
       expect(page.querySelector<HTMLSelectElement>('#filter-status')!.value).toBe('ACTIVE');
     });
 

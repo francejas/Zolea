@@ -49,9 +49,7 @@ interface PriceDraft {
 /** Qué estados muestra la tabla. Por defecto, las que están en servicio: disponibles y bloqueadas. */
 const STATUS_FILTERS = ['ACTIVE', 'AVAILABLE', 'BLOCKED', 'RETIRED', 'ALL'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
-type TypeFilter = 'ALL' | UnitType;
 
-const DEFAULT_TYPE_FILTER: TypeFilter = 'ALL';
 const DEFAULT_STATUS_FILTER: StatusFilter = 'ACTIVE';
 
 const EMPTY_DRAFT: UnitDraft = { type: 'UMBRELLA', identifier: '', dailyPrice: null };
@@ -107,21 +105,25 @@ export class Units {
     { value: 'TENT', label: UNIT_TYPE_LABEL.TENT },
   ];
 
-  protected readonly typeFilter = signal<TypeFilter>(DEFAULT_TYPE_FILTER);
+  /** Los tipos marcados en el filtro, en el orden en que se ven. Ninguno o los dos: todas. */
+  protected readonly typeFilter = signal<readonly UnitType[]>([]);
+  protected readonly typeFilterOptions: { value: UnitType; label: string }[] = [
+    { value: 'TENT', label: 'Carpas' },
+    { value: 'UMBRELLA', label: 'Sombrillas' },
+  ];
   protected readonly statusFilter = signal<StatusFilter>(DEFAULT_STATUS_FILTER);
 
   /** Si el filtro se movió del de por defecto: si no, «Quitar los filtros» no tiene nada que hacer. */
   protected readonly hasFilters = computed(
-    () =>
-      this.typeFilter() !== DEFAULT_TYPE_FILTER || this.statusFilter() !== DEFAULT_STATUS_FILTER,
+    () => this.typeFilter().length > 0 || this.statusFilter() !== DEFAULT_STATUS_FILTER,
   );
 
   /** Las unidades que pasan los dos filtros. */
   protected readonly visibleUnits = computed(() => {
-    const type = this.typeFilter();
+    const types = this.typeFilter();
     const status = this.statusFilter();
     return this.units().filter(
-      (unit) => (type === 'ALL' || unit.type === type) && matchesStatus(unit, status),
+      (unit) => (types.length === 0 || types.includes(unit.type)) && matchesStatus(unit, status),
     );
   });
 
@@ -234,8 +236,13 @@ export class Units {
     return isRetired(unit);
   }
 
-  protected setTypeFilter(value: string): void {
-    if (value === 'ALL' || value === 'TENT' || value === 'UMBRELLA') this.typeFilter.set(value);
+  /** Marca o desmarca un tipo del filtro, conservando el orden de los botones. */
+  protected toggleTypeFilter(type: UnitType): void {
+    this.typeFilter.update((types) =>
+      this.typeFilterOptions
+        .map((option) => option.value)
+        .filter((value) => (value === type ? !types.includes(type) : types.includes(value))),
+    );
   }
 
   protected setStatusFilter(value: string): void {
@@ -245,13 +252,13 @@ export class Units {
   }
 
   protected clearFilters(): void {
-    this.typeFilter.set(DEFAULT_TYPE_FILTER);
+    this.typeFilter.set([]);
     this.statusFilter.set(DEFAULT_STATUS_FILTER);
   }
 
   /** Sin unidades en servicio: deja ver las que se dieron de baja. */
   protected showRetired(): void {
-    this.typeFilter.set(DEFAULT_TYPE_FILTER);
+    this.typeFilter.set([]);
     this.statusFilter.set('RETIRED');
   }
 

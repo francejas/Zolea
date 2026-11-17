@@ -78,7 +78,7 @@
   gap: var(--space-4);
 }
 
-.units__filters label {
+.units__filters > label {
   display: grid;
   flex: 1 1 180px;
   gap: var(--space-2);
@@ -88,6 +88,20 @@
 .units__filters select {
   width: 100%;
   min-width: 0;
+}
+
+/* El filtro de tipo: su título se ve igual que el «Estado» de al lado. */
+.units__type-filter {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: var(--space-2);
+    padding: 0;
+  }
 }
 
 /* El resumen recibe el foco tras la baja; no hace falta el anillo en un texto que no se toca. */
@@ -105,7 +119,30 @@
   gap: var(--space-2);
 }
 
-/* El tipo de la unidad nueva: dos botones, como el filtro de la Portada. */
+/* El tipo, en el alta y en los filtros: las opciones dentro de un recuadro con el borde, las
+   esquinas y el alto (48 px) de los campos de al lado, como el Estado de Reservas. Solo acá: las
+   opciones del resto de la app siguen en pastilla. */
+.units__segmented {
+  display: flex;
+  gap: 4px;
+  height: var(--control);
+  padding: 3px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.units__segmented .z-choice {
+  flex: 1 1 auto;
+  justify-content: center;
+  height: 100%;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: var(--radius-s);
+  white-space: nowrap;
+}
+
+/* El tipo de la unidad nueva. */
 .units__type-field {
   display: grid;
   gap: 6px;
@@ -118,17 +155,6 @@
     margin-bottom: 6px;
     padding: 0;
   }
-}
-
-.units__type-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.units__type-option {
-  height: var(--control);
-  padding-inline: 14px 18px;
 }
 
 /* La celda del precio mide lo mismo con el número que con el campo: abrir «Precio» no estira la
@@ -189,7 +215,8 @@
     flex: 1 1 100%;
   }
 
-  .units__filters label {
+  .units__filters > label,
+  .units__type-filter {
     flex-basis: 100%;
   }
 
