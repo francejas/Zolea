@@ -227,8 +227,10 @@
   margin-top: var(--space-3);
 }
 
-/* El anillo de foco de siempre es tinta: sobre el verde y el rojo no se vería. */
-.z-scan-result :focus-visible {
+/* El anillo de foco de siempre es tinta: sobre el verde, el rojo y la tinta del escáner (el
+   «Reintentar» de la cámara) no se vería. */
+.z-scan-result :focus-visible,
+.z-scanner :focus-visible {
   outline-color: var(--color-cream);
   outline-offset: 3px;
 }

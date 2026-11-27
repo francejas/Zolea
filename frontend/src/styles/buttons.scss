@@ -91,13 +91,6 @@
 .z-btn--on-color:hover {
   background: var(--color-sand);
 }
-
-/* Va sobre un fondo oscuro (la tinta del escáner, el verde y el rojo del resultado): el foco en
-   tinta no se ve ahí, va en crema (5,7:1 o más). */
-.z-btn--on-color:focus-visible {
-  outline-color: var(--color-cream);
-}
-
 .z-btn--large {
   height: var(--control-large);
   padding: 0 32px;
