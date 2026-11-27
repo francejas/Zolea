@@ -58,7 +58,7 @@
   --color-block: var(--color-sand);
   --color-text: var(--color-ink);
   --color-text-muted: var(--color-ink-soft);
-  --color-focus: var(--color-coral-text);
+  --color-focus: var(--color-ink);       /* foco: tinta, separado del rojo del error (ZV-01) */
   --color-scrim: rgb(72 42 29 / 0.55);
 
   /* --- Tipografía ------------------------------------------------------- */

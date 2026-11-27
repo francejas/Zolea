@@ -663,6 +663,17 @@ describe('Units', () => {
         .filter((b) => b.textContent!.includes('Dar de baja'))
         .at(-1)!;
 
+    it('en la fila es un botón de texto rojo, y el que confirma va relleno', async () => {
+      const retire = Array.from(rowOf('A-01').querySelectorAll('button')).find((b) =>
+        b.textContent!.includes('Dar de baja'),
+      )!;
+      expect(retire.classList).toContain('z-btn--danger-text');
+
+      await ask('A-01');
+
+      expect(confirm().classList).toContain('z-btn--danger');
+    });
+
     it('pide confirmación, avisa que es definitivo y, si se vuelve atrás, no manda nada', async () => {
       await ask('A-01');
 

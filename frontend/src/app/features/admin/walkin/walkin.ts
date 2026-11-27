@@ -109,8 +109,6 @@ export class WalkIn {
 
   /** El error de reservar que no es de un campo: la unidad ocupada en esas fechas, bloqueada… */
   protected readonly formError = signal('');
-  /** Se intentó reservar sin unidad o sin fechas: se marca en el resumen. */
-  protected readonly missingChoice = signal(false);
   /** La reserva recién confirmada: mientras hay una, se ven sus entradas en lugar del formulario. */
   protected readonly confirmed = signal<Booking | null>(null);
 
@@ -174,6 +172,13 @@ export class WalkIn {
   });
 
   protected readonly canBook = computed(() => this.selectedUnit() !== null && this.days() > 0);
+
+  /** Como el botón de la Ficha: mientras no se puede confirmar, dice qué falta. */
+  protected readonly confirmLabel = computed(() => {
+    if (this.walkInForm().submitting()) return 'Confirmando…';
+    if (this.selectedUnit() === null) return 'Elegí una unidad';
+    return this.days() > 0 ? 'Confirmar y cobrar' : 'Elegí las fechas';
+  });
 
   /** El titular y sus acompañantes. */
   protected readonly people = computed(() => this.model().guests.length + 1);
@@ -296,7 +301,6 @@ export class WalkIn {
     this.confirmed.set(null);
     this.formError.set('');
     this.notice.set('');
-    this.missingChoice.set(false);
     this.selectedId.set(null);
     this.startDate.set(todayIso());
     this.endDate.set(todayIso());
@@ -312,10 +316,7 @@ export class WalkIn {
     const unit = this.selectedUnit();
     const startDate = this.startDate();
     const endDate = this.endDate();
-    // Sin unidad o sin fechas no sale, pero el formulario igual se valida: así se marcan juntos el
-    // resumen y los campos que falten.
-    this.missingChoice.set(!this.canBook());
-
+    // Sin unidad o sin fechas el botón está deshabilitado; si igual llega, no sale.
     await submit(this.walkInForm, async () => {
       if (!this.canBook() || !unit || !startDate || !endDate) return;
       const value = this.walkInForm().value();

@@ -456,6 +456,13 @@ describe('Detalle de reserva del administrador', () => {
     await fixture.whenStable();
   }
 
+  it('«Cancelar reserva» en la página va con contorno rojo, y el que confirma va relleno', async () => {
+    await ask();
+
+    expect(button('Cancelar reserva').classList).toContain('z-btn--danger-outline');
+    expect(button('Confirmar cancelación', dialog()).classList).toContain('z-btn--danger');
+  });
+
   it('volver cierra el diálogo sin enviar PATCH', async () => {
     await ask();
 
