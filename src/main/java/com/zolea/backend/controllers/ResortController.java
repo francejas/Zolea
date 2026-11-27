@@ -1,10 +1,13 @@
 package com.zolea.backend.controllers;
 
 import com.zolea.backend.dtos.resort.ResortActionResponse;
+import com.zolea.backend.dtos.resort.ResortRegistrationRequest;
 import com.zolea.backend.dtos.resort.ResortRequest;
 import com.zolea.backend.dtos.resort.ResortResponse;
 import com.zolea.backend.dtos.resort.ResortSearch;
 import com.zolea.backend.dtos.resort.ResortStatsResponse;
+import com.zolea.backend.dtos.resort.ResortSummaryResponse;
+import com.zolea.backend.exceptions.resort.ResortRegistrationInvalidException;
 import com.zolea.backend.models.UnitType;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.ResortService;
@@ -15,7 +18,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -27,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +42,7 @@ import java.util.Map;
 public class ResortController {
 
     private final ResortService resortService;
+    private final Validator validator;
 
     @GetMapping
     @Operation(summary = "Listar y buscar balnearios",
@@ -127,27 +133,62 @@ public class ResortController {
         return ResponseEntity.ok(new ResortActionResponse("Balneario actualizado correctamente.", saved));
     }
 
+    /** La lista de la cuenta de Zolea (#71): todos los balnearios, también los inactivos. */
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/all")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Todos los balnearios (cuenta de Zolea)",
+            description = "Solo la cuenta de Zolea, un administrador sin balneario. Activos e inactivos, ordenados "
+                    + "por nombre, con su administrador y cuántas unidades tienen, sin las dadas de baja.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Los balnearios; la lista vacía si no hay ninguno"),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea: un cliente o el administrador de un balneario no pueden", content = @Content)
+    })
+    public ResponseEntity<List<ResortSummaryResponse>> getAllResorts(@AuthenticationPrincipal UserPrincipal principal) {
+        principal.requireZoleaAccount();
+        return ResponseEntity.ok(resortService.getAllForZolea());
+    }
+
     /**
      * Dar de alta un balneario es de la cuenta de Zolea, como el catálogo de servicios (15.7): antes
-     * cualquier administrador podía sumar balnearios a la portada. Se mira antes de validar el pedido,
-     * para que el administrador de un balneario reciba el motivo y no un 400. Es solo por la API.
+     * cualquier administrador podía sumar balnearios a la portada. Desde #71 el alta trae también la
+     * cuenta de su administrador. Se mira que sea la cuenta de Zolea antes de validar el pedido, para
+     * que el administrador de un balneario reciba el 403 y no un 400: por eso el cuerpo no lleva
+     * {@code @Valid} y se valida a mano.
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Registrar nuevo balneario (cuenta de Zolea)",
-            description = "Solo la cuenta de Zolea, un administrador sin balneario.")
+    @Operation(summary = "Registrar un balneario con su administrador (cuenta de Zolea)",
+            description = "Solo la cuenta de Zolea, un administrador sin balneario. Crea el balneario, activo, y la "
+                    + "cuenta de su administrador con ese balneario asignado y la contraseña provisoria del pedido. "
+                    + "Los errores de un campo del administrador van en campos como admin.email.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Balneario creado"),
+            @ApiResponse(responseCode = "201", description = "Balneario y administrador creados"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos, con el detalle en campos; o ya hay un balneario con ese nombre", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea: un cliente o el administrador de un balneario no pueden", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea: un cliente o el administrador de un balneario no pueden", content = @Content),
+            @ApiResponse(responseCode = "409", description = "El email, el teléfono o el DNI del administrador ya son de otra cuenta, con el campo en campos", content = @Content)
     })
-    public ResponseEntity<ResortActionResponse> registerResort(@RequestBody ResortRequest request,
+    public ResponseEntity<ResortActionResponse> registerResort(@RequestBody ResortRegistrationRequest request,
                                                                @AuthenticationPrincipal UserPrincipal principal) {
         principal.requireZoleaAccount();
+        validate(request);
         ResortResponse saved = resortService.registerResort(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResortActionResponse("Balneario registrado correctamente.", saved));
+    }
+
+    /** Las anotaciones del pedido, como haría {@code @Valid}, con cada error en su campo. */
+    private void validate(ResortRegistrationRequest request) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        for (ConstraintViolation<ResortRegistrationRequest> violation : validator.validate(request)) {
+            fields.putIfAbsent(violation.getPropertyPath().toString(), violation.getMessage());
+        }
+        if (!fields.isEmpty()) {
+            throw new ResortRegistrationInvalidException(fields);
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#id, principal.idManagedResort)")
@@ -165,14 +206,15 @@ public class ResortController {
         return ResponseEntity.ok(new ResortActionResponse("Balneario actualizado correctamente.", saved));
     }
 
-    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#id, principal.idManagedResort)")
+    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedByOrZolea(#id, principal.idManagedResort)")
     @PutMapping("/{id}/inactive")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Desactivar balneario (Admin)")
+    @Operation(summary = "Desactivar balneario (Admin o cuenta de Zolea)",
+            description = "Su administrador, o la cuenta de Zolea sobre cualquier balneario.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El balneario desactivado. Deja de aparecer en el listado público"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario o la cuenta de Zolea", content = @Content),
             @ApiResponse(responseCode = "404", description = "El balneario no existe, o es de otro administrador: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<ResortActionResponse> toInactiveResort(@PathVariable Long id) {
@@ -180,14 +222,15 @@ public class ResortController {
         return ResponseEntity.ok(new ResortActionResponse("Balneario desactivado correctamente.", saved));
     }
 
-    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#id, principal.idManagedResort)")
+    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedByOrZolea(#id, principal.idManagedResort)")
     @PutMapping("/{id}/active")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Activar balneario (Admin)")
+    @Operation(summary = "Activar balneario (Admin o cuenta de Zolea)",
+            description = "Su administrador, o la cuenta de Zolea sobre cualquier balneario.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El balneario activado. Vuelve a aparecer en el listado público"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario o la cuenta de Zolea", content = @Content),
             @ApiResponse(responseCode = "404", description = "El balneario no existe, o es de otro administrador: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<ResortActionResponse> toActiveResort(@PathVariable Long id) {
