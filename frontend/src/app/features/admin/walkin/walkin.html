@@ -199,10 +199,6 @@
               <strong class="z-money">{{ total() }}</strong>
             </div>
 
-            @if (missingChoice() && !canBook()) {
-              <z-alert variant="warning" text="Elegí la unidad y las fechas para reservar." />
-            }
-
             @if (formError(); as message) {
               <z-alert variant="danger" title="No se pudo reservar" [text]="message" />
             }
@@ -212,9 +208,9 @@
               size="large"
               block
               [loading]="walkInForm().submitting()"
-              [disabled]="walkInForm().submitting()"
+              [disabled]="!canBook() || walkInForm().submitting()"
             >
-              {{ walkInForm().submitting() ? 'Confirmando…' : 'Confirmar y cobrar' }}
+              {{ confirmLabel() }}
             </z-btn>
           </aside>
         </form>

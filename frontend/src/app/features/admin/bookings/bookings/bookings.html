@@ -144,16 +144,10 @@
                             Ver detalle
                           </a>
 
-                          @if (booking.status !== 'CANCELED') {
-                            <!-- Una estadía que ya terminó no se cancela: el botón lo dice de
-                                 entrada, sin abrir la confirmación. -->
-                            <z-btn
-                              variant="danger"
-                              size="small"
-                              [disabled]="stayEnded(booking)"
-                              [attr.title]="stayEnded(booking) ? endedReason : null"
-                              (click)="askCancel(booking)"
-                            >
+                          <!-- Una cancelada o una estadía que ya terminó no se cancelan: en esa
+                               fila el botón no se dibuja. -->
+                          @if (booking.status !== 'CANCELED' && !stayEnded(booking)) {
+                            <z-btn variant="danger-text" size="small" (click)="askCancel(booking)">
                               Cancelar
                             </z-btn>
                           }

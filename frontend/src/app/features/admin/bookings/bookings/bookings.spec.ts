@@ -48,23 +48,30 @@ describe('Bookings', () => {
     )!;
     return Array.from(row.querySelectorAll<HTMLButtonElement>('button')).find(
       (b) => b.textContent!.trim() === 'Cancelar',
-    )!;
+    );
   };
 
-  it('una estadía confirmada que ya terminó no se puede cancelar: el botón viene deshabilitado', async () => {
-    expect(cancelOf(1).disabled).toBe(true);
-
-    cancelOf(1).click();
-    await fixture.whenStable();
-
-    // No abre la confirmación ni pregunta las condiciones.
-    http.expectNone(`${API}/1/cancellation`);
-    expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(false);
+  it('una estadía confirmada que ya terminó no se puede cancelar: la fila no tiene el botón', () => {
+    expect(cancelOf(1)).toBeUndefined();
   });
 
-  it('una estadía en curso o una pendiente sí se cancelan', () => {
-    expect(cancelOf(2).disabled).toBe(false);
-    expect(cancelOf(3).disabled).toBe(false);
+  it('una estadía en curso o una pendiente sí se cancelan, con un botón de texto rojo', () => {
+    expect(cancelOf(2)!.disabled).toBe(false);
+    expect(cancelOf(3)!.disabled).toBe(false);
+    expect(cancelOf(2)!.classList).toContain('z-btn--danger-text');
+  });
+
+  it('la tabla no tiene botones rojos rellenos: el relleno queda para la confirmación', async () => {
+    expect(page.querySelector('table .z-btn--danger')).toBeNull();
+
+    cancelOf(2)!.click();
+    await fixture.whenStable();
+
+    const dialog = page.querySelector('dialog')!;
+    const confirm = Array.from(dialog.querySelectorAll('button')).find((b) =>
+      b.textContent!.includes('Cancelar reserva'),
+    )!;
+    expect(confirm.classList).toContain('z-btn--danger');
   });
 
   it('el estado se elige entre opciones a la vista, sin desplegable', async () => {

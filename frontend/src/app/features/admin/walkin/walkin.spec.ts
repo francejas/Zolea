@@ -305,14 +305,23 @@ describe('WalkIn', () => {
     expect(text(page)).toContain('El DNI son 7 u 8 números, sin puntos.');
   });
 
-  it('sin unidad no sale y lo pide en el resumen', async () => {
+  it('sin unidad el botón queda deshabilitado y dice qué falta, como el de la Ficha', async () => {
     await open();
     await type('#walkin-name', 'Juan Pérez');
     await type('#walkin-dni', '30111222');
-    await submit();
 
+    const confirm = () => page.querySelector<HTMLButtonElement>('form button[type="submit"]')!;
+    expect(confirm().disabled).toBe(true);
+    expect(text(confirm())).toBe('Elegí una unidad');
+
+    confirm().click();
+    await settle();
     http.expectNone(WALKIN);
-    expect(summary()).toContain('Elegí la unidad y las fechas para reservar.');
+
+    await chooseUnit('A-01');
+
+    expect(confirm().disabled).toBe(false);
+    expect(text(confirm())).toBe('Confirmar y cobrar');
   });
 
   it('la unidad ocupada en esas fechas muestra el error del backend y no confirma', async () => {
