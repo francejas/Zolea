@@ -24,6 +24,10 @@ export class GuestQr {
 
   guest = input.required<GuestSummary>();
   booking = input.required<Booking>();
+  /** Si la entrada es de quien mira (el titular): el ingreso se dice «Entraste» y no «Entró». */
+  you = input(false);
+
+  protected entry = computed(() => entryLine(this.guest(), this.you()));
 
   protected unit = computed(() =>
     unitLabel(this.booking().rentalUnitType, this.booking().rentalUnitIdentifier),
@@ -101,6 +105,21 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     image.onerror = reject;
     image.src = src;
   });
+}
+
+/**
+ * El último ingreso de la persona (GH-76): «Entraste hoy a las 10:12», «Entraste el 26/11 a las
+ * 18:05» o «Todavía no entraste». La hora llega en la del balneario y sin zona: se muestra tal cual.
+ */
+export function entryLine(guest: GuestSummary, you: boolean): string {
+  const [date, time] = guest.lastEntryAt?.split('T') ?? [];
+  if (!date) return you ? 'Todavía no entraste' : 'Todavía no entró';
+
+  const verb = you ? 'Entraste' : 'Entró';
+  const hour = time ? ` a las ${time.slice(0, 5)}` : '';
+  if (guest.isEntryValidated) return `${verb} hoy${hour}`;
+  const [, month, day] = date.split('-');
+  return `${verb} el ${day}/${month}${hour}`;
 }
 
 /** Escribe el texto centrado y, si no entra en el ancho, achica la letra hasta que entre. */

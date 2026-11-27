@@ -4,7 +4,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { environment } from '../../../../environments/environment';
 import { Me } from '../../../core/api/auth.models';
-import { GuestValidation } from '../../../core/api/entry.models';
+import { GuestEntry, GuestValidation } from '../../../core/api/entry.models';
 import { RentalUnit } from '../../../core/api/resort.models';
 import { SessionService } from '../../../core/session/session.service';
 import { CameraProblem, QrCamera } from './qr-camera';
@@ -12,6 +12,7 @@ import { Validate } from './validate';
 
 const VALIDATE = `${environment.apiUrl}/api/guests/validate`;
 const UNITS = `${environment.apiUrl}/api/rental-units`;
+const ENTRIES = `${environment.apiUrl}/api/resorts/my/entries`;
 
 const admin: Me = {
   idClient: 2,
@@ -117,8 +118,9 @@ describe('Validate', () => {
     await fixture.whenStable();
   }
 
-  async function withUnits(list: RentalUnit[] = units): Promise<void> {
+  async function withUnits(list: RentalUnit[] = units, entries: GuestEntry[] = []): Promise<void> {
     http.expectOne(UNITS).flush(list);
+    http.expectOne(ENTRIES).flush(entries);
     await settle();
   }
 
@@ -155,10 +157,19 @@ describe('Validate', () => {
     await settle();
   }
 
-  async function answer(url: string, body: object, status = 200): Promise<void> {
+  async function answer(
+    url: string,
+    body: object,
+    status = 200,
+    entries: GuestEntry[] = [],
+  ): Promise<void> {
     const req = http.expectOne(url);
     expect(req.request.method).toBe('POST');
     req.flush(body, { status, statusText: status === 200 ? 'OK' : 'Error' });
+    await settle();
+    // Después de un verde, «Ingresos de hoy» se vuelve a pedir.
+    if (status !== 200) return;
+    http.expectOne(ENTRIES).flush(entries);
     await settle();
   }
 
@@ -302,7 +313,7 @@ describe('Validate', () => {
     it('verde, y después el mismo código sale rojo con el motivo', async () => {
       type('#entry-code', `  ${TOKEN} `);
       await submit();
-      await answer(`${VALIDATE}/${TOKEN}`, valentina);
+      await answer(`${VALIDATE}/${TOKEN}?typed=true`, valentina);
       expect(verdict()).toBe('Puede pasar');
       expect(resultDetail()).toBe('Sombrilla A-03');
 
@@ -313,7 +324,7 @@ describe('Validate', () => {
 
       type('#entry-code', TOKEN);
       await submit();
-      await answer(`${VALIDATE}/${TOKEN}`, { error: ALREADY_USED }, 400);
+      await answer(`${VALIDATE}/${TOKEN}?typed=true`, { error: ALREADY_USED }, 400);
       expect(verdict()).toBe('No puede pasar');
       expect(resultName()).toBe(ALREADY_USED);
     });
@@ -322,7 +333,7 @@ describe('Validate', () => {
       type('#entry-code', 'tok-99999');
       await submit();
       await answer(
-        `${VALIDATE}/tok-99999`,
+        `${VALIDATE}/tok-99999?typed=true`,
         { error: 'El código ingresado no existe o es incorrecto.' },
         404,
       );
@@ -335,7 +346,7 @@ describe('Validate', () => {
       const message = 'La reserva todavía no comenzó. El ingreso se habilita el 20/01/2027.';
       type('#entry-code', TOKEN);
       await submit();
-      await answer(`${VALIDATE}/${TOKEN}`, { error: message }, 400);
+      await answer(`${VALIDATE}/${TOKEN}?typed=true`, { error: message }, 400);
 
       expect(resultName()).toBe(message);
     });
@@ -359,7 +370,7 @@ describe('Validate', () => {
       type('#entry-code', TOKEN);
       await submit();
       await answer(
-        `${VALIDATE}/${TOKEN}`,
+        `${VALIDATE}/${TOKEN}?typed=true`,
         { error: 'No tenés permiso para realizar esta operación' },
         403,
       );
@@ -372,7 +383,7 @@ describe('Validate', () => {
       type('#entry-code', TOKEN);
       await submit();
       http
-        .expectOne(`${VALIDATE}/${TOKEN}`)
+        .expectOne(`${VALIDATE}/${TOKEN}?typed=true`)
         .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
       await settle();
 
@@ -382,7 +393,7 @@ describe('Validate', () => {
 
       button('Reintentar').click();
       await settle();
-      await answer(`${VALIDATE}/${TOKEN}`, valentina);
+      await answer(`${VALIDATE}/${TOKEN}?typed=true`, valentina);
       expect(verdict()).toBe('Puede pasar');
     });
 
@@ -390,7 +401,7 @@ describe('Validate', () => {
       type('#entry-code', TOKEN);
       await submit();
       http
-        .expectOne(`${VALIDATE}/${TOKEN}`)
+        .expectOne(`${VALIDATE}/${TOKEN}?typed=true`)
         .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
       await settle();
 
@@ -471,6 +482,7 @@ describe('Validate', () => {
 
   it('si las unidades no llegan, el verde dice «Unidad» y el código', async () => {
     http.expectOne(UNITS).flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne(ENTRIES).flush([]);
     await settle();
 
     camera.read(TOKEN);
@@ -496,5 +508,88 @@ describe('Validate', () => {
     expect(text(page.querySelector('.z-problem__text'))).toBe(
       'Tu cuenta no tiene un balneario asignado, así que no podés validar ingresos.',
     );
+  });
+
+  describe('ZV-21: el dato buscado en el resultado', () => {
+    const lookup = () => text(page.querySelector('.z-scan-result__lookup'));
+
+    it('el verde por DNI dice el DNI con puntos', async () => {
+      await withUnits();
+      await goTo('DNI');
+      type('#entry-dni', '30123456');
+      await submit();
+      await answer(`${VALIDATE}/dni/30123456`, valentina);
+
+      expect(lookup()).toBe('DNI 30.123.456');
+    });
+
+    it('el rojo por código dice el código', async () => {
+      await withUnits();
+      await goTo('Código');
+      type('#entry-code', 'tok-99999');
+      await submit();
+      await answer(`${VALIDATE}/tok-99999?typed=true`, { error: 'No existe.' }, 404);
+
+      expect(lookup()).toBe('Código tok-99999');
+    });
+  });
+
+  describe('Ingresos de hoy', () => {
+    const lucia: GuestEntry = {
+      id: 2001,
+      idGuest: 70,
+      fullName: 'Lucía Gutiérrez',
+      bookingId: 62,
+      rentalUnitIdentifier: 'B-02',
+      enteredAt: '2026-11-27T09:05:00',
+      method: 'QR',
+    };
+    const items = () => Array.from(page.querySelectorAll('.entry__item')).map(text);
+
+    it('sin ingresos lo dice', async () => {
+      await withUnits();
+
+      expect(text(page.querySelector('.entry__today'))).toContain('Todavía no entró nadie hoy.');
+    });
+
+    it('lista los del día y suma el nuevo al validar', async () => {
+      await withUnits(units, [lucia]);
+      expect(items()).toEqual(['09:05 Lucía Gutiérrez B-02 · QR']);
+
+      await goTo('DNI');
+      type('#entry-dni', '30123456');
+      await submit();
+      await answer(`${VALIDATE}/dni/30123456`, valentina, 200, [
+        {
+          ...lucia,
+          id: 2002,
+          idGuest: 4,
+          fullName: 'Valentina García',
+          enteredAt: '2026-11-27T10:12:00',
+          rentalUnitIdentifier: 'A-03',
+          method: 'DNI',
+        },
+        lucia,
+      ]);
+
+      expect(items()).toEqual([
+        '10:12 Valentina García A-03 · DNI',
+        '09:05 Lucía Gutiérrez B-02 · QR',
+      ]);
+    });
+
+    it('si no llegan, deja reintentar', async () => {
+      http.expectOne(UNITS).flush(units);
+      http.expectOne(ENTRIES).flush(null, { status: 500, statusText: 'Error' });
+      await settle();
+
+      expect(text(page.querySelector('.entry__today .z-problem__title'))).toBe(
+        'No pudimos traer los ingresos',
+      );
+      page.querySelector<HTMLButtonElement>('.entry__today button')!.click();
+      http.expectOne(ENTRIES).flush([lucia]);
+      await settle();
+      expect(items()).toHaveLength(1);
+    });
   });
 });

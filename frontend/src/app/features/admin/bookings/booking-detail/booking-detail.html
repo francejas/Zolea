@@ -143,6 +143,43 @@
               <p class="detail__muted">La estadía todavía no empezó.</p>
             }
 
+            @if (b.status === 'PENDING') {
+              <p class="detail__muted">
+                Los ingresos se registran cuando la reserva está confirmada.
+              </p>
+            } @else if (entriesError(); as message) {
+              <z-problem
+                title="No pudimos traer los ingresos"
+                [text]="message"
+                (retry)="loadEntries(b)"
+              />
+            } @else if (entries() === null) {
+              <div class="detail__entries" aria-busy="true" aria-label="Cargando los ingresos">
+                <z-skeleton width="60%" />
+                <z-skeleton width="40%" />
+              </div>
+            } @else if (entryGroups().length === 0) {
+              <p class="detail__muted">Todavía no entró nadie.</p>
+            } @else {
+              <ul class="detail__entries">
+                @for (group of entryGroups(); track group.idGuest) {
+                  <li>
+                    <p class="detail__entry-guest">{{ group.fullName }}</p>
+                    <ul class="detail__entry-times">
+                      @for (entry of group.entries; track entry.id) {
+                        <li>
+                          <time [attr.datetime]="entry.enteredAt">
+                            {{ moment(entry.enteredAt, todayIso()) }}
+                          </time>
+                          <span class="detail__muted"> · {{ entryMethod[entry.method] }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </li>
+                }
+              </ul>
+            }
+
             @if (b.status === 'CANCELED') {
               <h2>Cancelación</h2>
               <p>Esta reserva está cancelada.</p>
