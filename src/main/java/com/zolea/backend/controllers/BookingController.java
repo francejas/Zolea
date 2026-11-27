@@ -53,8 +53,9 @@ public class BookingController {
     // Un ADMIN no reserva por acá, ni a su nombre ni al de otro (RNF03): para eso está el
     // mostrador, que confirma sin pasar por MercadoPago y queda en su balneario.
     // El clientId es obligatorio: sin él, un cliente armaba una reserva sin titular con los datos
-    // de mostrador, que después ni él podía ver (ZOL-176).
-    @PreAuthorize("!hasRole('ADMIN') and #request.clientId != null and #request.clientId == principal.idClient")
+    // de mostrador, que después ni él podía ver (ZOL-176). Un clientId de otro responde como uno que no
+    // existe: 404, como cualquier cuenta ajena (desde el 26/11).
+    @PreAuthorize("!hasRole('ADMIN') and #request.clientId != null and @clientAccess.isSelf(#request.clientId, principal.idClient)")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     @Operation(summary = "Crear reserva web", description = "Crea la reserva y devuelve la URL de pago de MercadoPago.")
@@ -62,8 +63,8 @@ public class BookingController {
             @ApiResponse(responseCode = "201", description = "Reserva creada, en estado PENDING, con su URL de pago"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos (como un huésped vacío), vinieron los datos de mostrador (walkInName o walkInDni), rango de fechas al revés, o unidad bloqueada u ocupada", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin credenciales o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Falta el clientId, es de otro cliente, o quien pide es un administrador: él usa la reserva de mostrador", content = @Content),
-            @ApiResponse(responseCode = "404", description = "La unidad o el cliente no existen", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Falta el clientId, o quien pide es un administrador: él usa la reserva de mostrador", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La unidad no existe, o el clientId no es el de quien pide", content = @Content),
             @ApiResponse(responseCode = "502", description = "MercadoPago no respondió", content = @Content)
     })
     public ResponseEntity<BookingCheckoutResponse> createBooking(@Valid @RequestBody BookingRequest request) {
@@ -85,8 +86,8 @@ public class BookingController {
             @ApiResponse(responseCode = "200", description = "Una dirección de pago nueva para la misma reserva"),
             @ApiResponse(responseCode = "400", description = "La reserva ya no está pendiente (está confirmada o cancelada), o pasó la hora para pagarla", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La cuenta de Zolea, que no tiene balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe, o es de otro cliente o de otro balneario: la respuesta es la misma", content = @Content),
             @ApiResponse(responseCode = "502", description = "MercadoPago no respondió", content = @Content)
     })
     public ResponseEntity<PaymentUrlResponse> retryPayment(@PathVariable Long id) {
@@ -95,16 +96,16 @@ public class BookingController {
 
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/walkin")
-    // Solo sobre unidades del balneario del administrador (RNF03). Una unidad que no existe pasa,
-    // para que el servicio responda su 404.
+    // Solo sobre unidades del balneario del administrador (RNF03). Una de otro balneario responde
+    // como una que no existe: el mismo 404 que da el servicio.
     @PreAuthorize("hasRole('ADMIN') and @unitAccess.belongsToResort(#request.rentalUnitId, principal.idManagedResort)")
     @Operation(summary = "Crear reserva presencial (Admin)", description = "Crea y confirma automáticamente la reserva sin pasar por MercadoPago.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Reserva confirmada, con un código QR por huésped"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos (como un huésped vacío), vino un clientId, o la unidad está bloqueada u ocupada", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o la unidad es de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una unidad con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La unidad no existe, o es de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<WalkInBookingResponse> createWalkInBooking(@Valid @RequestBody BookingRequest request) {
         // La de mostrador es para quien no tiene cuenta. Con un clientId, un administrador se armaba
@@ -141,14 +142,14 @@ public class BookingController {
 
     // Solo el propio cliente. El administrador ve a sus clientes, con su historial en su
     // balneario, en GET /api/clients; por acá habría visto las reservas en los cinco (RNF03).
-    @PreAuthorize("#clientId == principal.idClient")
+    @PreAuthorize("@clientAccess.isSelf(#clientId, principal.idClient)")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/client/{clientId}")
     @Operation(summary = "Reservas de un cliente")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Las reservas de ese cliente, con sus códigos QR"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Son las reservas de otra persona. Un administrador ve a sus clientes en GET /api/clients", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Son las reservas de otra persona: responde como si no existiera. Un administrador ve a sus clientes en GET /api/clients", content = @Content)
     })
     public ResponseEntity<List<BookingResponse>> getBookingsByClient(@PathVariable Long clientId) {
         return ResponseEntity.ok(bookingService.getBookingsByClientId(clientId));
@@ -166,8 +167,8 @@ public class BookingController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "La reserva, con sus huéspedes y sus códigos QR"),
             @ApiResponse(responseCode = "401", description = "Sin credenciales o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "La cuenta de Zolea, que no tiene balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe, o es de otro cliente o de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.getBookingById(id));
@@ -182,8 +183,8 @@ public class BookingController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Los ingresos; vacío si todavía no entró nadie"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "La cuenta de Zolea, que no tiene balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe, o es de otro cliente o de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<List<GuestEntryResponse>> getBookingEntries(@PathVariable Long id) {
         return ResponseEntity.ok(guestService.getBookingEntries(id));
@@ -201,8 +202,8 @@ public class BookingController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Si se puede cancelar, con el reintegro, o el motivo si no"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "La cuenta de Zolea, que no tiene balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe, o es de otro cliente o de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<CancellationResponse> getCancellationTerms(
             @PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {
@@ -222,8 +223,8 @@ public class BookingController {
             @ApiResponse(responseCode = "200", description = "La reserva cancelada, con su reintegro. La unidad queda libre para esas fechas"),
             @ApiResponse(responseCode = "400", description = "La reserva ya estaba cancelada, la estadía ya empezó (si cancela el cliente) o ya terminó", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "La cuenta de Zolea, que no tiene balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe, o es de otro cliente o de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<BookingResponse> cancelBooking(
             @PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {

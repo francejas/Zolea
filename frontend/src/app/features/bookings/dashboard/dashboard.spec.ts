@@ -119,7 +119,7 @@ describe('ClientDashboard', () => {
     expect(cards.length).toBe(1);
     expect(text(cards[0].querySelector('.z-booking-card__title'))).toBe('Zolea Club de Playa');
     expect(text(cards[0].querySelector('.z-status'))).toBe('Pendiente de pago');
-    expect(text(cards[0])).toContain('mié 28 ene → dom 1 feb · 5 días');
+    expect(text(cards[0])).toContain('28 ene → 1 feb · 5 días');
     expect(button('Pagar')).toBeDefined();
     expect(link('Ver todas')?.getAttribute('href')).toBe('/my-bookings');
   });

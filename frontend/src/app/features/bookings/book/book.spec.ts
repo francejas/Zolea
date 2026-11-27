@@ -57,7 +57,7 @@ function resort(overrides: Partial<Resort> = {}): Resort {
   };
 }
 
-/** Los espacios de «$ 25.500,00» son no separables: se comparan como espacios comunes. */
+/** Los espacios de «$ 25.500» son no separables: se comparan como espacios comunes. */
 const text = (el: Element | null | undefined) =>
   (el?.textContent ?? '')
     .replace(/\u00a0/g, ' ')
@@ -178,7 +178,7 @@ describe('Book', () => {
       expect(text_).toContain('Sombrilla A-01');
       expect(text_).toContain('3 días');
       // Tres días a $ 8.500 por día: del 15 al 17 se cobran los dos extremos.
-      expect(text_).toContain('$ 25.500,00');
+      expect(text_).toContain('$ 25.500');
       expect(submitButton().disabled).toBe(false);
     });
 

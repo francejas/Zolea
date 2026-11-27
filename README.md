@@ -252,7 +252,7 @@ http://localhost:8080/swagger-ui/index.html
 | `POST`, `PUT`, `DELETE` | `/api/amenities` | Cuenta de Zolea | Administrar el catálogo de servicios. El administrador de un balneario recibe `403`: elige los suyos en `PUT /api/resorts/my` |
 
 **DUEÑO o ADMIN** quiere decir que el recurso solo lo ve quien es su titular, o el administrador
-del balneario de la reserva; el de otro balneario recibe `403` (RNF03). **DUEÑO** es solo el
+del balneario de la reserva; el de otro balneario recibe `404`, igual que si no existiera (RNF03). **DUEÑO** es solo el
 titular, también cuando quien pide es un administrador. La matriz de accesos cruzados
 (`CrossAccessMatrixTest`) prueba cada una de estas operaciones sin token, con un cliente ajeno, con
 el administrador de otro balneario y con quien sí puede. Los endpoints de MercadoPago son públicos porque quien los

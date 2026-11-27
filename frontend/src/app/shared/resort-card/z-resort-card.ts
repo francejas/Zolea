@@ -3,14 +3,10 @@ import { Params, RouterLink } from '@angular/router';
 import { LucideCheck, LucideMapPin } from '@lucide/angular';
 import { Amenity, RentalUnit } from '../../core/api/resort.models';
 import { byAmenityId } from '../utils/amenity-icons';
+import { money } from '../utils/format';
 import { ZRating } from '../z-rating/z-rating';
 
 const VISIBLE_AMENITIES = 3;
-const pesos = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 export interface ResortCardData {
   name: string;
@@ -221,7 +217,7 @@ export class ZResortCard {
     const prices = this.data()
       .rentalUnits.filter((unit) => !unit.isBlocked && !unit.retired)
       .map((unit) => unit.dailyPrice);
-    return prices.length > 0 ? pesos.format(Math.min(...prices)) : null;
+    return prices.length > 0 ? money(Math.min(...prices)) : null;
   });
   protected readonly rating = computed(() => {
     const value = this.data().averageRating;

@@ -1,6 +1,13 @@
 import { Booking, BookingStatus, CancellationResponse } from '../../core/api/booking.models';
 import { parseResortDateTime } from '../../shared/utils/days';
-import { bookingNumber, dayRange, formatDni, money, unitLabel } from '../../shared/utils/format';
+import {
+  bookingNumber,
+  dayRange,
+  formatDni,
+  money,
+  shortDate,
+  unitLabel,
+} from '../../shared/utils/format';
 
 /** Cómo se dice cada estado, y su variante de `z-status`: verde, amarilla o sin bandera. */
 export const BOOKING_STATUS: Record<BookingStatus, { label: string; modifier: string }> = {
@@ -13,20 +20,6 @@ export const BOOKING_STATUS: Record<BookingStatus, { label: string; modifier: st
 function parseDate(text: string): Date {
   const [year, month, day] = text.split('-').map(Number);
   return new Date(year, month - 1, day);
-}
-
-const weekdayDayMonth = new Intl.DateTimeFormat('es-AR', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
-
-/** «vie 15 ene»: sin la coma ni los puntos que agrega `Intl`. */
-export function shortDate(iso: string): string {
-  const parts = weekdayDayMonth.formatToParts(parseDate(iso));
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    (parts.find((p) => p.type === type)?.value ?? '').replace('.', '');
-  return `${part('weekday')} ${part('day')} ${part('month')}`;
 }
 
 /** Las dos fechas cuentan: del 15 al 17 son tres días. */
@@ -99,8 +92,8 @@ export function refundLine(booking: Pick<Booking, 'status' | 'refundAmount'>): s
 }
 
 /**
- * `money`, `unitLabel`, `dayRange`, `bookingNumber` y `formatDni` viven en shared/utils/format.ts,
- * porque los usan también el panel y la entrada. Se reexportan para que Reservar y el Detalle sigan
- * importándolos de acá.
+ * `money`, `unitLabel`, `dayRange`, `shortDate`, `bookingNumber` y `formatDni` viven en
+ * shared/utils/format.ts, porque los usan también el panel y la entrada. Se reexportan para que
+ * Reservar y el Detalle sigan importándolos de acá.
  */
-export { bookingNumber, dayRange, formatDni, money, unitLabel };
+export { bookingNumber, dayRange, formatDni, money, shortDate, unitLabel };

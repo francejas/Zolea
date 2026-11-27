@@ -48,7 +48,7 @@ public class ClientService {
 
     public ClientResponse getClientById(Long id) {
         Client client = clientRepository.findById(id)
-                .orElseThrow(() -> new ClientNotFoundException("Client with id " + id + " not found"));
+                .orElseThrow(() -> ClientNotFoundException.withId(id));
 
         return mapToResponse(client);
     }
@@ -85,7 +85,7 @@ public class ClientService {
     @Transactional
     public ClientResponse updateClient(Long id, ClientRequest request) {
         Client saved = clientRepository.findById(id)
-                .orElseThrow(() -> new ClientNotFoundException("Client with id " + id + " not found"));
+                .orElseThrow(() -> ClientNotFoundException.withId(id));
 
         // Antes de guardar: si no, lo frena la restricción única de la base, con un 409 que no dice
         // cuál de los tres datos es el repetido.

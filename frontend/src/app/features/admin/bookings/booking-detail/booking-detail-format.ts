@@ -1,12 +1,26 @@
 import { Booking, GuestSummary } from '../../../../core/api/booking.models';
 import { todayIso } from '../../../../shared/utils/days';
-/** El servidor ya informa la hora de Buenos Aires: no la convertimos. */
+import { shortDate, tableDate } from '../../../../shared/utils/format';
+
+/**
+ * «mié 7 ene», o «mié 7 ene · 10:30» si trae la hora. El servidor ya informa la hora de Buenos
+ * Aires: no la convertimos.
+ */
 export function bookingDate(value: string | null): string {
+  return withTime(value, shortDate);
+}
+
+/** Lo mismo para una tabla, sin el día de la semana: «7 ene · 10:30». */
+export function bookingTableDate(value: string | null): string {
+  return withTime(value, tableDate);
+}
+
+function withTime(value: string | null, format: (iso: string) => string): string {
   if (!value) return 'Sin fecha informada';
 
   const [date, time] = value.split('T');
 
-  return date.split('-').reverse().join('/') + (time ? ` · ${time.slice(0, 5)}` : '');
+  return format(date) + (time ? ` · ${time.slice(0, 5)}` : '');
 }
 
 /** Cómo se ve el ingreso de una persona: el texto y el color de la etiqueta. */
@@ -29,9 +43,8 @@ export function entryStatus(guest: GuestSummary): EntryStatus {
   }
 
   if (date) {
-    const [, month, day] = date.split('-');
     return {
-      text: `Entró por última vez el ${day}/${month}` + (hour ? ` a las ${hour}` : ''),
+      text: `Entró por última vez el ${tableDate(date)}` + (hour ? ` a las ${hour}` : ''),
       modifier: 'neutral',
     };
   }

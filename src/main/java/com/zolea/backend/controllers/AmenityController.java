@@ -28,13 +28,12 @@ public class AmenityController {
     /**
      * El catálogo es uno solo para todos los balnearios, así que lo carga Zolea y no cada balneario
      * (15.7): crear, renombrar y borrar es solo de la cuenta de Zolea, un administrador sin balneario.
-     * El rol lo exige el {@code @PreAuthorize}; el balneario, {@link UserPrincipal#requireZoleaAccount(String)},
-     * antes de validar el pedido, para que un administrador de balneario reciba el motivo y no un 400.
+     * El rol lo exige el {@code @PreAuthorize}; el balneario, {@link UserPrincipal#requireZoleaAccount()},
+     * antes de validar el pedido, para que un administrador de balneario reciba el 403 y no un 400.
      */
     private static final String DESCRIPCION_CATALOGO = "Solo la cuenta de Zolea, un administrador sin balneario. "
             + "Cada balneario elige los servicios que ofrece en PUT /api/resorts/my.";
 
-    private static final String MOTIVO_CATALOGO = "Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.";
 
     private final AmenityService amenityService;
 
@@ -62,11 +61,11 @@ public class AmenityController {
             @ApiResponse(responseCode = "201", description = "El servicio creado"),
             @ApiResponse(responseCode = "400", description = "El nombre viene vacío", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea. Un cliente, o el administrador de un balneario: «Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.»", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea: un cliente o el administrador de un balneario no pueden", content = @Content)
     })
     public ResponseEntity<AmenityResponse> createAmenity(@RequestBody AmenityRequest request,
                                                          @AuthenticationPrincipal UserPrincipal principal) {
-        principal.requireZoleaAccount(MOTIVO_CATALOGO);
+        principal.requireZoleaAccount();
         return new ResponseEntity<>(amenityService.createAmenity(request), HttpStatus.CREATED);
     }
 
@@ -78,12 +77,12 @@ public class AmenityController {
             @ApiResponse(responseCode = "200", description = "El servicio como quedó"),
             @ApiResponse(responseCode = "400", description = "El nombre viene vacío", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea. Un cliente, o el administrador de un balneario: «Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.»", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea: un cliente o el administrador de un balneario no pueden", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe un servicio con ese identificador", content = @Content)
     })
     public ResponseEntity<AmenityResponse> updateAmenity(@PathVariable Long id, @RequestBody AmenityRequest request,
                                                          @AuthenticationPrincipal UserPrincipal principal) {
-        principal.requireZoleaAccount(MOTIVO_CATALOGO);
+        principal.requireZoleaAccount();
         return ResponseEntity.ok(amenityService.updateAmenity(id, request));
     }
 
@@ -94,12 +93,12 @@ public class AmenityController {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Borrado. Si algún balneario lo ofrecía, queda desvinculado"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea. Un cliente, o el administrador de un balneario: «Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.»", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta ser la cuenta de Zolea: un cliente o el administrador de un balneario no pueden", content = @Content),
             @ApiResponse(responseCode = "404", description = "No existe un servicio con ese identificador", content = @Content)
     })
     public ResponseEntity<Void> deleteAmenity(@PathVariable Long id,
                                               @AuthenticationPrincipal UserPrincipal principal) {
-        principal.requireZoleaAccount(MOTIVO_CATALOGO);
+        principal.requireZoleaAccount();
         amenityService.deleteAmenity(id);
         return ResponseEntity.noContent().build();
     }

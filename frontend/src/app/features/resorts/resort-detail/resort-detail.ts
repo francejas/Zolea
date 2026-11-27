@@ -9,6 +9,7 @@ import { ResortsApi } from '../../../core/api/resorts.api';
 import { SessionService } from '../../../core/session/session.service';
 import { ResortPlan } from '../../../shared/resort-plan/resort-plan';
 import { occupiedDays, totalPrice, validRange } from '../../../shared/utils/days';
+import { money } from '../../../shared/utils/format';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
@@ -32,15 +33,6 @@ const sameQuery = (a: OccupiedQuery | null, b: OccupiedQuery | null) =>
   a === b || (a !== null && b !== null && a.id === b.id && a.from === b.from && a.to === b.to);
 
 const TYPE_NAME: Record<UnitType, string> = { UMBRELLA: 'Sombrilla', TENT: 'Carpa' };
-
-/** «$ 8.500»: para los precios sueltos. */
-const pesos = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
-/** «$ 25.500,00»: para lo que se cobra, con centavos como en el diseño. */
-const pesosCents = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 
 /**
  * La Ficha de un balneario (`/resorts/:id`): cómo es, qué ofrece y dónde se elige el lugar. Es
@@ -124,7 +116,7 @@ export class ResortDetail {
     const from = this.from();
     const to = this.to();
     return unit && from && to && this.days() > 0
-      ? pesosCents.format(totalPrice(unit.dailyPrice, from, to))
+      ? money(totalPrice(unit.dailyPrice, from, to))
       : '—';
   });
 
@@ -248,15 +240,7 @@ export class ResortDetail {
     void this.router.navigate(['/']);
   }
 
-  /** El precio de una unidad suelta, sin centavos: «$ 8.500». */
-  protected price(value: number): string {
-    return pesos.format(value);
-  }
-
-  /** El precio por día con centavos, como se cobra. */
-  protected priceWithCents(value: number): string {
-    return pesosCents.format(value);
-  }
+  protected readonly money = money;
 
   /** «Fila A · » para las unidades con identificador A-03; nada para las demás. */
   protected rowOf(unit: RentalUnit): string {

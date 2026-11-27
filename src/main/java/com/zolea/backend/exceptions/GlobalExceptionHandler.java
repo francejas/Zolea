@@ -1,11 +1,9 @@
 package com.zolea.backend.exceptions;
 
-import com.zolea.backend.exceptions.auth.ZoleaAccountRequiredException;
 import com.zolea.backend.exceptions.amenity.AmenityNotFoundException;
 import com.zolea.backend.exceptions.amenity.InvalidAmenityException;
 import com.zolea.backend.exceptions.auth.InvalidCredentialsException;
 import com.zolea.backend.exceptions.booking.BookingAlreadyCanceledException;
-import com.zolea.backend.exceptions.booking.BookingForbiddenException;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
 import com.zolea.backend.exceptions.booking.UnitNotAvailableException;
 import com.zolea.backend.exceptions.client.ClientDataTakenException;
@@ -105,16 +103,13 @@ public class GlobalExceptionHandler {
         return respuesta(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler({
-            BookingForbiddenException.class,
-            ZoleaAccountRequiredException.class
-    })
-    public ResponseEntity<Map<String, String>> handleForbidden(RuntimeException ex) {
-        return respuesta(HttpStatus.FORBIDDEN, ex.getMessage());
-    }
-
     /**
-     * El 403 de {@code @PreAuthorize}.
+     * El 403: el tipo de cuenta no puede hacer esto (un cliente en un endpoint de administrador, el
+     * administrador de un balneario en algo de la cuenta de Zolea, la cuenta de Zolea en el panel de
+     * un balneario).
+     *
+     * <p>El texto es siempre el mismo y no nombra nada: lo que existe pero es de otro no llega acá,
+     * responde 404 como lo que no existe (desde el 26/11).
      *
      * <p>Sin este manejador la excepción caía en el genérico de más abajo y salía como 500, así que
      * el único control de autorización del sistema parecía estar roto. Tiene que estar declarado

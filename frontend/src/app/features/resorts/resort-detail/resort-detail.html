@@ -139,7 +139,7 @@
                 ></span>
                 <div>
                   <strong>{{ typeName[unit.type] }} {{ unit.identifier }}</strong>
-                  <span>{{ rowOf(unit) }}{{ price(unit.dailyPrice) }} por día</span>
+                  <span>{{ rowOf(unit) }}{{ money(unit.dailyPrice) }} por día</span>
                 </div>
               </div>
             } @else {
@@ -151,7 +151,7 @@
             <dl class="z-book-card__lines">
               <div>
                 <dt>Precio por día</dt>
-                <dd>{{ selectedUnit() ? priceWithCents(selectedUnit()!.dailyPrice) : '—' }}</dd>
+                <dd>{{ selectedUnit() ? money(selectedUnit()!.dailyPrice) : '—' }}</dd>
               </div>
               <div>
                 <dt>Días</dt>

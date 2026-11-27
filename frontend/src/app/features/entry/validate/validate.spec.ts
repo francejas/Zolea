@@ -366,17 +366,18 @@ describe('Validate', () => {
       expect(errorOf('entry-code')).toBe('El código lleva solo letras, números y guiones.');
     });
 
-    it('una entrada de otro balneario sale roja, aunque el backend no diga por qué', async () => {
+    it('una entrada de otro balneario sale roja igual que un código que no existe', async () => {
       type('#entry-code', TOKEN);
       await submit();
       await answer(
         `${VALIDATE}/${TOKEN}?typed=true`,
-        { error: 'No tenés permiso para realizar esta operación' },
-        403,
+        { error: 'El código ingresado no existe o es incorrecto.' },
+        404,
       );
 
       expect(verdict()).toBe('No puede pasar');
-      expect(resultName()).toBe('Esta entrada es de otro balneario.');
+      expect(resultName()).toBe('El código ingresado no existe o es incorrecto.');
+      expect(page.textContent).not.toContain('otro balneario');
     });
 
     it('sin conexión no sale rojo: dice que no se sabe y reintenta el mismo código', async () => {

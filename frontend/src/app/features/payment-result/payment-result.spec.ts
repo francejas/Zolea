@@ -13,12 +13,23 @@ import { aBooking, aGuest } from '../bookings/booking.fixtures';
 const BOOKINGS = `${environment.apiUrl}/api/bookings`;
 const MP_URL = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=nueva';
 
-/** Los espacios de «$ 36.000,00» son no separables: se comparan como espacios comunes. */
+/** Los espacios de «$ 36.000» son no separables: se comparan como espacios comunes. */
 const text = (el: Element | null | undefined) =>
   (el?.textContent ?? '')
     .replace(/\u00a0/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('La Vuelta del pago', () => {
   let http: HttpTestingController;
@@ -79,7 +90,7 @@ describe('La Vuelta del pago', () => {
       expect(text(page)).toContain('Zolea Club de Playa');
       expect(text(page)).toContain('Sombrilla A-03');
       expect(text(page)).toContain('15 → 17 ene · 3 días');
-      expect(text(page)).toContain('$ 36.000,00');
+      expect(text(page)).toContain('$ 36.000');
       expect(page.querySelector('app-guest-qr')).not.toBeNull();
       expect(text(page.querySelector('.z-ticket__name'))).toBe('Santiago Rodríguez');
       expect(sessionStorage.getItem(PENDING_BOOKING_KEY)).toBeNull();
@@ -187,11 +198,12 @@ describe('La Vuelta del pago', () => {
       expect(text(page)).toContain('No encontramos la reserva');
     });
 
-    it('una reserva de otra persona avisa que no es suya', async () => {
+    it('una reserva de otra persona responde como una que no existe, sin decir de quién es', async () => {
       await open('47');
-      await answer(null, 403);
+      await answer(null, 404);
 
-      expect(text(page)).toContain('Esta reserva no es tuya');
+      expect(text(page)).toContain('No encontramos esta reserva');
+      expect(text(page)).not.toContain('no es tuya');
     });
 
     it('una reserva que no existe lo avisa', async () => {

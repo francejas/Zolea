@@ -153,10 +153,9 @@ class GuestEntryLogTest extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
 
-        // 403 hasta que entre «Errores sin pistas» (#65), que lo pasa a 404: los dos niegan.
         mockMvc.perform(get("/api/bookings/" + guest.getBooking().getId() + "/entries")
                         .header("Authorization", bearer(anAdminOf(aResort()))))
-                .andExpect(result -> assertThat(result.getResponse().getStatus()).isIn(403, 404));
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -182,7 +181,7 @@ class GuestEntryLogTest extends IntegrationTest {
 
         mockMvc.perform(get("/api/bookings/" + guest.getBooking().getId() + "/entries")
                         .header("Authorization", bearer(aClient())))
-                .andExpect(result -> assertThat(result.getResponse().getStatus()).isIn(403, 404));
+                .andExpect(status().isNotFound());
     }
 
     @Test

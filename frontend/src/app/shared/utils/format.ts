@@ -1,14 +1,23 @@
 import { UnitType } from '../../core/api/resort.models';
+import { parseIsoDate, todayIso } from './days';
 
 /** Cómo se dice cada tipo de unidad. */
 export const UNIT_TYPE_LABEL: Record<UnitType, string> = { TENT: 'Carpa', UMBRELLA: 'Sombrilla' };
 
-/** Se crea una sola vez: un formateador nuevo por cada fila o dibujo es caro. */
-const pesos = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+// Se crean una sola vez: un formateador nuevo por cada fila o dibujo es caro.
+const pesos = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 0,
+});
+const pesosCents = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 
-/** «$ 36.000,00»: la plata llega con dos decimales exactos y se muestra igual. */
+/**
+ * «$ 36.000»: el único formato de la plata en todo el sitio. Los centavos van solo si existen
+ * («$ 8.500,50»). En una tabla, la cifra va en una celda `is-num` o con `z-money`.
+ */
 export function money(amount: number): string {
-  return pesos.format(amount);
+  return Number.isInteger(amount) ? pesos.format(amount) : pesosCents.format(amount);
 }
 
 /** «Sombrilla A-03». */
@@ -16,21 +25,50 @@ export function unitLabel(type: UnitType, identifier: string): string {
   return `${UNIT_TYPE_LABEL[type]} ${identifier}`;
 }
 
-/** Se crea una sola vez: un formateador nuevo por cada dibujo es caro. */
-const dayMonth = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' });
+const weekdayDayMonth = new Intl.DateTimeFormat('es-AR', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
 
-/** `YYYY-MM-DD` como fecha local: `new Date(texto)` la toma en UTC y en Argentina cae el día antes. */
-function parseDate(text: string): Date {
-  const [year, month, day] = text.split('-').map(Number);
-  return new Date(year, month - 1, day);
+/** El día de la semana, el día y el mes de `Intl`, sin la coma ni los puntos que agrega. */
+function dateParts(iso: string) {
+  const parts = weekdayDayMonth.formatToParts(parseIsoDate(iso));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    (parts.find((p) => p.type === type)?.value ?? '').replace('.', '');
+  return { weekday: part('weekday'), day: part('day'), month: part('month') };
 }
 
-/** «15 → 17 ene», o «30 ene → 2 feb» cuando cambia el mes. */
-export function dayRange(start: string, end: string): string {
-  const from = parseDate(start);
-  const to = parseDate(end);
-  const sameMonth = from.getMonth() === to.getMonth() && from.getFullYear() === to.getFullYear();
-  return `${sameMonth ? from.getDate() : dayMonth.format(from)} → ${dayMonth.format(to)}`;
+/** « 2027» si la fecha no es del año en curso; si lo es, nada. */
+function yearSuffix(iso: string, today: string): string {
+  return iso.slice(0, 4) === today.slice(0, 4) ? '' : ` ${iso.slice(0, 4)}`;
+}
+
+/** «7 ene», o «7 ene 2027» si no es de este año. */
+function dayMonth(iso: string, today: string): string {
+  const { day, month } = dateParts(iso);
+  return `${day} ${month}${yearSuffix(iso, today)}`;
+}
+
+/** La fecha corta, `YYYY-MM-DD` → «mié 7 ene», con el año solo si no es el actual («mié 7 ene 2027»). */
+export function shortDate(iso: string, today: string = todayIso()): string {
+  return `${dateParts(iso).weekday} ${dayMonth(iso, today)}`;
+}
+
+/** La fecha corta de las tablas, sin el día de la semana: «7 ene», o «7 ene 2027». */
+export function tableDate(iso: string, today: string = todayIso()): string {
+  return dayMonth(iso, today);
+}
+
+/**
+ * Un rango de fechas: «20 → 25 dic» dentro del mismo mes y «28 dic → 3 ene 2027» si cruza de mes
+ * o de año. El año va solo donde no es el actual. Un solo día es una sola fecha: «20 dic».
+ */
+export function dayRange(start: string, end: string, today: string = todayIso()): string {
+  if (start === end) return dayMonth(start, today);
+  const sameMonth = start.slice(0, 7) === end.slice(0, 7);
+  const from = sameMonth ? dateParts(start).day : dayMonth(start, today);
+  return `${from} → ${dayMonth(end, today)}`;
 }
 
 /** «#0047». */

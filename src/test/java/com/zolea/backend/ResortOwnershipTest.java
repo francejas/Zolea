@@ -102,8 +102,8 @@ class ResortOwnershipTest extends IntegrationTest {
     // ---------------------------------------------------------------------
 
     @Test
-    @DisplayName("un admin no puede cambiar el precio de una unidad de otro balneario")
-    void changePriceOfAnotherResortsUnit_forbidden() throws Exception {
+    @DisplayName("un admin no puede cambiar el precio de una unidad de otro balneario: 404")
+    void changePriceOfAnotherResortsUnit_notFound() throws Exception {
         Resort ajeno = aResort();
         RentalUnit unidadAjena = aUnitIn(ajeno, 7_000.0);
         Client admin = anAdminOf(aResort());
@@ -111,12 +111,12 @@ class ResortOwnershipTest extends IntegrationTest {
         mockMvc.perform(patch("/api/rental-units/" + unidadAjena.getIdRentalUnit() + "/price")
                         .param("newPrice", "1")
                         .header("Authorization", "Bearer " + tokenFor(admin)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("un admin no puede bloquear una unidad de otro balneario")
-    void blockAnotherResortsUnit_forbidden() throws Exception {
+    @DisplayName("un admin no puede bloquear una unidad de otro balneario: 404")
+    void blockAnotherResortsUnit_notFound() throws Exception {
         Resort ajeno = aResort();
         RentalUnit unidadAjena = aUnitIn(ajeno, 7_000.0);
         Client admin = anAdminOf(aResort());
@@ -124,12 +124,12 @@ class ResortOwnershipTest extends IntegrationTest {
         mockMvc.perform(patch("/api/rental-units/" + unidadAjena.getIdRentalUnit() + "/block")
                         .param("isBlocked", "true")
                         .header("Authorization", "Bearer " + tokenFor(admin)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("un admin no puede crear una unidad en otro balneario")
-    void createUnitInAnotherResort_forbidden() throws Exception {
+    @DisplayName("un admin no puede crear una unidad en otro balneario: 404")
+    void createUnitInAnotherResort_notFound() throws Exception {
         Resort ajeno = aResort();
         Client admin = anAdminOf(aResort());
 
@@ -140,7 +140,7 @@ class ResortOwnershipTest extends IntegrationTest {
                                 {"type":"TENT","identifier":"X-1","dailyPrice":9000,
                                  "isBlocked":false,"resortId":%d}
                                 """.formatted(ajeno.getIdResort())))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     @Test

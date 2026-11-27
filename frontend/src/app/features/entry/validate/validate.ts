@@ -35,7 +35,6 @@ import { EntryApi } from '../../../core/api/entry.api';
 import { UnitType } from '../../../core/api/resort.models';
 import { UnitsApi } from '../../../core/api/units.api';
 import { toUserMessage } from '../../../core/errors/error-message';
-import { SessionService } from '../../../core/session/session.service';
 import { formatDni, unitLabel } from '../../../shared/utils/format';
 import { GuestEntry } from '../../../core/api/entry.models';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
@@ -70,8 +69,6 @@ const DNI_EMPTY = 'Escribí el DNI.';
 
 const NOT_ZOLEA = 'Este QR no es una entrada de Zolea.';
 const NOT_ZOLEA_HINT = 'Pedile el QR de la entrada, o buscala por el DNI.';
-const OTHER_RESORT = 'Esta entrada es de otro balneario.';
-const OTHER_RESORT_HINT = 'Solo se validan las reservas de tu balneario.';
 const NO_RESORT = 'Tu cuenta no tiene un balneario asignado, así que no podés validar ingresos.';
 
 /** Qué revisar cuando el backend no encuentra la entrada. */
@@ -130,7 +127,6 @@ const AGAIN_LABEL: Record<Mode, string> = {
 export class Validate {
   private readonly entryApi = inject(EntryApi);
   private readonly unitsApi = inject(UnitsApi);
-  private readonly session = inject(SessionService);
   private readonly camera = inject(QrCamera);
   private readonly injector = inject(Injector);
 
@@ -379,8 +375,9 @@ export class Validate {
 
   /**
    * El 400 y el 404 son el motivo por el que no entra, escrito por el backend para mostrarse tal
-   * cual: ya se usó, no existe, no empezó, venció o no está pagada. El 403 no trae el motivo: con
-   * un balneario asignado, es una entrada de otro. Lo demás es que no hubo respuesta.
+   * cual: ya se usó, no existe, no empezó, venció o no está pagada. Una entrada de otro balneario
+   * responde 404, igual que una que no existe (#65). El 403 es el tipo de cuenta: un administrador
+   * sin balneario no valida ingresos. Lo demás es que no hubo respuesta.
    */
   private toOutcome(error: unknown, mode: Mode): Outcome {
     if (!(error instanceof HttpErrorResponse)) {
@@ -392,11 +389,7 @@ export class Validate {
     if (error.status === 404 && reason) {
       return { kind: 'out', reason, hint: NOT_FOUND_HINT[mode], lookup: null };
     }
-    if (error.status === 403) {
-      return this.session.user()?.idManagedResort == null
-        ? { kind: 'error', message: NO_RESORT }
-        : { kind: 'out', reason: OTHER_RESORT, hint: OTHER_RESORT_HINT, lookup: null };
-    }
+    if (error.status === 403) return { kind: 'error', message: NO_RESORT };
     return { kind: 'error', message: toUserMessage(error) };
   }
 

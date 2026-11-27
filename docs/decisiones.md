@@ -362,7 +362,8 @@ creía y lo que hacía es el defecto.
 
 **Decisión.** `UserPrincipal.requireManagedResort()` lanza `AccessDeniedException` cuando no hay
 balneario, y los tres listados de administrador —reservas, unidades y clientes— lo usan. Sale como
-**403** con el motivo.
+**403** con el motivo. *Desde el 26/11 todo 403 lleva el mismo texto genérico, y lo ajeno responde
+404 como lo que no existe (#65).*
 
 **Por qué 403 y no una lista vacía.** Las dos opciones son igual de seguras: pasar el `null` a la
 consulta tampoco devuelve nada ajeno. La diferencia es que una se puede diagnosticar. Un panel en
@@ -462,7 +463,8 @@ balneario asignado (`zolea@zolea.com` en la demo). El `@PreAuthorize` sigue exig
 `UserPrincipal.requireZoleaAccount(motivo)` responde **403** con el motivo a un administrador con
 balneario: «Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.» en el catálogo y «Los
 balnearios los da de alta Zolea.» en el alta. Se mira antes de validar el pedido, para que ese
-administrador reciba el motivo y no un `400`. Cada balneario sigue eligiendo sus servicios en
+administrador reciba el motivo y no un `400`. *Desde el 26/11 el 403 lleva el texto genérico, sin
+motivo propio, y el método pasó a ser `requireZoleaAccount()` (#65).* Cada balneario sigue eligiendo sus servicios en
 `PUT /api/resorts/my`, y listar el catálogo sigue siendo público. El alta es solo por la API: no
 tiene pantalla.
 

@@ -27,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Alta de balnearios — solo la cuenta de Zolea")
 class ResortRegistrationTest extends IntegrationTest {
 
-    private static final String MOTIVO = "Los balnearios los da de alta Zolea.";
+    /** El 403 es genérico: dice que esa cuenta no puede, sin nombrar nada (desde el 26/11). */
+    private static final String MOTIVO = "No tenés permiso para realizar esta operación";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JwtUtil jwtUtil;
@@ -55,7 +56,7 @@ class ResortRegistrationTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("el administrador de un balneario no da de alta otro: 403 con el motivo, y no se crea nada")
+    @DisplayName("el administrador de un balneario no da de alta otro: 403, y no se crea nada")
     void elAdministradorDeUnBalneario_noDaDeAlta() throws Exception {
         Client admin = anAdminOf(aResort());
         syncWithDatabase();

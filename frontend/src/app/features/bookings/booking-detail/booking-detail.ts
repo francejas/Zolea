@@ -12,7 +12,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import {
   LucideCalendarDays,
@@ -27,7 +27,6 @@ import { BookingsApi } from '../../../core/api/bookings.api';
 import { toUserMessage } from '../../../core/errors/error-message';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
-import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 import { ZDirections } from '../../../shared/z-directions/z-directions';
@@ -42,6 +41,7 @@ import {
   unitLabel,
 } from '../booking-format';
 import { GuestQr } from '../../../shared/guest-qr/guest-qr';
+import { ErrorPage } from '../../error-page/error-page';
 
 type LoadState = 'loading' | 'ready' | 'forbidden' | 'not-found' | 'error';
 
@@ -66,11 +66,11 @@ interface CancelNotice {
     LucideMapPin,
     LucideTent,
     LucideUmbrella,
+    ErrorPage,
     GuestQr,
     ZAlert,
     ZBtn,
     ZDirections,
-    ZEmpty,
     ZProblem,
     ZSkeleton,
   ],
@@ -79,7 +79,6 @@ interface CancelNotice {
 })
 export class BookingDetail {
   private bookingsApi = inject(BookingsApi);
-  private router = inject(Router);
   private injector = inject(Injector);
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private cancelDialog = viewChild<ElementRef<HTMLDialogElement>>('cancelDialog');
@@ -178,10 +177,6 @@ export class BookingDetail {
       next: (terms) => this.terms.set(terms),
       error: () => this.terms.set(null),
     });
-  }
-
-  protected goToMyBookings(): void {
-    void this.router.navigateByUrl('/my-bookings');
   }
 
   protected showTicket(step: number): void {

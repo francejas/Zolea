@@ -33,16 +33,6 @@
       />
     }
 
-    @case ('forbidden') {
-      <z-alert
-        variant="forbidden"
-        title="Esta reserva no es tuya"
-        text="Solo la ve quien la hizo. Si es tuya, fijate con qué cuenta entraste."
-        actionLabel="Ir a Mis reservas"
-        (action)="goToMyBookings()"
-      />
-    }
-
     @case ('not-found') {
       <z-empty
         title="No encontramos esta reserva"

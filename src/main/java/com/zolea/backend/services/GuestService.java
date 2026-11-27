@@ -16,7 +16,6 @@ import com.zolea.backend.repositories.ClientRepository;
 import com.zolea.backend.repositories.GuestEntryRepository;
 import com.zolea.backend.repositories.GuestRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,25 +58,26 @@ public class GuestService {
      * pasó para poder resolverlo.
      *
      * <p>Antes que todo eso, que la reserva sea del balneario de quien valida: un administrador no
-     * marca ingresos de otro balneario, y tampoco se entera de en qué estado está esa reserva.
+     * marca ingresos de otro balneario, y tampoco se entera de en qué estado está esa reserva ni de
+     * que existe: el código de otro balneario responde igual que uno que no existe (desde el 26/11).
      *
      * @param token el {@code qrToken} que el escáner leyó del código.
      * @param typed si el código se escribió a mano en vez de leerse con la cámara: queda como «código».
      * @param resortId el balneario del administrador que valida.
      * @param adminId el administrador que valida, que queda en el registro.
      * @return los datos del huésped que acaba de ingresar.
-     * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si el código no existe.
-     * @throws org.springframework.security.access.AccessDeniedException si la reserva es de otro balneario.
+     * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si el código no existe o es de
+     *         una reserva de otro balneario.
      * @throws com.zolea.backend.exceptions.guest.BookingNotPaidException si la reserva no está confirmada.
      * @throws com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException si hoy está fuera de sus fechas.
      */
     @Transactional
     public GuestValidationResponse validateGuestEntry(String token, boolean typed, Long resortId, Long adminId) {
         Guest guest = guestRepository.findByQrToken(token)
-                .orElseThrow(() -> new GuestNotFoundException("El código ingresado no existe o es incorrecto."));
+                .orElseThrow(GuestNotFoundException::unknownCode);
 
         if (!resortId.equals(guest.getBooking().getRentalUnit().getResort().getIdResort())) {
-            throw new AccessDeniedException("Ese código es de una reserva de otro balneario.");
+            throw GuestNotFoundException.unknownCode();
         }
 
         if (guest.getBooking().getStatus() != Status.CONFIRMED) {

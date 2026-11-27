@@ -13,6 +13,7 @@ import { SessionService } from '../../../core/session/session.service';
 import { readChartTokens } from '../../../shared/chart/chart-tokens';
 import { ZChart } from '../../../shared/chart/z-chart';
 import { parseIsoDate, todayIso } from '../../../shared/utils/days';
+import { shortDate } from '../../../shared/utils/format';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { RangeLabels, ZDateRange } from '../../../shared/z-date-range/z-date-range';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
@@ -179,7 +180,7 @@ export class Dashboard {
   }
 
   protected reviewDate(review: Review): string {
-    return shortDate.format(parseIsoDate(review.createdAt.slice(0, 10))).replace(/\./g, '');
+    return shortDate(review.createdAt.slice(0, 10));
   }
 
   private show(stats: ResortStats): void {
@@ -201,5 +202,3 @@ export class Dashboard {
     }
   }
 }
-
-const shortDate = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' });

@@ -48,8 +48,7 @@ public class ReviewService {
     @Transactional
     public ReviewResponse review(Long bookingId, ReviewRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
-                        "Reserva no encontrada con el ID: " + bookingId));
+                .orElseThrow(() -> BookingNotFoundException.withId(bookingId));
 
         // Primero esta: una reserva ya calificada también terminó, y el motivo que importa es otro.
         if (reviewRepository.existsByBooking_Id(bookingId)) {
@@ -102,7 +101,7 @@ public class ReviewService {
 
     private Review findReview(Long bookingId) {
         if (!bookingRepository.existsById(bookingId)) {
-            throw new BookingNotFoundException("Reserva no encontrada con el ID: " + bookingId);
+            throw BookingNotFoundException.withId(bookingId);
         }
         return reviewRepository.findByBookingId(bookingId)
                 .orElseThrow(() -> new ReviewNotFoundException("Esta reserva todavía no se calificó."));

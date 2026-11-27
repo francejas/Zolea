@@ -5,6 +5,7 @@ import {
   CanActivateChildFn,
   CanActivateFn,
   provideRouter,
+  RedirectCommand,
   Router,
   RouterStateSnapshot,
   UrlTree,
@@ -59,6 +60,15 @@ describe('guards', () => {
 
   const target = (result: unknown) => router.serializeUrl(result as UrlTree);
 
+  /** La página 403, con la barra de direcciones en lo que se pidió. */
+  function isForbidden(result: unknown, requested: string): boolean {
+    return (
+      result instanceof RedirectCommand &&
+      router.serializeUrl(result.redirectTo) === '/forbidden' &&
+      result.navigationBehaviorOptions?.browserUrl === requested
+    );
+  }
+
   describe('authGuard', () => {
     it('sin sesión manda a /login con la ruta pedida en volver', () => {
       const result = run(authGuard, '/my-bookings');
@@ -91,14 +101,14 @@ describe('guards', () => {
       expect(run(roleGuard('ADMIN'), '/admin')).toBe(true);
     });
 
-    it('manda al cliente que pide una ruta de administrador a /', () => {
+    it('al cliente que pide una ruta de administrador le muestra el 403', () => {
       user.set(client);
-      expect(target(run(roleGuard('ADMIN'), '/admin'))).toBe('/');
+      expect(isForbidden(run(roleGuard('ADMIN'), '/admin'), '/admin')).toBe(true);
     });
 
-    it('manda al administrador que pide una ruta de cliente a /admin', () => {
+    it('al administrador que pide una ruta de cliente le muestra el 403', () => {
       user.set(admin);
-      expect(target(run(roleGuard('USER'), '/my-bookings'))).toBe('/admin');
+      expect(isForbidden(run(roleGuard('USER'), '/my-bookings'), '/my-bookings')).toBe(true);
     });
 
     it('sin sesión manda al login, por si se usa sin authGuard', () => {
@@ -108,9 +118,9 @@ describe('guards', () => {
       expect(target(result)).toMatch(/^\/login\?/);
     });
 
-    it('manda a la cuenta de Zolea que pide una ruta de cliente a su catálogo', () => {
+    it('a la cuenta de Zolea que pide una ruta de cliente le muestra el 403', () => {
       user.set(zolea);
-      expect(target(run(roleGuard('USER'), '/my-bookings'))).toBe('/admin/amenities');
+      expect(isForbidden(run(roleGuard('USER'), '/my-bookings'), '/my-bookings')).toBe(true);
     });
   });
 
@@ -121,10 +131,10 @@ describe('guards', () => {
       expect(run(adminAreaGuard, '/admin/amenities?x=1')).toBe(true);
     });
 
-    it('devuelve a la cuenta de Zolea al catálogo desde otra pantalla del panel', () => {
+    it('a la cuenta de Zolea, en otra pantalla del panel, le muestra el 403', () => {
       user.set(zolea);
       for (const url of ['/admin', '/admin/units', '/admin/bookings/4', '/admin/validate']) {
-        expect(target(run(adminAreaGuard, url))).toBe('/admin/amenities');
+        expect(isForbidden(run(adminAreaGuard, url), url)).toBe(true);
       }
     });
 
@@ -135,9 +145,9 @@ describe('guards', () => {
       }
     });
 
-    it('devuelve al administrador de un balneario del catálogo a su Panel', () => {
+    it('al administrador de un balneario que pide el catálogo le muestra el 403', () => {
       user.set(admin);
-      expect(target(run(adminAreaGuard, '/admin/amenities'))).toBe('/admin');
+      expect(isForbidden(run(adminAreaGuard, '/admin/amenities'), '/admin/amenities')).toBe(true);
     });
   });
 });

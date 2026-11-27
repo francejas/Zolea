@@ -37,8 +37,8 @@ public class GuestController {
             @ApiResponse(responseCode = "200", description = "Ingreso registrado. El mismo código vuelve a servir durante toda la estadía"),
             @ApiResponse(responseCode = "400", description = "La reserva no está paga, no empezó todavía o ya venció", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el código es de una reserva de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "El código no existe", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
+            @ApiResponse(responseCode = "404", description = "El código no existe, o es de una reserva de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<GuestValidationResponse> validateGuestEntry(
             @PathVariable String token,
