@@ -462,6 +462,77 @@ describe('Units', () => {
       expect(rowOf('A-01').querySelector('.z-status')!.textContent).toContain('Disponible');
     });
   });
+
+  describe('reservas por delante', () => {
+    const conReservas = unit({
+      idRentalUnit: 5,
+      identifier: 'B-02',
+      upcomingBookings: 2,
+      nextBookingDate: '2026-12-14',
+    });
+    const conUna = unit({
+      idRentalUnit: 6,
+      identifier: 'B-03',
+      upcomingBookings: 1,
+      nextBookingDate: '2026-12-01',
+    });
+    const sinReservas = unit({ upcomingBookings: 0, nextBookingDate: null });
+
+    beforeEach(async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 27, 12));
+      await respondWith([sinReservas, conReservas, conUna]);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const dialog = () => page.querySelector<HTMLDialogElement>('dialog')!;
+    const text = (el: Element) => el.textContent!.replace(/\s+/g, ' ').trim();
+
+    async function askBlock(identifier: string): Promise<void> {
+      Array.from(rowOf(identifier).querySelectorAll('button'))
+        .find((b) => b.textContent!.includes('Bloquear'))!
+        .click();
+      await fixture.whenStable();
+    }
+
+    it('la tabla dice cuántas tiene junto al estado, y nada si no tiene', () => {
+      const upcoming = (identifier: string) =>
+        rowOf(identifier).querySelector('td[data-label="Estado"] .units__upcoming')?.textContent;
+
+      expect(upcoming('B-02')).toBe('2 reservas por delante');
+      expect(upcoming('B-03')).toBe('1 reserva por delante');
+      expect(upcoming('A-01')).toBeUndefined();
+      expect(cells(rowOf('A-01'))[3]).toBe('Disponible');
+    });
+
+    it('bloquear una unidad con reservas avisa cuántas, la próxima y que siguen valiendo', async () => {
+      await askBlock('B-02');
+
+      expect(text(dialog())).toContain(
+        'Tiene 2 reservas por delante (la próxima, el lun 14 dic). Siguen valiendo: bloquear solo evita reservas nuevas.',
+      );
+    });
+
+    it('con una sola, lo dice en singular', async () => {
+      await askBlock('B-03');
+
+      expect(text(dialog())).toContain(
+        'Tiene 1 reserva por delante (el mar 1 dic). Sigue valiendo: bloquear solo evita reservas nuevas.',
+      );
+    });
+
+    it('bloquear una sin reservas no muestra el aviso', async () => {
+      await askBlock('A-01');
+
+      expect(dialog().textContent).toContain('¿Bloqueás la Sombrilla A-01?');
+      expect(dialog().textContent).not.toContain('por delante');
+      expect(dialog().textContent).not.toContain('reservas que ya tiene');
+    });
+  });
+
   describe('filtrar', () => {
     beforeEach(async () => {
       await respondWith([sombrilla, carpa, bloqueada, dadaDeBaja]);

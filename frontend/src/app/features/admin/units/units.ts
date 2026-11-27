@@ -29,7 +29,7 @@ import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
-import { money, UNIT_TYPE_LABEL, unitLabel } from '../../../shared/utils/format';
+import { money, shortDate, UNIT_TYPE_LABEL, unitLabel } from '../../../shared/utils/format';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -234,6 +234,29 @@ export class Units {
 
   protected isRetired(unit: RentalUnit): boolean {
     return isRetired(unit);
+  }
+
+  /** «2 reservas por delante», junto al estado; nada si no tiene o si está dada de baja. */
+  protected upcomingLabel(unit: RentalUnit): string | null {
+    const count = unit.upcomingBookings ?? 0;
+    if (count === 0 || isRetired(unit)) return null;
+    return count === 1 ? '1 reserva por delante' : `${count} reservas por delante`;
+  }
+
+  /**
+   * El aviso de la confirmación de bloquear (GH-77): las reservas que ya tiene siguen valiendo.
+   * Sin reservas por delante, no hay nada que avisar.
+   */
+  protected blockWarning(unit: RentalUnit): string | null {
+    const count = unit.upcomingBookings ?? 0;
+    if (count === 0) return null;
+    const date = unit.nextBookingDate ? shortDate(unit.nextBookingDate) : null;
+    if (count === 1) {
+      const when = date ? ` (el ${date})` : '';
+      return `Tiene 1 reserva por delante${when}. Sigue valiendo: bloquear solo evita reservas nuevas.`;
+    }
+    const when = date ? ` (la próxima, el ${date})` : '';
+    return `Tiene ${count} reservas por delante${when}. Siguen valiendo: bloquear solo evita reservas nuevas.`;
   }
 
   /** Marca o desmarca un tipo del filtro, conservando el orden de los botones. */
