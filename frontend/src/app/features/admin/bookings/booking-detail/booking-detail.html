@@ -61,7 +61,7 @@
             @if (b.status !== 'CANCELED') {
               <!-- Una estadía terminada no se cancela: el botón ya lo dice, sin abrir nada. -->
               <z-btn
-                variant="danger"
+                variant="danger-outline"
                 [disabled]="dialogOpen() || stayEnded(b)"
                 [attr.title]="stayEnded(b) ? 'La estadía ya terminó: no se puede cancelar.' : null"
                 (click)="askCancel()"

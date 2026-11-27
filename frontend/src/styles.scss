@@ -1,5 +1,6 @@
-/* Estilos globales. Los colores y las medidas salen de tokens.css, que es una copia exacta de
-   Zolea-docs/diseno/tokens.css: si cambia allá, se vuelve a copiar acá. */
+/* Estilos globales. Los colores y las medidas salen de tokens.css, que es una copia de
+   Zolea-docs/diseno/tokens.css: si cambia allá, se vuelve a copiar acá. La única diferencia, hasta
+   que se pase allá, es --color-focus, que va en tinta (ZV-01). */
 @use 'styles/tokens';
 @use 'styles/buttons';
 @use 'styles/utilities';

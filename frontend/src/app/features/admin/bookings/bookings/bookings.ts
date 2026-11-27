@@ -59,7 +59,6 @@ export class Bookings {
   };
   /** Las reservas viejas también se buscan: el calendario no frena en hoy. */
   protected readonly minDate = '2020-01-01';
-  protected readonly endedReason = 'La estadía ya terminó: no se puede cancelar.';
   /** Hoy, una vez: contra esto se ve si una estadía ya terminó. */
   private readonly today = todayIso();
 

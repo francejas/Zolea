@@ -308,6 +308,19 @@ describe('MyResort', () => {
   });
 
   describe('desactivar', () => {
+    it('en la página es un botón con contorno rojo, y el que confirma va relleno', async () => {
+      await open();
+
+      expect(button('Desactivar el balneario')!.classList).toContain('z-btn--danger-outline');
+
+      button('Desactivar el balneario')!.click();
+      await fixture.whenStable();
+      const confirm = page.querySelector<HTMLButtonElement>(
+        'dialog z-btn[variant="danger"] button',
+      );
+      expect(confirm!.classList).toContain('z-btn--danger');
+    });
+
     it('no avanza sin confirmar', async () => {
       await open();
 

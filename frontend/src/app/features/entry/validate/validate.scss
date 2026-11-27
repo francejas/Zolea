@@ -227,7 +227,7 @@
   margin-top: var(--space-3);
 }
 
-/* El anillo de foco de siempre es coral: sobre el verde y el rojo no se vería. */
+/* El anillo de foco de siempre es tinta: sobre el verde y el rojo no se vería. */
 .z-scan-result :focus-visible {
   outline-color: var(--color-cream);
   outline-offset: 3px;

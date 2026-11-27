@@ -50,6 +50,8 @@
   background: var(--color-sand-soft);
 }
 
+/* Lo destructivo, en tres niveles (ZV-03). El relleno rojo es solo para el botón que confirma,
+   dentro del diálogo de confirmación. */
 .z-btn--danger {
   background: var(--color-danger);
   color: var(--color-cream);
@@ -57,6 +59,28 @@
 
 .z-btn--danger:hover {
   background: var(--color-danger-hover);
+}
+
+/* En una página: «Cancelar reserva», «Desactivar el balneario». */
+.z-btn--danger-outline {
+  background: transparent;
+  color: var(--color-danger-text);
+  border-color: var(--color-danger);
+}
+
+.z-btn--danger-outline:hover {
+  background: var(--color-danger-soft);
+}
+
+/* En las filas de tablas y listas. Si la acción no aplica a esa fila, no se dibuja. */
+.z-btn--danger-text {
+  background: transparent;
+  color: var(--color-danger-text);
+  padding: 0 var(--space-3);
+}
+
+.z-btn--danger-text:hover {
+  background: var(--color-danger-soft);
 }
 
 .z-btn--on-color {
@@ -89,10 +113,23 @@
   width: 100%;
 }
 
-.z-btn:disabled,
+/* Deshabilitado (ZV-18): un estado propio, sin opacidad, que no parece un botón roto. Va igual en
+   todas las variantes y el hover no lo cambia. Uno ocupado (aria-busy) también está deshabilitado,
+   pero conserva su variante: está haciendo lo que se le pidió. Los de fondo transparente (ghost,
+   danger-text) siguen sin fondo, solo con el texto apagado. */
+.z-btn:disabled:not([aria-busy='true']),
 .z-btn[aria-disabled='true'] {
-  opacity: 0.45;
+  background: var(--color-sand-soft);
+  color: var(--color-ink-soft);
+  border-color: transparent;
   cursor: not-allowed;
+}
+
+.z-btn--ghost:disabled:not([aria-busy='true']),
+.z-btn--ghost[aria-disabled='true'],
+.z-btn--danger-text:disabled:not([aria-busy='true']),
+.z-btn--danger-text[aria-disabled='true'] {
+  background: transparent;
 }
 
 .z-btn[aria-busy='true'] {

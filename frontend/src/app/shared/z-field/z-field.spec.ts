@@ -49,6 +49,15 @@ describe('ZField', () => {
     expect(field().classList).toContain('z-field--invalid');
   });
 
+  it('el error lleva un ícono de alerta, no solo el color', async () => {
+    fixture.componentInstance.f.email().markAsTouched();
+    await fixture.whenStable();
+
+    const icon = field().querySelector('.z-field__error svg')!;
+    expect(icon).not.toBeNull();
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('conecta solo el control con el texto que se ve debajo: la ayuda o el error', async () => {
     const input = page.querySelector('input')!;
     expect(input.getAttribute('aria-describedby')).toBe('email-help');
