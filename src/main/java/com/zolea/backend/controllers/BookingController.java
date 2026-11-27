@@ -11,6 +11,8 @@ import com.zolea.backend.exceptions.booking.WebBookingWithWalkInException;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.BookingCheckoutService;
 import com.zolea.backend.services.BookingService;
+import com.zolea.backend.services.GuestService;
+import com.zolea.backend.dtos.guest.GuestEntryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -42,6 +44,7 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final BookingCheckoutService checkoutService;
+    private final GuestService guestService;
 
     // El clientId viaja en el cuerpo del pedido, así que hay que comprobar que sea el de quien
     // firma la petición: sin esto, cualquier usuario autenticado creaba reservas y generaba pagos
@@ -168,6 +171,22 @@ public class BookingController {
     })
     public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.getBookingById(id));
+    }
+
+    @PreAuthorize("@bookingAccess.canRead(#id, principal)")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{id}/entries")
+    @Operation(summary = "Ingresos de una reserva",
+            description = "Cada validación exitosa de cada persona de la reserva, del más nuevo al más viejo, con la "
+                    + "hora y cómo se validó (QR, CODE o DNI). Los ve el administrador del balneario y el cliente dueño.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Los ingresos; vacío si todavía no entró nadie"),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente o de otro balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
+    })
+    public ResponseEntity<List<GuestEntryResponse>> getBookingEntries(@PathVariable Long id) {
+        return ResponseEntity.ok(guestService.getBookingEntries(id));
     }
 
     @PreAuthorize("@bookingAccess.canRead(#id, principal)")

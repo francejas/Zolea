@@ -4,6 +4,7 @@ import com.zolea.backend.dtos.guest.GuestValidationResponse;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.GuestService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -31,7 +32,7 @@ public class GuestController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/validate/{token}")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Validar ingreso por token QR (Admin)", description = "Registra el ingreso del huésped (fecha y hora) y devuelve sus datos. El código sirve todas las veces que haga falta mientras dura la estadía. Solo para reservas del balneario del administrador.")
+    @Operation(summary = "Validar ingreso por token QR (Admin)", description = "Registra el ingreso del huésped (una fila nueva por cada validación, con la fecha y la hora, quién validó y si fue con el QR o con el código escrito) y devuelve sus datos. El código sirve todas las veces que haga falta mientras dura la estadía. Solo para reservas del balneario del administrador.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Ingreso registrado. El mismo código vuelve a servir durante toda la estadía"),
             @ApiResponse(responseCode = "400", description = "La reserva no está paga, no empezó todavía o ya venció", content = @Content),
@@ -41,8 +42,11 @@ public class GuestController {
     })
     public ResponseEntity<GuestValidationResponse> validateGuestEntry(
             @PathVariable String token,
+            @Parameter(description = "true si el código se escribió a mano: el ingreso queda como «código» y no como QR")
+            @RequestParam(defaultValue = "false") boolean typed,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(guestService.validateGuestEntry(token, principal.requireManagedResort()));
+        return ResponseEntity.ok(guestService.validateGuestEntry(
+                token, typed, principal.requireManagedResort(), principal.idClient()));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -59,6 +63,7 @@ public class GuestController {
     public ResponseEntity<GuestValidationResponse> validateGuestEntryByDni(
             @PathVariable String dni,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(guestService.validateGuestEntryByDni(dni, principal.requireManagedResort()));
+        return ResponseEntity.ok(guestService.validateGuestEntryByDni(
+                dni, principal.requireManagedResort(), principal.idClient()));
     }
 }

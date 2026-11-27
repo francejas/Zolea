@@ -1,12 +1,19 @@
 package com.zolea.backend.services;
 
+import com.zolea.backend.dtos.guest.GuestEntryResponse;
 import com.zolea.backend.dtos.guest.GuestValidationResponse;
+import com.zolea.backend.exceptions.booking.BookingNotFoundException;
 import com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException;
 import com.zolea.backend.exceptions.guest.BookingNotPaidException;
 import com.zolea.backend.exceptions.guest.GuestNotFoundException;
 import com.zolea.backend.models.Booking;
+import com.zolea.backend.models.EntryMethod;
 import com.zolea.backend.models.Guest;
+import com.zolea.backend.models.GuestEntry;
 import com.zolea.backend.models.Status;
+import com.zolea.backend.repositories.BookingRepository;
+import com.zolea.backend.repositories.ClientRepository;
+import com.zolea.backend.repositories.GuestEntryRepository;
 import com.zolea.backend.repositories.GuestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,6 +33,9 @@ import java.util.Optional;
 public class GuestService {
 
     private final GuestRepository guestRepository;
+    private final GuestEntryRepository guestEntryRepository;
+    private final BookingRepository bookingRepository;
+    private final ClientRepository clientRepository;
     private final Clock clock;
 
     private static final DateTimeFormatter DMY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -52,7 +62,9 @@ public class GuestService {
      * marca ingresos de otro balneario, y tampoco se entera de en qué estado está esa reserva.
      *
      * @param token el {@code qrToken} que el escáner leyó del código.
+     * @param typed si el código se escribió a mano en vez de leerse con la cámara: queda como «código».
      * @param resortId el balneario del administrador que valida.
+     * @param adminId el administrador que valida, que queda en el registro.
      * @return los datos del huésped que acaba de ingresar.
      * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si el código no existe.
      * @throws org.springframework.security.access.AccessDeniedException si la reserva es de otro balneario.
@@ -60,7 +72,7 @@ public class GuestService {
      * @throws com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException si hoy está fuera de sus fechas.
      */
     @Transactional
-    public GuestValidationResponse validateGuestEntry(String token, Long resortId) {
+    public GuestValidationResponse validateGuestEntry(String token, boolean typed, Long resortId, Long adminId) {
         Guest guest = guestRepository.findByQrToken(token)
                 .orElseThrow(() -> new GuestNotFoundException("El código ingresado no existe o es incorrecto."));
 
@@ -74,7 +86,7 @@ public class GuestService {
 
         checkBookingPeriod(guest.getBooking());
 
-        return confirmEntry(guest);
+        return confirmEntry(guest, typed ? EntryMethod.CODE : EntryMethod.QR, adminId);
     }
 
     /**
@@ -98,12 +110,13 @@ public class GuestService {
      *
      * @param dni el documento que el operador cargó.
      * @param resortId el balneario del administrador que valida.
+     * @param adminId el administrador que valida, que queda en el registro.
      * @return los datos del huésped que acaba de ingresar.
      * @throws com.zolea.backend.exceptions.guest.GuestNotFoundException si no hay ninguna reserva confirmada con ese DNI en el balneario.
      * @throws com.zolea.backend.exceptions.guest.BookingNotInValidPeriodException si ninguna está vigente hoy.
      */
     @Transactional
-    public GuestValidationResponse validateGuestEntryByDni(String dni, Long resortId) {
+    public GuestValidationResponse validateGuestEntryByDni(String dni, Long resortId, Long adminId) {
         List<Guest> guests = guestRepository.findConfirmedByDniInResort(dni, resortId);
 
         if (guests.isEmpty()) {
@@ -142,11 +155,13 @@ public class GuestService {
                         .thenComparing(Guest::getIdGuest))
                 .orElseThrow();
 
-        return confirmEntry(guest);
+        return confirmEntry(guest, EntryMethod.DNI, adminId);
     }
 
-    private GuestValidationResponse confirmEntry(Guest guest) {
-        guest.setLastEntryAt(LocalDateTime.now(clock));
+    /** Anota el ingreso: una fila nueva en el registro por cada validación exitosa (GH-76). */
+    private GuestValidationResponse confirmEntry(Guest guest, EntryMethod method, Long adminId) {
+        guestEntryRepository.save(guest.recordEntry(LocalDateTime.now(clock), method,
+                clientRepository.getReferenceById(adminId)));
         guestRepository.save(guest);
 
         String unitIdentifier = guest.getBooking().getRentalUnit().getIdentifier();
@@ -157,6 +172,44 @@ public class GuestService {
                 unitIdentifier,
                 "¡Acceso Permitido! Dirigirse a la unidad: " + unitIdentifier
         );
+    }
+
+    /**
+     * Los ingresos de una reserva, del más nuevo al más viejo. Quién puede verlos lo decide el
+     * endpoint: el administrador de su balneario o el cliente dueño.
+     *
+     * @throws BookingNotFoundException si la reserva no existe.
+     */
+    @Transactional(readOnly = true)
+    public List<GuestEntryResponse> getBookingEntries(Long bookingId) {
+        if (!bookingRepository.existsById(bookingId)) {
+            throw new BookingNotFoundException("Reserva no encontrada con el ID: " + bookingId);
+        }
+        return guestEntryRepository.findByBooking(bookingId).stream().map(GuestService::toResponse).toList();
+    }
+
+    /**
+     * Los ingresos de un día en un balneario, del más nuevo al más viejo.
+     *
+     * @param day el día, en la hora del balneario; {@code null} es hoy.
+     */
+    @Transactional(readOnly = true)
+    public List<GuestEntryResponse> getResortEntries(Long resortId, LocalDate day) {
+        LocalDate from = day != null ? day : today();
+        return guestEntryRepository
+                .findByResortBetween(resortId, from.atStartOfDay(), from.plusDays(1).atStartOfDay())
+                .stream().map(GuestService::toResponse).toList();
+    }
+
+    private static GuestEntryResponse toResponse(GuestEntry entry) {
+        return new GuestEntryResponse(
+                entry.getId(),
+                entry.getGuest().getIdGuest(),
+                entry.getGuest().getFullName(),
+                entry.getBooking().getId(),
+                entry.getBooking().getRentalUnit().getIdentifier(),
+                entry.getEnteredAt(),
+                entry.getMethod());
     }
 
     /** Rechaza el ingreso si hoy está fuera de la ventana [startDate, endDate] de la reserva. */
