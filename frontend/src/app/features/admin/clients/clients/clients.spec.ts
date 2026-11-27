@@ -219,8 +219,7 @@ describe('Clients', () => {
 
     expect(dialog.open).toBe(true);
     expect(dialog.textContent).toContain('Historial de Ángela Pérez');
-    expect(dialog.textContent).toContain('15/11/2026');
-    expect(dialog.textContent).toContain('17/11/2026');
+    expect(dialog.textContent).toContain('15 → 17 nov');
     expect(dialog.textContent).toContain('C-01');
     expect(dialog.textContent).toContain('Confirmada');
     expect(dialog.textContent).toContain(money(100));

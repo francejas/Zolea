@@ -3,19 +3,12 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { Review } from '../../../core/api/review.models';
 import { ReviewsApi } from '../../../core/api/reviews.api';
-import { parseIsoDate } from '../../../shared/utils/days';
+import { shortDate } from '../../../shared/utils/format';
 import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZRating } from '../../../shared/z-rating/z-rating';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 
 type State = 'loading' | 'ready' | 'error';
-
-/** «12 de enero de 2026». */
-const longDate = new Intl.DateTimeFormat('es-AR', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
 
 /**
  * Lo que opinaron del balneario, la reseña más nueva primero (así las manda la API), con quién la
@@ -63,6 +56,6 @@ export class ResortReviews {
   }
 
   protected date(review: Review): string {
-    return longDate.format(parseIsoDate(review.createdAt.slice(0, 10)));
+    return shortDate(review.createdAt.slice(0, 10));
   }
 }

@@ -13,23 +13,13 @@
       </div>
     }
 
+    <!-- La de otro balneario responde igual que una que no existe: la página de error, sin decir de quién es. -->
     @case ('forbidden') {
-      <z-alert
-        variant="forbidden"
-        title="No tenés permiso para ver esta reserva"
-        text="Solo podés consultar las reservas de tu balneario."
-        actionLabel="Volver a reservas"
-        (action)="back()"
-      />
+      <app-error-page [code]="403" />
     }
 
     @case ('not-found') {
-      <z-empty
-        title="No encontramos esta reserva"
-        text="Revisá el enlace o volvé al listado."
-        actionLabel="Volver a reservas"
-        (action)="back()"
-      />
+      <app-error-page [code]="404" />
     }
 
     @case ('error') {
@@ -267,7 +257,7 @@
                       </td>
 
                       <td data-label="Fecha">
-                        <span>{{ date(payment.paidAt) }}</span>
+                        <span>{{ tableDate(payment.paidAt) }}</span>
                       </td>
 
                       <td data-label="Estado">

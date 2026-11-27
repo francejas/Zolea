@@ -4,6 +4,17 @@ import { QRCodeComponent } from 'angularx-qrcode';
 import { aBooking, aGuest } from '../../features/bookings/booking.fixtures';
 import { GuestQr } from './guest-qr';
 
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('GuestQr', () => {
   let fixture: ComponentFixture<GuestQr>;
   let page: HTMLElement;

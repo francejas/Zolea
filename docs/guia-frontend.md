@@ -90,7 +90,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 ```
 
 Distinguir 401 de 403 es lo que evita el error clásico: mandar al login a alguien que **sí** está
-logueado y solo intentó abrir algo ajeno.
+logueado y solo intentó abrir algo que su tipo de cuenta no puede usar.
 
 ---
 
@@ -119,10 +119,14 @@ a los controles del formulario.
 |---|---|---|
 | **400** | Una regla rechazó el pedido, o el pedido está mal armado | Mostrar `error`, y marcar los controles de `campos` si viene |
 | **401** | Falta el token o venció | Limpiar la sesión e ir al login |
-| **403** | El recurso existe, pero no es tuyo | Mostrar «no tenés permiso». **No** desloguear |
-| **404** | No existe | Pantalla de «no encontrado» |
+| **403** | Tu tipo de cuenta no puede hacer esto: un cliente en un endpoint de administrador, el administrador de un balneario en algo de la cuenta de Zolea. El texto es siempre el mismo | La página de error 403, «No tenés acceso a esta página». **No** desloguear |
+| **404** | No existe, **o no es tuyo**: las dos cosas responden igual, con el mismo texto | La página de error 404, «No encontramos esta página». Nunca decir de quién es |
 | **409** | Era válido al comprobarlo y dejó de serlo al guardar | Mostrar `error`: alguien se adelantó |
 | **502** | MercadoPago no respondió | Ofrecer reintentar el pago |
+
+**Desde el 26/11, lo ajeno responde como lo que no existe.** Antes, una reserva de otro respondía
+`403` y una que no existe, `404`: probando números se sabía qué reservas había. Ahora la pantalla
+no puede distinguirlos, y no tiene que intentarlo.
 
 Un pedido mal armado nunca responde `500` (RNF06): un id que no es un número
 (`GET /api/bookings/abc`), un cuerpo que no es JSON válido, un parámetro obligatorio que falta o un
@@ -134,26 +138,25 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
 ## 4. Quién puede hacer qué
 
 - Un **cliente** solo accede a sus propias reservas y a su propio perfil. Los ids son consecutivos,
-  y pedir el de otro devuelve `403` — no hace falta ocultarlo en la interfaz por seguridad, pero sí
-  para no mostrar botones que van a fallar.
+  y pedir el de otro devuelve `404`, con el mismo texto que uno que no existe — no hace falta
+  ocultarlo en la interfaz por seguridad, pero sí para no mostrar botones que van a fallar.
 - Un **administrador** ve y toca solo **su** balneario: sus unidades, las reservas hechas en ellas y
   los clientes que reservaron ahí. **No existe un administrador que vea todo**: si una cuenta con rol
-  ADMIN no tiene balneario asignado, esos tres listados responden `403` con el motivo, en vez de
-  devolver el sistema entero. Lo mismo al tocar algo por id: editar, desactivar o reactivar otro
-  balneario, ver una reserva de otro balneario, sus condiciones de cancelación o su link de pago, y
-  la reserva de mostrador sobre una unidad ajena responden `403`.
+  ADMIN no tiene balneario asignado, esos tres listados responden `403`, en vez de devolver el
+  sistema entero. Lo de otro balneario responde `404`, igual que lo que no existe: editar,
+  desactivar o reactivar otro balneario, ver una reserva de otro balneario, cancelarla, sus
+  condiciones de cancelación o su link de pago, tocar o crear una unidad en otro balneario y la
+  reserva de mostrador sobre una unidad ajena.
 - El **catálogo de servicios** (`POST`, `PUT` y `DELETE` en `/api/amenities`) lo administra solo
   **la cuenta de Zolea**: el ADMIN sin balneario (`zolea@zolea.com` en la demo). El administrador
-  de un balneario recibe `403` con el motivo «Los servicios los carga Zolea. Elegí los tuyos en Mi
-  balneario.», y elige los que ofrece en `PUT /api/resorts/my`, con `amenityIds`. Listar el
-  catálogo sigue siendo público.
+  de un balneario recibe `403`, con el texto genérico, y elige los que ofrece en
+  `PUT /api/resorts/my`, con `amenityIds`. Listar el catálogo sigue siendo público.
 - **Mi balneario** (`PUT /api/resorts/my`) manda el formulario entero: la descripción y la foto se
   reemplazan siempre, y vacías se borran. `PUT /api/resorts/{id}` es parcial: lo que llega vacío
   o no viene se conserva.
 - **Dar de alta un balneario** (`POST /api/resorts`) también es solo de la cuenta de Zolea, y solo
-  por la API: no tiene pantalla. El administrador de un balneario recibe `403` con el motivo «Los
-  balnearios los da de alta Zolea.». Esa cuenta carga el catálogo y da de alta balnearios, y nada
-  más: el panel le sigue respondiendo `403`.
+  por la API: no tiene pantalla. El administrador de un balneario recibe `403`. Esa cuenta carga
+  el catálogo y da de alta balnearios, y nada más: el panel le sigue respondiendo `403`.
 - En el frontend, la cuenta de Zolea se reconoce por `/me` con `role: ADMIN` e `idManagedResort`
   vacío. Al ingresar va directo a `/admin/amenities`, su barra lateral solo tiene el catálogo, y
   cualquier otra pantalla de `/admin` la devuelve ahí. El administrador de un balneario no ve el
@@ -171,7 +174,8 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
   `walkIn: true` y sin `idClient`, `email` ni `phone`. El importe `totalSpent` ya viene sumado por el
   backend — no lo recalcules en el navegador, que es donde se pierden los centavos.
 - Al **crear una reserva**, el `clientId` del cuerpo tiene que ser el del usuario del token. Mandar
-  otro devuelve `403` en vez de corregirlo en silencio, justamente para que el error se vea.
+  otro devuelve `404`, como un cliente que no existe, en vez de corregirlo en silencio, justamente
+  para que el error se vea.
 
 ---
 
@@ -284,7 +288,7 @@ Si no se puede, `canCancel` es `false` y `reason` dice por qué. Después,
 `PATCH /api/bookings/{id}/cancel` aplica exactamente eso y devuelve la reserva con tres campos más:
 `canceledAt`, `canceledBy` (`CLIENT`, `ADMIN` o `SYSTEM`, cuando una pendiente vence sola) y
 `refundAmount` (`null` si no estaba pagada). El administrador solo cancela reservas de su
-balneario: las de otro responden `403`.
+balneario: las de otro responden `404`, como si no existieran.
 
 ### El pago en el detalle
 
@@ -327,8 +331,9 @@ PUT /api/bookings/{id}/review      { "rating": 5, "comment": "..." }
 
 Las dos responden `404` si la reserva todavía no se calificó, y validan igual que calificar.
 
-Solo la califica su dueño, y solo si es un cliente: la de otro cliente responde `403`, también para
-el administrador del balneario, y un administrador recibe `403` aunque la reserva figure a su nombre. Los rechazos:
+Solo la califica su dueño, y solo si es un cliente: la de otro cliente responde `404`, como si no
+existiera, y un administrador recibe `403` —también el del balneario, y aunque la reserva figure a su
+nombre—. Los rechazos:
 
 | Caso | Respuesta |
 |---|---|
@@ -368,7 +373,8 @@ Una unidad dada de baja:
 
 No se puede dar de baja mientras tenga reservas pendientes o confirmadas que terminan hoy o después:
 `400` «Tiene reservas por delante: cancelalas o esperá a que terminen.». Solo la da de baja el
-administrador de su balneario; el de otro recibe `403`. Darla de baja otra vez no hace nada.
+administrador de su balneario; el de otro recibe `404`, como si no existiera. Darla de baja otra
+vez no hace nada.
 
 ### Detalles que ahorran errores
 
@@ -398,9 +404,9 @@ POST /api/guests/validate/{qrToken}     el código que muestra el huésped
 POST /api/guests/validate/dni/{dni}     alternativa si no tiene el código a mano
 ```
 
-Sin token responde `401`; con una cuenta de cliente, o con el código de una reserva de otro
-balneario, `403`. Por DNI busca solo entre las reservas de su balneario: un DNI que tiene reserva en
-otro responde `404`, igual que uno que no existe.
+Sin token responde `401`; con una cuenta de cliente, `403`. El código de una reserva de otro
+balneario responde `404`, igual que un código que no existe. Por DNI busca solo entre las reservas de
+su balneario: un DNI que tiene reserva en otro responde `404`, igual que uno que no existe.
 
 El código —y el DNI— sirven para entrar **todas las veces que haga falta mientras dura la
 estadía**: responde `200` cada vez que la reserva está confirmada y hoy (el día de Buenos Aires)

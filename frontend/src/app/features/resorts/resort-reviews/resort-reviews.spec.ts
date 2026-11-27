@@ -15,6 +15,17 @@ const review = (overrides: Partial<Review> = {}): Review => ({
   ...overrides,
 });
 
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('ResortReviews', () => {
   let fixture: ComponentFixture<ResortReviews>;
   let http: HttpTestingController;
@@ -51,8 +62,8 @@ describe('ResortReviews', () => {
         .join(' | '),
     );
     expect(items).toEqual([
-      '5 de 5 estrellas | La carpa estaba lista al llegar. | Santiago R. · 12 de enero de 2026',
-      '3 de 5 estrellas | Lucía M. · 2 de enero de 2026',
+      '5 de 5 estrellas | La carpa estaba lista al llegar. | Santiago R. · lun 12 ene',
+      '3 de 5 estrellas | Lucía M. · vie 2 ene',
     ]);
   });
 
@@ -60,7 +71,7 @@ describe('ResortReviews', () => {
     await respond([review({ updatedAt: '2026-01-14T09:15:00' })]);
 
     expect(page.querySelector('.reviews__byline')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      'Santiago R. · 12 de enero de 2026 · editada',
+      'Santiago R. · lun 12 ene · editada',
     );
   });
 

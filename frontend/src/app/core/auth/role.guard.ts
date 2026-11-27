@@ -2,11 +2,11 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { Role } from '../api/auth.models';
 import { SessionService } from '../session/session.service';
-import { homeOf } from './home';
+import { forbidden } from './forbidden';
 
 /**
- * Deja pasar solo al rol pedido. Con el rol equivocado, manda a su propio inicio: el administrador
- * a su panel (la cuenta de Zolea, a su catálogo) y el cliente a `/`.
+ * Deja pasar solo al rol pedido. Con el rol equivocado muestra la página 403 (#65): un cliente en
+ * el panel, o un administrador en una ruta de cliente.
  */
 export const roleGuard =
   (role: Role): CanActivateFn =>
@@ -21,5 +21,5 @@ export const roleGuard =
     if (user.role === role) {
       return true;
     }
-    return router.createUrlTree([user.role === 'ADMIN' ? homeOf(user) : '/']);
+    return forbidden(router, state.url);
   };

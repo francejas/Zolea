@@ -37,8 +37,9 @@ public class RentalUnitController {
     private final RentalUnitService rentalUnitService;
 
     // El resortId viaja en el cuerpo, igual que el clientId de las reservas: sin comprobarlo, un
-    // administrador podía crear unidades en el balneario de otro.
-    @PreAuthorize("hasRole('ADMIN') and #request.resortId == principal.idManagedResort")
+    // administrador podía crear unidades en el balneario de otro. El de otro responde como uno que no
+    // existe: 404 (desde el 26/11).
+    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#request.resortId, principal.idManagedResort)")
     @PostMapping
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Crear unidad de alquiler (Admin)", description = "Crea una carpa o sombrilla asociada al balneario.")
@@ -46,7 +47,8 @@ public class RentalUnitController {
             @ApiResponse(responseCode = "200", description = "La unidad creada"),
             @ApiResponse(responseCode = "400", description = "Faltan datos, o el precio no es positivo", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "El balneario indicado no es el del administrador", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "El balneario indicado no existe, o no es el del administrador: la respuesta es la misma", content = @Content),
             @ApiResponse(responseCode = "409", description = "Ya hay una unidad con ese identificador en el balneario", content = @Content)
     })
     public ResponseEntity<RentalUnitResponse> createRentalUnit(
@@ -81,8 +83,8 @@ public class RentalUnitController {
             @ApiResponse(responseCode = "200", description = "La unidad con su precio nuevo"),
             @ApiResponse(responseCode = "400", description = "El precio no es positivo, o la unidad está dada de baja", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La unidad es de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una unidad con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La unidad no existe, o es de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<RentalUnitResponse> updatePrice(
             @PathVariable Long id,
@@ -99,8 +101,8 @@ public class RentalUnitController {
             @ApiResponse(responseCode = "200", description = "La unidad como quedó. Una unidad bloqueada no se puede reservar"),
             @ApiResponse(responseCode = "400", description = "La unidad está dada de baja", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La unidad es de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una unidad con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La unidad no existe, o es de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<RentalUnitResponse> updateBlockStatus(
             @PathVariable Long id,
@@ -120,8 +122,8 @@ public class RentalUnitController {
             @ApiResponse(responseCode = "200", description = "La unidad dada de baja, con retired en true"),
             @ApiResponse(responseCode = "400", description = "Tiene reservas pendientes o confirmadas que terminan hoy o después", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La unidad es de otro balneario", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una unidad con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Hace falta ser el administrador de un balneario", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La unidad no existe, o es de otro balneario: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<RentalUnitResponse> retire(@PathVariable Long id) {
         return ResponseEntity.ok(rentalUnitService.retire(id));

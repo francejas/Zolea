@@ -302,10 +302,10 @@ class RequirementRulesTest extends IntegrationTest {
         }
 
         @Test
-        @DisplayName("el administrador de otro balneario: 403")
-        void adminOfAnotherResort_isForbidden() throws Exception {
+        @DisplayName("el administrador de otro balneario: 404, como si no existiera")
+        void adminOfAnotherResort_isNotFound() throws Exception {
             RentalUnit unit = aUnitIn(aResort(), 10_000.0);
-            retire(anAdminOf(aResort()), unit).andExpect(status().isForbidden());
+            retire(anAdminOf(aResort()), unit).andExpect(status().isNotFound());
         }
 
         @Test

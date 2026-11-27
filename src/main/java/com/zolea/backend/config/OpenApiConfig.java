@@ -61,7 +61,8 @@ import org.springframework.context.annotation.Configuration;
             ```
 
             Qué significa cada código: **400** una regla rechazó el pedido · **401** falta el \
-            token o venció · **403** el recurso existe pero no es tuyo · **404** no existe · \
+            token o venció · **403** tu tipo de cuenta no puede hacer esto · **404** no existe o \
+            no es tuyo · \
             **409** el pedido era válido y dejó de serlo al guardar (dos peticiones simultáneas) · \
             **502** MercadoPago no respondió.
 
@@ -70,7 +71,10 @@ import org.springframework.context.annotation.Configuration;
             Los endpoints marcados con candado necesitan token. Además, el **dueño** de un recurso \
             y un **administrador** ven cosas distintas: un cliente solo accede a sus propias \
             reservas, y cada administrador solo al balneario que gestiona. Pedir algo ajeno \
-            devuelve 403.
+            devuelve **404, con el mismo texto que si no existiera**, para no revelar qué existe. \
+            El **403** es para el tipo de cuenta equivocado: un cliente en un endpoint de \
+            administrador, o el administrador de un balneario en algo de la cuenta de Zolea, \
+            siempre con el mismo texto.
 
             Los cuatro endpoints de MercadoPago **no** llevan candado, y no es un olvido: los \
             llama la pasarela desde sus servidores, que no tiene token de la aplicación. Ninguno \

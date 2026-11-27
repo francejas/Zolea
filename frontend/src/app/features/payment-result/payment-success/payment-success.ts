@@ -23,15 +23,13 @@ import { clearPendingBooking } from '../pending-booking';
 import { BookingsApi } from '../../../core/api/bookings.api';
 import { GuestQr } from '../../../shared/guest-qr/guest-qr';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
-import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 import { Booking } from '../../../core/api/booking.models';
 import { bookingNumber, dayCount, dayRange, money, unitLabel } from '../../bookings/booking-format';
 import { toUserMessage } from '../../../core/errors/error-message';
 
-type LoadState =
-  'loading' | 'confirmed' | 'confirming' | 'missing' | 'forbidden' | 'not-found' | 'error';
+type LoadState = 'loading' | 'confirmed' | 'confirming' | 'missing' | 'not-found' | 'error';
 
 /** Cada cuánto se vuelve a preguntar si el pago ya se acreditó. */
 export const POLL_MS = 3000;
@@ -55,7 +53,6 @@ export const MAX_RETRIES = 20;
     LucideTent,
     LucideUmbrella,
     GuestQr,
-    ZAlert,
     ZEmpty,
     ZProblem,
     ZSkeleton,
@@ -171,9 +168,8 @@ export class PaymentSuccess {
     // Con la espera en marcha, un tropiezo de la red no tira la pantalla: se sigue preguntando.
     if (this.state() === 'confirming') {
       this.waitAndCheck(id);
-    } else if (error.status === 403) {
-      this.state.set('forbidden');
     } else if (error.status === 404) {
+      // La de otro responde 404, igual que una que no existe: no se dice de quién es (#65).
       this.state.set('not-found');
     } else {
       this.loadError.set(toUserMessage(error));

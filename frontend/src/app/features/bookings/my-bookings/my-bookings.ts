@@ -28,9 +28,9 @@ import {
 import {
   BOOKING_STATUS,
   dayCount,
+  dayRange,
   money,
   refundLine,
-  shortDate,
   unitLabel,
 } from '../booking-format';
 import { ReviewDialog } from '../review-dialog/review-dialog';
@@ -333,10 +333,7 @@ export class MyBookings {
 
   private toCard(booking: Booking): BookingCardData {
     const count = dayCount(booking.startDate, booking.endDate);
-    const range =
-      booking.startDate === booking.endDate
-        ? shortDate(booking.startDate)
-        : `${shortDate(booking.startDate)} → ${shortDate(booking.endDate)}`;
+    const range = dayRange(booking.startDate, booking.endDate);
     const notice = this.noticeFor(booking);
     return {
       booking,

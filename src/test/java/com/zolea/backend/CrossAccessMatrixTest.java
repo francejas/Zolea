@@ -40,9 +40,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * La matriz de accesos cruzados (RNF03): cada administrador, solo con lo de su balneario.
  *
- * <p>Para cada operación protegida prueba los cuatro casos que pide el registro de requisitos:
- * sin token (401), con un cliente ajeno (403), con el administrador de otro balneario (403) y con
- * quien sí puede (2xx). El último es el contrapeso: sin él, cerrar todo también pasaría la matriz.
+ * <p>Para cada operación protegida prueba los casos que pide el registro de requisitos: sin token
+ * (401), con el tipo de cuenta equivocado (403), con lo de otro —un cliente ajeno, el administrador
+ * de otro balneario— (404, como si no existiera, desde el 26/11) y con quien sí puede (2xx). El
+ * último es el contrapeso: sin él, cerrar todo también pasaría la matriz.
  *
  * <p>Los casos que se niegan van primero y el permitido al final, porque el permitido puede
  * modificar los datos —desactiva el balneario, crea la reserva— y los demás tienen que ver la
@@ -86,17 +87,34 @@ class CrossAccessMatrixTest extends IntegrationTest {
         return "Bearer " + jwtUtil.generateToken(UserPrincipal.de(client));
     }
 
-    /** Sin token, con cada actor que no puede, y al final con el que sí. */
+    /**
+     * Sin token: 401. Con el tipo de cuenta equivocado: 403. Con lo de otro: 404, como si no
+     * existiera. Y al final, con el que sí puede.
+     */
     private void matriz(Supplier<MockHttpServletRequestBuilder> pedido, int esperadoPermitido,
-                        Client permitido, Client... negados) throws Exception {
+                        Client permitido, Client[] sinRol, Client[] ajenos) throws Exception {
         syncWithDatabase();
         mockMvc.perform(pedido.get()).andExpect(status().isUnauthorized());
-        for (Client negado : negados) {
+        for (Client negado : sinRol) {
             mockMvc.perform(pedido.get().header("Authorization", bearer(negado)))
                     .andExpect(status().isForbidden());
         }
+        for (Client ajeno : ajenos) {
+            mockMvc.perform(pedido.get().header("Authorization", bearer(ajeno)))
+                    .andExpect(status().isNotFound());
+        }
         mockMvc.perform(pedido.get().header("Authorization", bearer(permitido)))
                 .andExpect(status().is(esperadoPermitido));
+    }
+
+    /** Los que reciben 403: su tipo de cuenta no puede hacer esto. */
+    private static Client[] sinRol(Client... clientes) {
+        return clientes;
+    }
+
+    /** Los que reciben 404: es de otro, y responde como si no existiera. */
+    private static Client[] ajenos(Client... clientes) {
+        return clientes;
     }
 
     private static MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder pedido, String cuerpo) {
@@ -112,21 +130,21 @@ class CrossAccessMatrixTest extends IntegrationTest {
     void editarBalneario() throws Exception {
         matriz(() -> json(put("/api/resorts/" + mio.getIdResort()), """
                         {"name":"Nombre Nuevo"}"""),
-                200, adminDelBalneario, cliente, adminDeOtro);
+                200, adminDelBalneario, sinRol(cliente), ajenos(adminDeOtro));
     }
 
     @Test
     @DisplayName("desactivar un balneario: solo su administrador")
     void desactivarBalneario() throws Exception {
         matriz(() -> put("/api/resorts/" + mio.getIdResort() + "/inactive"),
-                200, adminDelBalneario, cliente, adminDeOtro);
+                200, adminDelBalneario, sinRol(cliente), ajenos(adminDeOtro));
     }
 
     @Test
     @DisplayName("reactivar un balneario: solo su administrador")
     void reactivarBalneario() throws Exception {
         matriz(() -> put("/api/resorts/" + mio.getIdResort() + "/active"),
-                200, adminDelBalneario, cliente, adminDeOtro);
+                200, adminDelBalneario, sinRol(cliente), ajenos(adminDeOtro));
     }
 
     // ---------------------------------------------------------------------
@@ -137,21 +155,21 @@ class CrossAccessMatrixTest extends IntegrationTest {
     @DisplayName("ver una reserva: su dueño")
     void verReserva_elDuenio() throws Exception {
         matriz(() -> get("/api/bookings/" + reserva.getId()),
-                200, cliente, otroCliente, adminDeOtro);
+                200, cliente, sinRol(), ajenos(otroCliente, adminDeOtro));
     }
 
     @Test
     @DisplayName("ver una reserva: el administrador de su balneario")
     void verReserva_suAdministrador() throws Exception {
         matriz(() -> get("/api/bookings/" + reserva.getId()),
-                200, adminDelBalneario, otroCliente, adminDeOtro);
+                200, adminDelBalneario, sinRol(), ajenos(otroCliente, adminDeOtro));
     }
 
     @Test
     @DisplayName("las condiciones de cancelación: su dueño o el administrador de su balneario")
     void condicionesDeCancelacion() throws Exception {
         matriz(() -> get("/api/bookings/" + reserva.getId() + "/cancellation"),
-                200, cliente, otroCliente, adminDeOtro);
+                200, cliente, sinRol(), ajenos(otroCliente, adminDeOtro));
         mockMvc.perform(get("/api/bookings/" + reserva.getId() + "/cancellation")
                         .header("Authorization", bearer(adminDelBalneario)))
                 .andExpect(status().isOk());
@@ -161,7 +179,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
     @DisplayName("pedir el link de pago: su dueño o el administrador de su balneario")
     void linkDePago() throws Exception {
         matriz(() -> post("/api/bookings/" + reserva.getId() + "/pay"),
-                200, cliente, otroCliente, adminDeOtro);
+                200, cliente, sinRol(), ajenos(otroCliente, adminDeOtro));
         mockMvc.perform(post("/api/bookings/" + reserva.getId() + "/pay")
                         .header("Authorization", bearer(adminDelBalneario)))
                 .andExpect(status().isOk());
@@ -175,14 +193,14 @@ class CrossAccessMatrixTest extends IntegrationTest {
     @DisplayName("las reservas de un cliente: solo él, ni siquiera el administrador de su balneario")
     void reservasDeUnCliente() throws Exception {
         matriz(() -> get("/api/bookings/client/" + cliente.getIdClient()),
-                200, cliente, otroCliente, adminDeOtro, adminDelBalneario);
+                200, cliente, sinRol(), ajenos(otroCliente, adminDeOtro, adminDelBalneario));
     }
 
     @Test
     @DisplayName("ver el perfil de un cliente: solo él")
     void verPerfil() throws Exception {
         matriz(() -> get("/api/clients/" + cliente.getIdClient()),
-                200, cliente, otroCliente, adminDeOtro, adminDelBalneario);
+                200, cliente, sinRol(), ajenos(otroCliente, adminDeOtro, adminDelBalneario));
     }
 
     @Test
@@ -192,7 +210,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
                 {"firstName":"Nombre","lastName":"Cambiado","email":"%s","phone":"%s","dni":"%s"}
                 """.formatted(cliente.getEmail(), cliente.getPhone(), cliente.getDni());
         matriz(() -> json(put("/api/clients/" + cliente.getIdClient()), cuerpo),
-                200, cliente, otroCliente, adminDeOtro, adminDelBalneario);
+                200, cliente, sinRol(), ajenos(otroCliente, adminDeOtro, adminDelBalneario));
     }
 
     @Test
@@ -216,7 +234,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
                 {"startDate":"%s","endDate":"%s","clientId":%d,"rentalUnitId":%d,"guests":[]}
                 """.formatted(desde, desde.plusDays(1), cliente.getIdClient(), unidad.getIdRentalUnit());
         matriz(() -> json(post("/api/bookings"), cuerpo),
-                201, cliente, otroCliente, adminDeOtro, adminDelBalneario);
+                201, cliente, sinRol(adminDeOtro, adminDelBalneario), ajenos(otroCliente));
     }
 
     @Test
@@ -247,7 +265,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
                  "walkInName":"Marta Gómez","walkInDni":"31222333"}
                 """.formatted(desde, desde.plusDays(1), unidad.getIdRentalUnit());
         matriz(() -> json(post("/api/bookings/walkin"), cuerpo),
-                201, adminDelBalneario, cliente, adminDeOtro);
+                201, adminDelBalneario, sinRol(cliente), ajenos(adminDeOtro));
     }
 
     // ---------------------------------------------------------------------
@@ -259,7 +277,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
     void crearServicio() throws Exception {
         matriz(() -> json(post("/api/amenities"), """
                         {"name":"Guardavidas"}"""),
-                201, theZoleaAccount(), cliente, adminDelBalneario, adminDeOtro);
+                201, theZoleaAccount(), sinRol(cliente, adminDelBalneario, adminDeOtro), ajenos());
     }
 
     @Test
@@ -268,7 +286,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
         Amenity servicio = unServicio();
         matriz(() -> json(put("/api/amenities/" + servicio.getIdAmenity()), """
                         {"name":"Duchas calientes"}"""),
-                200, theZoleaAccount(), cliente, adminDelBalneario, adminDeOtro);
+                200, theZoleaAccount(), sinRol(cliente, adminDelBalneario, adminDeOtro), ajenos());
     }
 
     @Test
@@ -276,7 +294,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
     void borrarServicio() throws Exception {
         Amenity servicio = unServicio();
         matriz(() -> delete("/api/amenities/" + servicio.getIdAmenity()),
-                204, theZoleaAccount(), cliente, adminDelBalneario, adminDeOtro);
+                204, theZoleaAccount(), sinRol(cliente, adminDelBalneario, adminDeOtro), ajenos());
     }
 
     private Amenity unServicio() {
@@ -300,7 +318,7 @@ class CrossAccessMatrixTest extends IntegrationTest {
                 {"rating":5}""";
 
         matriz(() -> json(post("/api/bookings/" + terminada.getId() + "/review"), cuerpo),
-                201, cliente, otroCliente, adminDeOtro, adminDelBalneario);
+                201, cliente, sinRol(adminDeOtro, adminDelBalneario), ajenos(otroCliente));
         mockMvc.perform(json(post("/api/bookings/" + delAdministrador.getId() + "/review"), cuerpo)
                         .header("Authorization", bearer(adminDeOtro)))
                 .andExpect(status().isForbidden());

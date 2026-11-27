@@ -77,14 +77,14 @@ class GuestEntryAccessTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("el admin de otro balneario no puede validar: 403")
-    void validate_asAdminOfAnotherResort_403() throws Exception {
+    @DisplayName("el admin de otro balneario no puede validar: 404, como un código que no existe")
+    void validate_asAdminOfAnotherResort_404() throws Exception {
         Guest guest = guestOfCurrentBookingIn(aResort(), "30111224");
         Client otherAdmin = anAdminOf(aResort());
 
         mockMvc.perform(post("/api/guests/validate/" + guest.getQrToken())
                         .header("Authorization", bearer(otherAdmin)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
 
         assertThat(entryValidated(guest)).isFalse();
     }

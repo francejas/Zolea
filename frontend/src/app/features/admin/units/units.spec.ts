@@ -146,7 +146,7 @@ describe('Units', () => {
       expect(cells(rowOf('C-01')).slice(0, 4)).toEqual([
         'C-01',
         'Carpa',
-        expect.stringContaining('14.500,00'),
+        expect.stringContaining('14.500'),
         'Disponible',
       ]);
       expect(page.querySelector('.units__summary')!.textContent).toContain(
@@ -334,7 +334,7 @@ describe('Units', () => {
       await fixture.whenStable();
 
       expect(page.querySelector('#unit-new-price')).toBeNull();
-      expect(cells(rowOf('A-01'))[2]).toContain('9.000,00');
+      expect(cells(rowOf('A-01'))[2]).toContain('9.000');
     });
 
     it('con precio 0 no envía', async () => {
@@ -376,7 +376,7 @@ describe('Units', () => {
       await fixture.whenStable();
 
       expect(page.querySelector('#unit-new-price')).toBeNull();
-      expect(cells(rowOf('A-01'))[2]).toContain('8.500,00');
+      expect(cells(rowOf('A-01'))[2]).toContain('8.500');
     });
   });
 

@@ -200,13 +200,13 @@ class ReviewTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("la reserva de otro cliente: 403")
-    void anotherClientsBooking_forbidden() throws Exception {
+    @DisplayName("la reserva de otro cliente: 404, como si no existiera")
+    void anotherClientsBooking_notFound() throws Exception {
         Booking booking = endedYesterday(aClient());
 
         review(booking, aClient(), """
                 {"rating": 1}""")
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -490,8 +490,8 @@ class ReviewTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("la reseña de otro cliente no se ve ni se edita: 403, y no cambia")
-    void anotherClientsReview_forbidden() throws Exception {
+    @DisplayName("la reseña de otro cliente no se ve ni se edita: 404, y no cambia")
+    void anotherClientsReview_notFound() throws Exception {
         Client owner = aClient();
         Client other = aClient();
         Booking booking = endedYesterday(owner);
@@ -500,10 +500,10 @@ class ReviewTest extends IntegrationTest {
 
         mockMvc.perform(get("/api/bookings/" + booking.getId() + "/review")
                         .header("Authorization", bearer(other)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
         edit(booking, other, """
                 {"rating": 5}""")
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
 
         syncWithDatabase();
         assertThat(reviewRepository.findAll())

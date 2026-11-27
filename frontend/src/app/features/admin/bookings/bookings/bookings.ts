@@ -21,7 +21,13 @@ import { ZSkeleton } from '../../../../shared/z-skeleton/z-skeleton';
 import { BookingsApi } from '../../../../core/api/bookings.api';
 import { Booking, BookingStatus, CancellationResponse } from '../../../../core/api/booking.models';
 import { bookingHolder, filterBookings } from '../booking-filters';
-import { BOOKING_STATUS, bookingNumber, money, unitLabel } from '../../../bookings/booking-format';
+import {
+  BOOKING_STATUS,
+  bookingNumber,
+  dayRange,
+  money,
+  unitLabel,
+} from '../../../bookings/booking-format';
 import { toUserMessage } from '../../../../core/errors/error-message';
 
 @Component({
@@ -89,6 +95,7 @@ export class Bookings {
   protected readonly holder = bookingHolder;
   protected readonly number = bookingNumber;
   protected readonly money = money;
+  protected readonly dayRange = dayRange;
   protected readonly unitLabel = unitLabel;
 
   constructor() {

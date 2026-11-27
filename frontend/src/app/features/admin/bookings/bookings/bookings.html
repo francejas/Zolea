@@ -119,15 +119,9 @@
                       </td>
 
                       <td data-label="Fechas">
-                        <span>
-                          <time [attr.datetime]="booking.startDate">
-                            {{ booking.startDate.split('-').reverse().join('/') }}
-                          </time>
-                          →
-                          <time [attr.datetime]="booking.endDate">
-                            {{ booking.endDate.split('-').reverse().join('/') }}
-                          </time>
-                        </span>
+                        <time [attr.datetime]="booking.startDate">
+                          {{ dayRange(booking.startDate, booking.endDate) }}
+                        </time>
                       </td>
 
                       <td data-label="Estado">

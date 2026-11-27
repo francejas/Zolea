@@ -79,8 +79,8 @@ describe('Detalle de reserva del administrador', () => {
 
     expect(text(page.querySelector('h1'))).toBe('Zolea Club de Playa');
     expect(text(section('stay-title'))).toContain('Sombrilla A-03');
-    expect(text(section('stay-title'))).toContain('15/01/2026');
-    expect(text(section('stay-title'))).toContain('17/01/2026');
+    expect(text(section('stay-title'))).toContain('jue 15 ene');
+    expect(text(section('stay-title'))).toContain('sáb 17 ene');
     expect(text(section('stay-title'))).toContain(money(36000));
     expect(page.querySelector('a')?.getAttribute('href')).toBe('/admin/bookings');
     expect(button('Pagar ahora')).toBeUndefined();
@@ -158,7 +158,7 @@ describe('Detalle de reserva del administrador', () => {
         }),
       );
 
-      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 15/01 a las 10:15');
+      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 15 ene a las 10:15');
       expect(rowsOf()[0].querySelector('.z-status--neutral')).not.toBeNull();
     });
 
@@ -182,7 +182,7 @@ describe('Detalle de reserva del administrador', () => {
 
       expect(rowsOf().map(ingreso)).toEqual([
         'Entró hoy a las 10:15',
-        'Entró por última vez el 15/01 a las 18:40',
+        'Entró por última vez el 15 ene a las 18:40',
         'Todavía no entró',
       ]);
       expect(text(section('entry-title'))).toContain('1 de 3');
@@ -200,7 +200,7 @@ describe('Detalle de reserva del administrador', () => {
       expect(page.querySelector('.detail__count')).toBeNull();
       expect(text(section('entry-title'))).not.toContain('0 de 1');
       expect(text(section('entry-title'))).toContain('La estadía ya terminó');
-      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 17/01 a las 09:05');
+      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 17 ene a las 09:05');
     });
 
     it('en una estadía que no empezó no hay contador', async () => {
@@ -240,7 +240,7 @@ describe('Detalle de reserva del administrador', () => {
 
     expect(text(rows[0])).toContain('1234567890');
     expect(text(rows[0])).toContain(money(36000));
-    expect(text(rows[0])).toContain('10/01/2026 · 10:15');
+    expect(text(rows[0])).toContain('10 ene · 10:15');
     expect(text(rows[0])).toContain('Aprobado');
 
     expect(text(rows[1])).toContain('9876543210');
@@ -385,7 +385,7 @@ describe('Detalle de reserva del administrador', () => {
     );
 
     expect(text(section('entry-title'))).toContain('Cancelada por el sistema');
-    expect(text(section('entry-title'))).toContain('10/01/2026 · 10:15');
+    expect(text(section('entry-title'))).toContain('sáb 10 ene · 10:15');
     expect(text(section('entry-title'))).toContain(money(0));
   });
 
@@ -407,15 +407,9 @@ describe('Detalle de reserva del administrador', () => {
 
       expect(page.querySelector('table')).toBeNull();
 
-      expect(
-        page.querySelector(
-          status === 403
-            ? 'z-alert[variant="forbidden"]'
-            : status === 404
-              ? 'z-empty'
-              : 'z-problem',
-        ),
-      ).not.toBeNull();
+      expect(page.querySelector(status === 500 ? 'z-problem' : 'app-error-page')).not.toBeNull();
+      // La de otro balneario responde 404, como una que no existe: la página no dice de quién es.
+      expect(page.textContent).not.toContain('tu balneario');
 
       if (status === 500) {
         button('Reintentar').click();
