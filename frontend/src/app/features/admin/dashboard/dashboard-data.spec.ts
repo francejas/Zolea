@@ -62,6 +62,17 @@ function tooltipOf(view: ChartView, index: number): { title: string; label: stri
   return { title: call(callbacks.title, [item]), label: call(callbacks.label, item) };
 }
 
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('el rango del Panel', () => {
   it('abre del primer día del mes pasado al último del que viene', () => {
     expect(defaultRange('2026-11-13')).toEqual({ from: '2026-10-01', to: '2026-12-31' });

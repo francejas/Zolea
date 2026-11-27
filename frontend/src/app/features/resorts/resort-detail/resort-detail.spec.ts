@@ -58,6 +58,17 @@ const text = (el: Element | null | undefined) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('ResortDetail', () => {
   const loggedIn = signal(false);
   // Las reseñas tienen sus propias pruebas (resort-reviews): acá alcanza con lo que devuelvan.
@@ -314,7 +325,12 @@ describe('ResortDetail', () => {
       const entradas = Array.from(page.querySelectorAll('.z-range__field strong')).map((s) =>
         text(s),
       );
-      expect(entradas).toEqual(['vie 15 ene', 'dom 17 ene', 'vie 15 ene', 'dom 17 ene']);
+      expect(entradas).toEqual([
+        'vie 15 ene 2027',
+        'dom 17 ene 2027',
+        'vie 15 ene 2027',
+        'dom 17 ene 2027',
+      ]);
     });
   });
 

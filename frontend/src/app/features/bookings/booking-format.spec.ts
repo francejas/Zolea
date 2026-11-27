@@ -13,6 +13,17 @@ import {
 } from './booking-format';
 import { aBooking } from './booking.fixtures';
 
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('el plazo para pagar', () => {
   it('vence a la hora de hecha la reserva, con la hora de Buenos Aires', () => {
     expect(paymentDeadline('2026-01-10T11:00:00')).toBe(Date.parse('2026-01-10T12:00:00-03:00'));

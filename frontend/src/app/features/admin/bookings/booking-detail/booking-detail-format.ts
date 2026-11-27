@@ -44,7 +44,7 @@ export function entryStatus(guest: GuestSummary): EntryStatus {
 
   if (date) {
     return {
-      text: `Entró por última vez el ${shortDate(date)}` + (hour ? ` a las ${hour}` : ''),
+      text: `Entró por última vez el ${tableDate(date)}` + (hour ? ` a las ${hour}` : ''),
       modifier: 'neutral',
     };
   }

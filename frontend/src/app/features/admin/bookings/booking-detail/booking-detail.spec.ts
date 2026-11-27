@@ -158,7 +158,7 @@ describe('Detalle de reserva del administrador', () => {
         }),
       );
 
-      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el jue 15 ene a las 10:15');
+      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 15 ene a las 10:15');
       expect(rowsOf()[0].querySelector('.z-status--neutral')).not.toBeNull();
     });
 
@@ -182,7 +182,7 @@ describe('Detalle de reserva del administrador', () => {
 
       expect(rowsOf().map(ingreso)).toEqual([
         'Entró hoy a las 10:15',
-        'Entró por última vez el jue 15 ene a las 18:40',
+        'Entró por última vez el 15 ene a las 18:40',
         'Todavía no entró',
       ]);
       expect(text(section('entry-title'))).toContain('1 de 3');
@@ -200,7 +200,7 @@ describe('Detalle de reserva del administrador', () => {
       expect(page.querySelector('.detail__count')).toBeNull();
       expect(text(section('entry-title'))).not.toContain('0 de 1');
       expect(text(section('entry-title'))).toContain('La estadía ya terminó');
-      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el sáb 17 ene a las 09:05');
+      expect(ingreso(rowsOf()[0])).toBe('Entró por última vez el 17 ene a las 09:05');
     });
 
     it('en una estadía que no empezó no hay contador', async () => {

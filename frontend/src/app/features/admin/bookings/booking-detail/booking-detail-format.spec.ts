@@ -7,6 +7,17 @@ import {
 } from './booking-detail-format';
 import { aGuest } from '../../../bookings/booking.fixtures';
 
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('Formato del detalle administrativo', () => {
   it('conserva la fecha y hora de Buenos Aires sin conversión del navegador', () => {
     expect(bookingDate('2026-01-10T00:15:00')).toBe('sáb 10 ene · 00:15');
@@ -31,7 +42,7 @@ describe('Formato del detalle administrativo', () => {
     ).toEqual({ text: 'Entró hoy a las 10:15', modifier: 'confirmed' });
     expect(
       entryStatus(aGuest({ isEntryValidated: false, lastEntryAt: '2026-11-12T10:15:00' })),
-    ).toEqual({ text: 'Entró por última vez el jue 12 nov a las 10:15', modifier: 'neutral' });
+    ).toEqual({ text: 'Entró por última vez el 12 nov a las 10:15', modifier: 'neutral' });
     expect(entryStatus(aGuest({ isEntryValidated: false, lastEntryAt: null }))).toEqual({
       text: 'Todavía no entró',
       modifier: 'pending',

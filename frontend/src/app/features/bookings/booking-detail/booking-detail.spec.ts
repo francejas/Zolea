@@ -9,6 +9,17 @@ import { BookingDetail } from './booking-detail';
 
 const API = `${environment.apiUrl}/api/bookings`;
 
+// Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
+// no cambien de resultado cuando cambia el año.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('BookingDetail', () => {
   let fixture: ComponentFixture<BookingDetail>;
   let http: HttpTestingController;

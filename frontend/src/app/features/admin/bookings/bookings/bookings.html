@@ -119,7 +119,9 @@
                       </td>
 
                       <td data-label="Fechas">
-                        <span>{{ dayRange(booking.startDate, booking.endDate) }}</span>
+                        <time [attr.datetime]="booking.startDate">
+                          {{ dayRange(booking.startDate, booking.endDate) }}
+                        </time>
                       </td>
 
                       <td data-label="Estado">
