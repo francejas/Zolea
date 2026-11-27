@@ -65,8 +65,7 @@ public class ClientController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El perfil del cliente"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "El perfil es de otra persona, aunque quien pide sea un administrador", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe un cliente con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "404", description = "El perfil no existe, o es de otra persona (aunque quien pide sea un administrador): la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<ClientResponse> getClientById(@PathVariable Long id) {
         return ResponseEntity.ok(clientService.getClientById(id));
@@ -82,8 +81,7 @@ public class ClientController {
             @ApiResponse(responseCode = "200", description = "El perfil como quedó. Los campos que no vengan en el pedido no se tocan; un DNI vacío conserva el que ya tenía"),
             @ApiResponse(responseCode = "400", description = "Algún dato tiene formato inválido", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "El perfil es de otra persona, aunque quien pide sea un administrador", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe un cliente con ese identificador", content = @Content),
+            @ApiResponse(responseCode = "404", description = "El perfil no existe, o es de otra persona (aunque quien pide sea un administrador): la respuesta es la misma", content = @Content),
             @ApiResponse(responseCode = "409", description = "El email, el teléfono o el DNI ya son de otra cuenta: el campo viene en campos (email, phone o dni)", content = @Content)
     })
     public ResponseEntity<ClientResponse> updateClient(@PathVariable Long id,

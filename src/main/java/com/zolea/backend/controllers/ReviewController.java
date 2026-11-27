@@ -38,8 +38,8 @@ public class ReviewController {
             @ApiResponse(responseCode = "201", description = "La reseña, como se va a ver en el balneario"),
             @ApiResponse(responseCode = "400", description = "La estadía todavía no terminó o la reserva no está confirmada, ya se calificó, o la calificación o el comentario no son válidos", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente, o quien pide es un administrador", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe una reserva con ese identificador", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Quien pide es un administrador: la reseña es del cliente", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe, o es de otro cliente: la respuesta es la misma", content = @Content)
     })
     public ResponseEntity<ReviewResponse> reviewBooking(@PathVariable Long id,
                                                         @Valid @RequestBody ReviewRequest request) {
@@ -55,8 +55,8 @@ public class ReviewController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "La reseña, como se ve en el balneario"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente, o quien pide es un administrador", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe la reserva, o todavía no se calificó", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Quien pide es un administrador: la reseña es del cliente", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe o es de otro cliente, o todavía no se calificó", content = @Content)
     })
     public ResponseEntity<ReviewResponse> getBookingReview(@PathVariable Long id) {
         return ResponseEntity.ok(reviewService.getByBooking(id));
@@ -72,8 +72,8 @@ public class ReviewController {
             @ApiResponse(responseCode = "200", description = "La reseña, como queda en el balneario"),
             @ApiResponse(responseCode = "400", description = "La calificación o el comentario no son válidos", content = @Content),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
-            @ApiResponse(responseCode = "403", description = "La reserva es de otro cliente, o quien pide es un administrador", content = @Content),
-            @ApiResponse(responseCode = "404", description = "No existe la reserva, o todavía no se calificó", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Quien pide es un administrador: la reseña es del cliente", content = @Content),
+            @ApiResponse(responseCode = "404", description = "La reserva no existe o es de otro cliente, o todavía no se calificó", content = @Content)
     })
     public ResponseEntity<ReviewResponse> updateBookingReview(@PathVariable Long id,
                                                               @Valid @RequestBody ReviewRequest request) {
