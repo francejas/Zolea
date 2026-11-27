@@ -9,6 +9,7 @@ import {
   LucideLogOut,
   LucideMenu,
   LucideTicket,
+  LucideUmbrella,
   LucideUser,
   LucideX,
 } from '@lucide/angular';
@@ -17,8 +18,9 @@ import { homeOf } from '../../core/auth/home';
 import { SessionService } from '../../core/session/session.service';
 
 /**
- * El marco del sitio, para el público y el cliente: la barra superior y debajo la pantalla. En el
- * celular, la sesión y los accesos se pliegan en un menú que se abre debajo de la barra.
+ * El marco del sitio, para el público y el cliente: la barra superior y debajo la pantalla. Con
+ * sesión de cliente, la barra suma Balnearios y Mis reservas. En el celular, la sesión y los
+ * accesos se pliegan en un menú que se abre debajo de la barra.
  */
 @Component({
   selector: 'app-site-layout',
@@ -33,6 +35,7 @@ import { SessionService } from '../../core/session/session.service';
     LucideLogOut,
     LucideMenu,
     LucideTicket,
+    LucideUmbrella,
     LucideUser,
     LucideX,
   ],
@@ -55,6 +58,11 @@ export class SiteLayout {
     return user ? homeOf(user) : '/admin';
   });
 
+  private readonly router = inject(Router);
+
+  /** La dirección actual, sin la consulta ni el fragmento: de acá sale la sección marcada. */
+  private readonly path = signal(pathOf(this.router.url));
+
   protected readonly userMenuOpen = signal(false);
   protected readonly sheetOpen = signal(false);
 
@@ -70,15 +78,28 @@ export class SiteLayout {
 
   constructor() {
     // Al cambiar de pantalla, los menús se cierran solos.
-    inject(Router)
-      .events.pipe(
+    this.router.events
+      .pipe(
         filter((event) => event instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe(() => {
+      .subscribe((event) => {
+        this.path.set(pathOf(event.urlAfterRedirects));
         this.userMenuOpen.set(false);
         this.sheetOpen.set(false);
       });
+  }
+
+  /**
+   * El `aria-current` de una sección del cliente (GH-78): `page` en su pantalla principal y `true`
+   * en las que cuelgan de ella. Balnearios es la portada y la ficha de cada balneario; Mis reservas,
+   * la lista y el detalle de una reserva.
+   */
+  protected currentFor(section: 'resorts' | 'bookings'): 'page' | 'true' | null {
+    const path = this.path();
+    const [home, inside] = SECTIONS[section];
+    if (path === home) return 'page';
+    return path.startsWith(inside) ? 'true' : null;
   }
 
   /** Escape cierra lo que esté abierto y devuelve el foco al botón que lo abrió. */
@@ -120,4 +141,14 @@ export class SiteLayout {
     this.sheetOpen.set(false);
     this.session.logout();
   }
+}
+
+/** Cada sección: su pantalla principal y el comienzo de las direcciones que cuelgan de ella. */
+const SECTIONS = {
+  resorts: ['/', '/resorts/'],
+  bookings: ['/my-bookings', '/bookings/'],
+} as const;
+
+function pathOf(url: string): string {
+  return url.split(/[?#]/)[0];
 }
