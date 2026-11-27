@@ -12,7 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { LucideArrowLeft } from '@lucide/angular';
 import { Subject, takeUntil } from 'rxjs';
 import { todayIso } from '../../../../shared/utils/days';
@@ -31,6 +31,7 @@ import { ZBtn } from '../../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../../shared/z-skeleton/z-skeleton';
+import { ErrorPage } from '../../../error-page/error-page';
 import { BookingsApi } from '../../../../core/api/bookings.api';
 import { Booking, CancellationResponse } from '../../../../core/api/booking.models';
 import {
@@ -45,13 +46,12 @@ import { toUserMessage } from '../../../../core/errors/error-message';
 
 @Component({
   selector: 'app-admin-booking-detail',
-  imports: [RouterLink, LucideArrowLeft, ZAlert, ZBtn, ZEmpty, ZProblem, ZSkeleton],
+  imports: [RouterLink, LucideArrowLeft, ErrorPage, ZAlert, ZBtn, ZEmpty, ZProblem, ZSkeleton],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
 export class AdminBookingDetail {
   private readonly api = inject(BookingsApi);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly cancelDialog = viewChild<ElementRef<HTMLDialogElement>>('cancelDialog');
@@ -143,10 +143,6 @@ export class AdminBookingDetail {
     if (!this.dialogOpen()) {
       this.reload.update((value) => value + 1);
     }
-  }
-
-  protected back(): void {
-    void this.router.navigateByUrl('/admin/bookings');
   }
 
   /** Una confirmada cuya estadía ya terminó no se cancela (`Booking.refundFor`). */

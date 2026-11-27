@@ -187,11 +187,12 @@ describe('La Vuelta del pago', () => {
       expect(text(page)).toContain('No encontramos la reserva');
     });
 
-    it('una reserva de otra persona avisa que no es suya', async () => {
+    it('una reserva de otra persona responde como una que no existe, sin decir de quién es', async () => {
       await open('47');
-      await answer(null, 403);
+      await answer(null, 404);
 
-      expect(text(page)).toContain('Esta reserva no es tuya');
+      expect(text(page)).toContain('No encontramos esta reserva');
+      expect(text(page)).not.toContain('no es tuya');
     });
 
     it('una reserva que no existe lo avisa', async () => {

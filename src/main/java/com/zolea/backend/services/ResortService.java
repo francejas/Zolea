@@ -129,7 +129,7 @@ public class ResortService {
     public List<Long> getOccupiedUnitIds(Long resortId, LocalDate from, LocalDate to) {
         validateDates(from, to, true);
         if (!resortRepository.existsById(resortId)) {
-            throw new ResortNotFoundException("Resort with id " + resortId + " not found");
+            throw ResortNotFoundException.withId(resortId);
         }
         return bookingRepository.findOccupiedUnitIds(resortId, from, to);
     }
@@ -201,7 +201,7 @@ public class ResortService {
     public ResortResponse getResortById(Long id) {
         Resort resort = resortRepository.findById(id)
                 .filter(Resort::isActive)
-                .orElseThrow(() -> new ResortNotFoundException("Resort with id " + id + " not found"));
+                .orElseThrow(() -> ResortNotFoundException.withId(id));
 
         return mapToResponse(resort);
     }
@@ -232,7 +232,7 @@ public class ResortService {
     @Transactional
     public ResortResponse updateResort(Long resortId, ResortRequest request) {
         Resort resort = resortRepository.findById(resortId)
-                .orElseThrow(() -> new ResortNotFoundException("Resort with id " + resortId + " not found"));
+                .orElseThrow(() -> ResortNotFoundException.withId(resortId));
 
         applyChanges(resort, request);
         return mapToResponse(resortRepository.save(resort));
@@ -292,14 +292,14 @@ public class ResortService {
 
     @Transactional
     public ResortResponse toInactive(Long id) {
-        Resort resort = resortRepository.findById(id).orElseThrow(() -> new ResortNotFoundException("Resort not found"));
+        Resort resort = resortRepository.findById(id).orElseThrow(() -> ResortNotFoundException.withId(id));
         resort.setActive(false);
         return mapToResponse(resortRepository.save(resort));
     }
 
     @Transactional
     public ResortResponse toActive(Long id) {
-        Resort resort = resortRepository.findById(id).orElseThrow(() -> new ResortNotFoundException("Resort not found"));
+        Resort resort = resortRepository.findById(id).orElseThrow(() -> ResortNotFoundException.withId(id));
         resort.setActive(true);
         return mapToResponse(resortRepository.save(resort));
     }

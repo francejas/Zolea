@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { adminAreaGuard } from './core/auth/admin-area.guard';
 import { authGuard } from './core/auth/auth.guard';
+import { FORBIDDEN_PATH } from './core/auth/forbidden';
 import { roleGuard } from './core/auth/role.guard';
 import { AdminLayout } from './layout/admin-layout/admin-layout';
 import { SiteLayout } from './layout/site-layout/site-layout';
@@ -54,10 +55,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/policies/cancellation-policy').then((m) => m.CancellationPolicy),
       },
+      // Adonde mandan los guards a quien entra a una ruta de otro tipo de cuenta: la página 403. El
+      // guard no cambia la barra de direcciones, así que se sigue viendo lo que se pidió.
+      {
+        path: FORBIDDEN_PATH,
+        loadComponent: () => import('./features/error-page/error-page').then((m) => m.ErrorPage),
+        data: { code: 403 },
+      },
       // Lo que no es ninguna de las anteriores: la página 404.
       {
         path: '**',
-        loadComponent: () => import('./features/not-found/not-found').then((m) => m.NotFound),
+        loadComponent: () => import('./features/error-page/error-page').then((m) => m.ErrorPage),
+        data: { code: 404 },
       },
     ],
   },

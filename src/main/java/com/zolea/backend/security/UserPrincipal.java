@@ -1,6 +1,5 @@
 package com.zolea.backend.security;
 
-import com.zolea.backend.exceptions.auth.ZoleaAccountRequiredException;
 import com.zolea.backend.models.Client;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.GrantedAuthority;
@@ -100,11 +99,12 @@ public record UserPrincipal(
      * panel le sigue respondiendo 403 por {@link #requireManagedResort()}. El rol ADMIN lo exige
      * antes el {@code @PreAuthorize} del endpoint, así que acá solo falta mirar el balneario.
      *
-     * @param motivo lo que recibe en el 403 el administrador de un balneario
+     * <p>El administrador de un balneario recibe el 403 genérico, como cualquier tipo de cuenta que
+     * no puede hacer algo (desde el 26/11; antes llevaba un motivo propio).
      */
-    public void requireZoleaAccount(String motivo) {
+    public void requireZoleaAccount() {
         if (idManagedResort != null) {
-            throw new ZoleaAccountRequiredException(motivo);
+            throw new AccessDeniedException("Hace falta ser la cuenta de Zolea.");
         }
     }
 

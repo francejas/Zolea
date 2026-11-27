@@ -6,7 +6,6 @@ import com.zolea.backend.dtos.booking.BookingResponse;
 import com.zolea.backend.dtos.booking.CancellationResponse;
 import com.zolea.backend.dtos.booking.PaymentSummaryResponse;
 import com.zolea.backend.dtos.guest.GuestSummaryResponse;
-import com.zolea.backend.exceptions.booking.BookingForbiddenException;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
 import com.zolea.backend.exceptions.booking.UnitNotAvailableException;
 import com.zolea.backend.exceptions.client.ClientNotFoundException;
@@ -116,8 +115,7 @@ public class BookingService {
         //    si no, dos peticiones simultáneas leen "libre" las dos y la unidad queda reservada dos
         //    veces. Ver el Javadoc de findByIdForUpdate.
         RentalUnit rentalUnit = rentalUnitRepository.findByIdForUpdate(request.rentalUnitId())
-                .orElseThrow(() -> new RentalUnitNotFoundException(
-                        "Unidad no encontrada con el ID: " + request.rentalUnitId()));
+                .orElseThrow(() -> RentalUnitNotFoundException.withId(request.rentalUnitId()));
 
         // Un balneario desactivado no toma reservas nuevas, ni de clientes ni de mostrador. Las que ya
         // tenía siguen su curso: se pagan, se cancelan y se validan en la entrada como siempre.
@@ -246,7 +244,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public BookingResponse getBookingById(Long id) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada con el ID: " + id));
+                .orElseThrow(() -> BookingNotFoundException.withId(id));
 
         // Acá había un bloque que creaba un huésped si la reserva no tenía ninguno. Una consulta
         // que escribe en la base es una sorpresa para quien la lee y para quien la llama, y además
@@ -332,26 +330,27 @@ public class BookingService {
         return CancellationResponse.of(findOfClient(bookingId, clientEmail).refundFor(today(), false));
     }
 
+    /** La reserva, si es de ese balneario. La de otro responde como una que no existe (404). */
     private Booking findInResort(Long bookingId, Long managedResortId) {
         Booking booking = findBooking(bookingId);
         if (!managedResortId.equals(booking.getRentalUnit().getResort().getIdResort())) {
-            throw new BookingForbiddenException("Esa reserva es de otro balneario.");
+            throw BookingNotFoundException.withId(bookingId);
         }
         return booking;
     }
 
+    /** La reserva, si es de ese cliente. La de otro responde como una que no existe (404). */
     private Booking findOfClient(Long bookingId, String clientEmail) {
         Booking booking = findBooking(bookingId);
         if (booking.getClient() == null || !booking.getClient().getEmail().equals(clientEmail)) {
-            throw new BookingForbiddenException("No tenés permiso para cancelar esta reserva");
+            throw BookingNotFoundException.withId(bookingId);
         }
         return booking;
     }
 
     private Booking findBooking(Long bookingId) {
         return bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
-                        "Reserva no encontrada con el ID: " + bookingId));
+                .orElseThrow(() -> BookingNotFoundException.withId(bookingId));
     }
 
     /**
@@ -364,8 +363,7 @@ public class BookingService {
     @Transactional
     public void confirmBookingPayment(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookingNotFoundException(
-                        "Reserva no encontrada con el ID: " + bookingId));
+                .orElseThrow(() -> BookingNotFoundException.withId(bookingId));
 
         // Idempotente: la URL de retorno del pago la puede volver a abrir el navegador. Antes cada
         // visita creaba un huésped nuevo, con su propio QR.

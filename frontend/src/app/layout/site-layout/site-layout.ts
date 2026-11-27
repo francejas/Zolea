@@ -13,6 +13,7 @@ import {
   LucideX,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
+import { homeOf } from '../../core/auth/home';
 import { SessionService } from '../../core/session/session.service';
 
 /**
@@ -47,6 +48,12 @@ export class SiteLayout {
 
   /** El año del pie, tomado una vez al abrir. */
   protected readonly year = new Date().getFullYear();
+
+  /** El panel de quien es administrador: la cuenta de Zolea va a su catálogo, no al de un balneario. */
+  protected readonly panelHome = computed(() => {
+    const user = this.session.user();
+    return user ? homeOf(user) : '/admin';
+  });
 
   protected readonly userMenuOpen = signal(false);
   protected readonly sheetOpen = signal(false);

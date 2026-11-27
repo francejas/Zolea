@@ -5,4 +5,8 @@ public class ClientNotFoundException extends RuntimeException  {
         super(message);
     }
 
+    /** La cuenta no existe, o es de otra persona: el mismo texto en los dos casos. */
+    public static ClientNotFoundException withId(Long id) {
+        return new ClientNotFoundException("Client with id " + id + " not found");
+    }
 }

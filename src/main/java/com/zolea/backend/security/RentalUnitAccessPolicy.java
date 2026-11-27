@@ -1,5 +1,6 @@
 package com.zolea.backend.security;
 
+import com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException;
 import com.zolea.backend.repositories.RentalUnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,21 +23,22 @@ public class RentalUnitAccessPolicy {
     /**
      * Si esa unidad pertenece a ese balneario.
      *
-     * <p>Sigue el mismo criterio que {@link BookingAccessPolicy#canAccess}: una unidad que no existe
-     * se deja pasar para que el endpoint devuelva su 404, así el código de estado significa siempre
-     * lo mismo. Un administrador sin balneario asignado ({@code idResort} nulo) no alcanza ninguna.
+     * <p>Sigue el criterio de {@link BookingAccessPolicy}: una unidad de otro balneario responde
+     * como una que no existe, con el mismo 404 y el mismo texto; una que no existe pasa, para que
+     * el endpoint devuelva su 404. Un administrador sin balneario asignado ({@code idResort} nulo)
+     * no alcanza ninguna: 403.
      */
     @Transactional(readOnly = true)
     public boolean belongsToResort(Long idRentalUnit, Long idResort) {
-        if (idRentalUnit == null) {
+        if (idRentalUnit == null || idResort == null) {
             return false;
         }
-        if (idResort == null) {
-            return false;
+        boolean ofAnotherResort = rentalUnitRepository.findById(idRentalUnit)
+                .map(unit -> unit.getResort() == null || !idResort.equals(unit.getResort().getIdResort()))
+                .orElse(false); // no existe: que el endpoint devuelva su 404
+        if (ofAnotherResort) {
+            throw RentalUnitNotFoundException.withId(idRentalUnit);
         }
-        return rentalUnitRepository.findById(idRentalUnit)
-                .map(unit -> unit.getResort() != null
-                        && idResort.equals(unit.getResort().getIdResort()))
-                .orElse(true); // no existe: que el endpoint devuelva 404
+        return true;
     }
 }

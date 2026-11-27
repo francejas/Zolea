@@ -411,17 +411,21 @@ describe('BookingDetail', () => {
     expect(redirect).toHaveBeenCalledWith('https://mercadopago.example/checkout');
   });
 
-  it('si la reserva es de otra persona, avisa en la misma página', async () => {
-    await failWith(403);
-
-    expect(page.querySelector('.z-alert--forbidden')!.textContent).toContain(
-      'Esta reserva no es tuya',
-    );
-  });
-
-  it('si la reserva no existe, lo dice', async () => {
+  it('si la reserva no existe o es de otra persona, muestra la página 404 sin decir de quién es', async () => {
     await failWith(404);
 
-    expect(page.textContent).toContain('No encontramos esta reserva');
+    expect(page.querySelector('app-error-page h1')!.textContent).toContain(
+      'No encontramos esta página',
+    );
+    expect(page.textContent).not.toContain('no es tuya');
+  });
+
+  it('con un 403 muestra la página 403, sin nombrar la reserva', async () => {
+    await failWith(403);
+
+    expect(page.querySelector('app-error-page h1')!.textContent).toContain(
+      'No tenés acceso a esta página',
+    );
+    expect(page.textContent).not.toContain('no es tuya');
   });
 });

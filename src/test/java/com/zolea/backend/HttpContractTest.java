@@ -97,20 +97,15 @@ class HttpContractTest extends IntegrationTest {
     }
 
     /**
-     * El 403 gana al 404, y es deliberado.
+     * Un balneario que no existe responde igual que uno ajeno: 404.
      *
-     * <p>Esta prueba esperaba un 404 antes del bloque A.2, cuando cualquier administrador podía
-     * crear unidades en cualquier balneario y el único error posible era «ese balneario no existe».
-     * Ahora la pertenencia se comprueba primero: un balneario que no existe tampoco es el tuyo, así
-     * que la respuesta es 403 y el 404 dejó de ser alcanzable por acá.
-     *
-     * <p>Es la excepción consciente al criterio general de que 404 significa «no está»: cuando la
-     * regla de acceso se puede evaluar <em>sin</em> leer el recurso, se evalúa antes, porque
-     * responder 404 obligaría a confirmar primero que el recurso ajeno existe.
+     * <p>Hasta el 26/11 era un 403: la pertenencia se comprobaba primero, y un balneario que no
+     * existe tampoco es el tuyo. Desde entonces lo ajeno responde 404, como lo que no existe, así
+     * que los dos casos dan lo mismo y no hace falta leer el balneario para responder.
      */
     @Test
-    @DisplayName("crear una unidad en un balneario que no existe devuelve 403, no 404")
-    void unknownResort_returns403() throws Exception {
+    @DisplayName("crear una unidad en un balneario que no existe devuelve 404")
+    void unknownResort_returns404() throws Exception {
         Client admin = anAdminOf(aResort());
 
         mockMvc.perform(post("/api/rental-units")
@@ -125,7 +120,7 @@ class HttpContractTest extends IntegrationTest {
                                   "resortId": %d
                                 }
                                 """.formatted(MISSING_ID)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     // ---------------------------------------------------------------------

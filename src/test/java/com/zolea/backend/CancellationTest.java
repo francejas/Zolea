@@ -155,13 +155,13 @@ class CancellationTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("la reserva de otro cliente: 403")
-    void anotherClientsBooking_forbidden() throws Exception {
+    @DisplayName("la reserva de otro cliente: 404, como si no existiera")
+    void anotherClientsBooking_notFound() throws Exception {
         Booking booking = confirmedStartingIn(5, aClient());
 
         mockMvc.perform(patch("/api/bookings/" + booking.getId() + "/cancel")
                         .header("Authorization", bearer(aClient())))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
 
         assertThat(reload(booking).getStatus()).isEqualTo(Status.CONFIRMED);
     }
@@ -230,13 +230,13 @@ class CancellationTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("el admin de otro balneario: 403")
-    void adminOfAnotherResort_forbidden() throws Exception {
+    @DisplayName("el admin de otro balneario: 404, como si no existiera")
+    void adminOfAnotherResort_notFound() throws Exception {
         Booking booking = confirmedStartingIn(5, aClient());
 
         mockMvc.perform(patch("/api/bookings/" + booking.getId() + "/cancel")
                         .header("Authorization", bearer(anAdminOf(aResort()))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
 
         assertThat(reload(booking).getStatus()).isEqualTo(Status.CONFIRMED);
     }
@@ -284,13 +284,13 @@ class CancellationTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("GET …/cancellation de una reserva ajena: 403")
-    void quote_ofAnotherClientsBooking_forbidden() throws Exception {
+    @DisplayName("GET …/cancellation de una reserva ajena: 404")
+    void quote_ofAnotherClientsBooking_notFound() throws Exception {
         Booking booking = confirmedStartingIn(5, aClient());
 
         mockMvc.perform(get("/api/bookings/" + booking.getId() + "/cancellation")
                         .header("Authorization", bearer(aClient())))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     // ---------------------------------------------------------------------

@@ -31,6 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Se cerraron juntas al introducir {@code UserPrincipal} y pasar a {@code denyAll()} por
  * defecto. Ahora son la red que impide que la autorización se afloje de nuevo.
+ *
+ * <p>Desde el 26/11, lo que es de otro responde 404, como lo que no existe, y el 403 queda para el
+ * tipo de cuenta equivocado: un usuario común en un endpoint de administrador.
  */
 @AutoConfigureMockMvc
 @DisplayName("Autorización — quién accede a qué")
@@ -55,8 +58,8 @@ class AuthorizationMatrixTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("un usuario no puede leer la reserva de otro")
-    void readSomeoneElsesBooking_forbidden() throws Exception {
+    @DisplayName("un usuario no puede leer la reserva de otro: 404, como si no existiera")
+    void readSomeoneElsesBooking_notFound() throws Exception {
         Client duenio = aClient();
         Client intruso = aClient();
         RentalUnit unit = aUnit(10_000.0);
@@ -66,23 +69,23 @@ class AuthorizationMatrixTest extends IntegrationTest {
 
         mockMvc.perform(get("/api/bookings/" + ajena.getId())
                         .header("Authorization", "Bearer " + tokenFor(intruso)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("un usuario no puede listar las reservas de otro")
-    void listAnotherClientsBookings_forbidden() throws Exception {
+    @DisplayName("un usuario no puede listar las reservas de otro: 404")
+    void listAnotherClientsBookings_notFound() throws Exception {
         Client duenio = aClient();
         Client intruso = aClient();
 
         mockMvc.perform(get("/api/bookings/client/" + duenio.getIdClient())
                         .header("Authorization", "Bearer " + tokenFor(intruso)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("un usuario no puede modificar el perfil de otro")
-    void editSomeoneElsesProfile_forbidden() throws Exception {
+    @DisplayName("un usuario no puede modificar el perfil de otro: 404")
+    void editSomeoneElsesProfile_notFound() throws Exception {
         Client victima = aClient();
         Client intruso = aClient();
         // JSON armado a mano en vez de serializar un ClientRequest: Jackson 3 movió
@@ -97,7 +100,7 @@ class AuthorizationMatrixTest extends IntegrationTest {
                         .header("Authorization", "Bearer " + tokenFor(intruso))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(secuestro))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -111,8 +114,8 @@ class AuthorizationMatrixTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("un usuario no puede crear una reserva a nombre de otro")
-    void bookOnSomeoneElsesBehalf_forbidden() throws Exception {
+    @DisplayName("un usuario no puede crear una reserva a nombre de otro: 404")
+    void bookOnSomeoneElsesBehalf_notFound() throws Exception {
         Client victima = aClient();
         Client intruso = aClient();
         RentalUnit unit = aUnit(8_000.0);
@@ -129,7 +132,7 @@ class AuthorizationMatrixTest extends IntegrationTest {
                         .header("Authorization", "Bearer " + tokenFor(intruso))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(aNombreDeOtro))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
     }
 
     // Las dos que siguen son el contrapeso: sin ellas, denegar todo también pasaría la matriz.

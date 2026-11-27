@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Location } from '@angular/common';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
@@ -172,19 +173,31 @@ describe('routes', () => {
     }
   });
 
-  it('el cliente que escribe /admin a mano rebota a /', async () => {
+  it('el cliente que escribe /admin a mano ve el 403, y la barra sigue diciendo /admin', async () => {
     user.set(client);
     await harness.navigateByUrl('/admin');
 
-    expect(router.url).toBe('/');
-    expect(heading()).toBe('Reservá tu lugar en la playa');
+    expect(heading()).toBe('No tenés acceso a esta página');
+    expect(TestBed.inject(Location).path()).toBe('/admin');
+    expect(harness.routeNativeElement?.querySelector('.z-sidebar')).toBeNull();
   });
 
   it('el cliente tampoco entra a las subrutas del panel', async () => {
     user.set(client);
     await harness.navigateByUrl('/admin/validate');
 
-    expect(router.url).toBe('/');
+    expect(heading()).toBe('No tenés acceso a esta página');
+  });
+
+  it('el 403 lleva al inicio de quien está adentro', async () => {
+    user.set(client);
+    await harness.navigateByUrl('/admin');
+    harness.detectChanges();
+    const home = Array.from(
+      (harness.routeNativeElement as HTMLElement).querySelectorAll('app-error-page a'),
+    ).find((a) => a.textContent!.includes('Ir a mi inicio'));
+
+    expect(home?.getAttribute('href')).toBe('/dashboard');
   });
 
   it('el administrador de un balneario entra a todas las rutas del panel menos el catálogo', async () => {
@@ -204,20 +217,19 @@ describe('routes', () => {
     }
   });
 
-  it('el administrador de un balneario que pide el catálogo vuelve a su Panel', async () => {
+  it('el administrador de un balneario que pide el catálogo ve el 403', async () => {
     user.set(admin);
     await harness.navigateByUrl('/admin/amenities');
 
-    expect(router.url).toBe('/admin');
-    expect(heading()).toBe('Panel');
+    expect(heading()).toBe('No tenés acceso a esta página');
   });
 
-  it('el administrador que pide una ruta de cliente va a /admin', async () => {
+  it('el administrador que pide una ruta de cliente ve el 403', async () => {
     user.set(admin);
     await harness.navigateByUrl('/my-bookings');
 
-    expect(router.url).toBe('/admin');
-    expect(heading()).toBe('Panel');
+    expect(heading()).toBe('No tenés acceso a esta página');
+    expect(TestBed.inject(Location).path()).toBe('/my-bookings');
   });
 
   it('la cuenta de Zolea entra al catálogo', async () => {
@@ -228,7 +240,7 @@ describe('routes', () => {
     expect(heading()).toBe('Catálogo de servicios');
   });
 
-  it('la cuenta de Zolea vuelve al catálogo desde cualquier otra pantalla del panel', async () => {
+  it('la cuenta de Zolea ve el 403 en cualquier otra pantalla del panel', async () => {
     user.set(zolea);
     for (const url of [
       '/admin',
@@ -241,15 +253,15 @@ describe('routes', () => {
       '/admin/validate',
     ]) {
       await harness.navigateByUrl(url);
-      expect(router.url).toBe('/admin/amenities');
+      expect(heading()).toBe('No tenés acceso a esta página');
     }
   });
 
-  it('la cuenta de Zolea que pide una ruta de cliente va a su catálogo', async () => {
+  it('la cuenta de Zolea que pide una ruta de cliente ve el 403', async () => {
     user.set(zolea);
     await harness.navigateByUrl('/my-bookings');
 
-    expect(router.url).toBe('/admin/amenities');
+    expect(heading()).toBe('No tenés acceso a esta página');
   });
 
   it('una dirección que no existe muestra «No encontramos esta página»', async () => {

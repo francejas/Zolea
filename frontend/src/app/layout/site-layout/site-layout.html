@@ -112,7 +112,7 @@
   <!-- El admin no es un cliente: Mis reservas y Mi cuenta lo rebotarían a /admin. -->
   @if (session.isAdmin()) {
     <li>
-      <a class="z-menu__item" routerLink="/admin">
+      <a class="z-menu__item" [routerLink]="panelHome()">
         <svg lucideLayoutDashboard class="z-icon" aria-hidden="true"></svg>
         Panel de mi balneario
       </a>
