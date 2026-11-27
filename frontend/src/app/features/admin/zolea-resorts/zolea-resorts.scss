@@ -136,10 +136,11 @@
   gap: 2px;
 }
 
+/* En la computadora el email va entero, en un renglón; en el celular se puede partir. */
 .resorts__email {
   font-size: var(--text-small);
   color: var(--color-text-muted);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .resorts__skeleton {
@@ -169,5 +170,11 @@
 
   .resorts__admin {
     justify-items: end;
+    min-width: 0;
+  }
+
+  .resorts__email {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
