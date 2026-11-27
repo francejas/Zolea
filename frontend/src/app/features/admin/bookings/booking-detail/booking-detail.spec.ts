@@ -407,15 +407,9 @@ describe('Detalle de reserva del administrador', () => {
 
       expect(page.querySelector('table')).toBeNull();
 
-      expect(
-        page.querySelector(
-          status === 403
-            ? 'z-alert[variant="forbidden"]'
-            : status === 404
-              ? 'z-empty'
-              : 'z-problem',
-        ),
-      ).not.toBeNull();
+      expect(page.querySelector(status === 500 ? 'z-problem' : 'app-error-page')).not.toBeNull();
+      // La de otro balneario responde 404, como una que no existe: la página no dice de quién es.
+      expect(page.textContent).not.toContain('tu balneario');
 
       if (status === 500) {
         button('Reintentar').click();
