@@ -38,7 +38,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Catálogo de servicios — solo lo administra la cuenta de Zolea")
 class AmenityCatalogTest extends IntegrationTest {
 
-    private static final String MOTIVO = "Los servicios los carga Zolea. Elegí los tuyos en Mi balneario.";
+    /** El 403 es genérico: dice que esa cuenta no puede, sin nombrar nada (desde el 26/11). */
+    private static final String MOTIVO = "No tenés permiso para realizar esta operación";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JwtUtil jwtUtil;
@@ -121,7 +122,7 @@ class AmenityCatalogTest extends IntegrationTest {
     // ---------------------------------------------------------------------
 
     @Test
-    @DisplayName("el administrador de un balneario no crea, no renombra ni borra: 403 con el motivo")
+    @DisplayName("el administrador de un balneario no crea, no renombra ni borra: 403")
     void elAdministradorDeUnBalneario_noTocaElCatalogo() throws Exception {
         syncWithDatabase();
         long antes = amenityRepository.count();

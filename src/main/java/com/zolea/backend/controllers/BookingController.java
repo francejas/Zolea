@@ -50,8 +50,9 @@ public class BookingController {
     // Un ADMIN no reserva por acá, ni a su nombre ni al de otro (RNF03): para eso está el
     // mostrador, que confirma sin pasar por MercadoPago y queda en su balneario.
     // El clientId es obligatorio: sin él, un cliente armaba una reserva sin titular con los datos
-    // de mostrador, que después ni él podía ver (ZOL-176).
-    @PreAuthorize("!hasRole('ADMIN') and #request.clientId != null and #request.clientId == principal.idClient")
+    // de mostrador, que después ni él podía ver (ZOL-176). Un clientId de otro responde como uno que no
+    // existe: 404, como cualquier cuenta ajena (desde el 26/11).
+    @PreAuthorize("!hasRole('ADMIN') and #request.clientId != null and @clientAccess.isSelf(#request.clientId, principal.idClient)")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     @Operation(summary = "Crear reserva web", description = "Crea la reserva y devuelve la URL de pago de MercadoPago.")
@@ -92,8 +93,8 @@ public class BookingController {
 
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/walkin")
-    // Solo sobre unidades del balneario del administrador (RNF03). Una unidad que no existe pasa,
-    // para que el servicio responda su 404.
+    // Solo sobre unidades del balneario del administrador (RNF03). Una de otro balneario responde
+    // como una que no existe: el mismo 404 que da el servicio.
     @PreAuthorize("hasRole('ADMIN') and @unitAccess.belongsToResort(#request.rentalUnitId, principal.idManagedResort)")
     @Operation(summary = "Crear reserva presencial (Admin)", description = "Crea y confirma automáticamente la reserva sin pasar por MercadoPago.")
     @ApiResponses({
@@ -138,7 +139,7 @@ public class BookingController {
 
     // Solo el propio cliente. El administrador ve a sus clientes, con su historial en su
     // balneario, en GET /api/clients; por acá habría visto las reservas en los cinco (RNF03).
-    @PreAuthorize("#clientId == principal.idClient")
+    @PreAuthorize("@clientAccess.isSelf(#clientId, principal.idClient)")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/client/{clientId}")
     @Operation(summary = "Reservas de un cliente")

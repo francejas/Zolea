@@ -85,8 +85,7 @@ public class RentalUnitService {
     @Transactional
     public RentalUnitResponse updatePrice(Long idRentalUnit, BigDecimal newPrice) {
         RentalUnit unit = rentalUnitRepository.findById(idRentalUnit)
-                .orElseThrow(() -> new RentalUnitNotFoundException(
-                        "Unidad no encontrada con el ID: " + idRentalUnit));
+                .orElseThrow(() -> RentalUnitNotFoundException.withId(idRentalUnit));
         unit.requireInService();
 
         // Se normaliza la escala al entrar: si no, ?newPrice=8500 queda guardado sin centavos y
@@ -98,8 +97,7 @@ public class RentalUnitService {
     @Transactional
     public RentalUnitResponse updateBlockStatus(Long idRentalUnit, Boolean isBlocked) {
         RentalUnit unit = rentalUnitRepository.findById(idRentalUnit)
-                .orElseThrow(() -> new RentalUnitNotFoundException(
-                        "Unidad no encontrada con el ID: " + idRentalUnit));
+                .orElseThrow(() -> RentalUnitNotFoundException.withId(idRentalUnit));
         unit.requireInService();
 
         unit.setIsBlocked(isBlocked);
@@ -124,8 +122,7 @@ public class RentalUnitService {
     @Transactional
     public RentalUnitResponse retire(Long idRentalUnit) {
         RentalUnit unit = rentalUnitRepository.findByIdForUpdate(idRentalUnit)
-                .orElseThrow(() -> new RentalUnitNotFoundException(
-                        "Unidad no encontrada con el ID: " + idRentalUnit));
+                .orElseThrow(() -> RentalUnitNotFoundException.withId(idRentalUnit));
         if (unit.isRetired()) {
             return mapToResponse(unit);
         }

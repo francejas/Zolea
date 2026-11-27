@@ -37,8 +37,9 @@ public class RentalUnitController {
     private final RentalUnitService rentalUnitService;
 
     // El resortId viaja en el cuerpo, igual que el clientId de las reservas: sin comprobarlo, un
-    // administrador podía crear unidades en el balneario de otro.
-    @PreAuthorize("hasRole('ADMIN') and #request.resortId == principal.idManagedResort")
+    // administrador podía crear unidades en el balneario de otro. El de otro responde como uno que no
+    // existe: 404 (desde el 26/11).
+    @PreAuthorize("hasRole('ADMIN') and @resortAccess.isManagedBy(#request.resortId, principal.idManagedResort)")
     @PostMapping
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Crear unidad de alquiler (Admin)", description = "Crea una carpa o sombrilla asociada al balneario.")

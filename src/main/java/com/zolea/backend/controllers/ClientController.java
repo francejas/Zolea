@@ -58,7 +58,7 @@ public class ClientController {
 
     // Solo el propio perfil, también para un administrador: a sus clientes los ve en GET
     // /api/clients, y por acá habría leído y editado cualquier cuenta del sistema (RNF03).
-    @PreAuthorize("#id == principal.idClient")
+    @PreAuthorize("@clientAccess.isSelf(#id, principal.idClient)")
     @GetMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Obtener cliente por ID")
@@ -74,7 +74,7 @@ public class ClientController {
 
     // Solo el propio perfil, también para un administrador: a sus clientes los ve en GET
     // /api/clients, y por acá habría leído y editado cualquier cuenta del sistema (RNF03).
-    @PreAuthorize("#id == principal.idClient")
+    @PreAuthorize("@clientAccess.isSelf(#id, principal.idClient)")
     @PutMapping("/{id}")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Actualizar datos del cliente")

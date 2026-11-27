@@ -1,9 +1,7 @@
 package com.zolea.backend.security;
 
-import com.zolea.backend.repositories.ResortRepository;
-import lombok.RequiredArgsConstructor;
+import com.zolea.backend.exceptions.resort.ResortNotFoundException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Único punto donde vive la regla «este balneario es el de este administrador».
@@ -14,21 +12,21 @@ import org.springframework.transaction.annotation.Transactional;
  * Plata podía sacar de la portada a Ocean View Resort (RNF03).
  */
 @Component("resortAccess")
-@RequiredArgsConstructor
 public class ResortAccessPolicy {
 
-    private final ResortRepository resortRepository;
-
     /**
-     * Si ese balneario es el que administra. Sigue el criterio de {@link BookingAccessPolicy#canAccess}:
-     * un balneario que no existe pasa, para que el endpoint devuelva su 404. Un administrador sin
-     * balneario asignado no alcanza ninguno.
+     * Si ese balneario es el que administra. Si no, responde como si no existiera: el mismo 404 y el
+     * mismo texto, exista o no (desde el 26/11; antes, uno ajeno daba 403). No hace falta mirar la
+     * base: el único que puede tocar es el suyo. Un administrador sin balneario asignado no alcanza
+     * ninguno: 403.
      */
-    @Transactional(readOnly = true)
     public boolean isManagedBy(Long idResort, Long idManagedResort) {
         if (idResort == null || idManagedResort == null) {
             return false;
         }
-        return idManagedResort.equals(idResort) || !resortRepository.existsById(idResort);
+        if (!idManagedResort.equals(idResort)) {
+            throw ResortNotFoundException.withId(idResort);
+        }
+        return true;
     }
 }
