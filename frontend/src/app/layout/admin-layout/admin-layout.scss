@@ -64,7 +64,10 @@
   padding: 0 var(--space-3);
 }
 
-.z-sidebar :focus-visible {
+/* Sobre la tinta, el foco en tinta no se ve: va en coral (4,2:1). También en la barra de arriba
+   del celular, que tiene el mismo fondo y no está dentro de .z-sidebar. */
+.z-sidebar :focus-visible,
+.admin__bar :focus-visible {
   outline-color: var(--color-coral);
 }
 
