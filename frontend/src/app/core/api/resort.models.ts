@@ -63,6 +63,46 @@ export interface ResortRequest {
   amenityIds: number[];
 }
 
+/** El administrador de un balneario en la lista de la cuenta de Zolea. */
+export interface ResortSummaryAdmin {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+/** Una fila de `GET /api/resorts/all` (#71): activos e inactivos, para la cuenta de Zolea. */
+export interface ResortSummary {
+  idResort: number;
+  name: string;
+  location: string;
+  active: boolean;
+  /** Las unidades, sin las dadas de baja. */
+  unitCount: number;
+  /** `null` si todavía no tiene administrador. */
+  admin: ResortSummaryAdmin | null;
+}
+
+/** La cuenta del administrador que se crea con el balneario. La contraseña es provisoria. */
+export interface AdminAccountRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** Con el código de país, como lo arma `joinPhone`. */
+  phone: string;
+  dni: string;
+  password: string;
+}
+
+/**
+ * El pedido de `POST /api/resorts` (#71): el balneario y su administrador. Los errores de un campo
+ * del administrador llegan en `campos` como `admin.email`.
+ */
+export interface ResortRegistrationRequest {
+  name: string;
+  location: string;
+  admin: AdminAccountRequest;
+}
+
 /** Lo que responden editar, activar y desactivar: un mensaje y el balneario como quedó. */
 export interface ResortActionResponse {
   message: string;

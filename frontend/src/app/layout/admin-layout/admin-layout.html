@@ -53,7 +53,7 @@
 
   <div class="z-sidebar__resort" [attr.aria-busy]="resort.isLoading()">
     @if (zolea()) {
-      <strong>Zolea · Catálogo de servicios</strong>
+      <strong>Cuenta de Zolea</strong>
     } @else if (resort.hasValue()) {
       <strong>{{ resort.value().name }}</strong>
       <span>{{ resort.value().location }}</span>
@@ -79,6 +79,17 @@
         >
           <svg lucideTag class="z-icon" aria-hidden="true"></svg>
           Catálogo de servicios
+        </a>
+      </li>
+      <li>
+        <a
+          class="z-sidebar__item"
+          routerLink="/admin/resorts"
+          routerLinkActive
+          ariaCurrentWhenActive="page"
+        >
+          <svg lucideBuilding2 class="z-icon" aria-hidden="true"></svg>
+          Balnearios
         </a>
       </li>
     </ul>

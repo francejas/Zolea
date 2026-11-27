@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideArrowUpRight,
+  LucideBuilding2,
   LucideHouse,
   LucideLayoutDashboard,
   LucideLogOut,
@@ -35,6 +36,7 @@ import { SessionService } from '../../core/session/session.service';
     RouterLinkActive,
     RouterOutlet,
     LucideArrowUpRight,
+    LucideBuilding2,
     LucideHouse,
     LucideLayoutDashboard,
     LucideLogOut,
@@ -54,8 +56,8 @@ export class AdminLayout {
   private readonly session = inject(SessionService);
 
   /**
-   * La cuenta de Zolea (12.9): no tiene balneario y del panel solo usa el catálogo de servicios.
-   * Su barra lleva solo eso, y el administrador de un balneario ve todo lo demás.
+   * La cuenta de Zolea (12.9): no tiene balneario y del panel usa el catálogo de servicios y los
+   * balnearios (#71). Su barra lleva solo eso, y el administrador de un balneario ve todo lo demás.
    */
   protected readonly zolea = computed(() => isZoleaAccount(this.session.user()));
 
