@@ -13,6 +13,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { LucideChevronRight, LucideMenu, LucideTent, LucideUmbrella } from '@lucide/angular';
 import { RentalUnit, UnitType } from '../../core/api/resort.models';
+import { money } from '../utils/format';
 import { ZSkeleton } from '../z-skeleton/z-skeleton';
 
 /** Una fila del plano: las unidades que comparten el prefijo del identificador (A-03 → A). */
@@ -46,12 +47,6 @@ const ZONE_TITLE: Record<UnitType, string> = { UMBRELLA: 'Sombrillas', TENT: 'Ca
 const ZONE_ORDER: UnitType[] = ['UMBRELLA', 'TENT'];
 /** Las unidades cuyo identificador no tiene guion van a esta fila, siempre la última. */
 const OTHER_ROW = 'Otras';
-
-const pesos = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 let nextId = 0;
 
@@ -192,12 +187,12 @@ export class ResortPlan {
   /** «Sombrilla A-01, libre, $ 8.500 por día». La elegida se dice con aria-pressed. */
   protected unitLabel(unit: RentalUnit): string {
     const state = this.stateOf(unit).toLowerCase();
-    return `${TYPE_NAME[unit.type]} ${unit.identifier}, ${state}, ${pesos.format(unit.dailyPrice)} por día`;
+    return `${TYPE_NAME[unit.type]} ${unit.identifier}, ${state}, ${money(unit.dailyPrice)} por día`;
   }
 
   /** El precio de una unidad, para la lista: «$ 15.000». */
   protected price(unit: RentalUnit): string {
-    return pesos.format(unit.dailyPrice);
+    return money(unit.dailyPrice);
   }
 
   /** Tocar una libre la elige; tocar la elegida la deselecciona; una no disponible no hace nada. */
@@ -269,7 +264,7 @@ export class ResortPlan {
         return {
           prefix,
           name: prefix === OTHER_ROW ? OTHER_ROW : `Fila ${prefix}`,
-          priceLabel: `${same ? '' : 'desde '}${pesos.format(min)} por día`,
+          priceLabel: `${same ? '' : 'desde '}${money(min)} por día`,
           samePrice: same,
           units: rowUnits,
           pairs: inPairs(rowUnits),

@@ -13,7 +13,7 @@ import { aBooking, aGuest } from '../bookings/booking.fixtures';
 const BOOKINGS = `${environment.apiUrl}/api/bookings`;
 const MP_URL = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=nueva';
 
-/** Los espacios de «$ 36.000,00» son no separables: se comparan como espacios comunes. */
+/** Los espacios de «$ 36.000» son no separables: se comparan como espacios comunes. */
 const text = (el: Element | null | undefined) =>
   (el?.textContent ?? '')
     .replace(/\u00a0/g, ' ')
@@ -79,7 +79,7 @@ describe('La Vuelta del pago', () => {
       expect(text(page)).toContain('Zolea Club de Playa');
       expect(text(page)).toContain('Sombrilla A-03');
       expect(text(page)).toContain('15 → 17 ene · 3 días');
-      expect(text(page)).toContain('$ 36.000,00');
+      expect(text(page)).toContain('$ 36.000');
       expect(page.querySelector('app-guest-qr')).not.toBeNull();
       expect(text(page.querySelector('.z-ticket__name'))).toBe('Santiago Rodríguez');
       expect(sessionStorage.getItem(PENDING_BOOKING_KEY)).toBeNull();

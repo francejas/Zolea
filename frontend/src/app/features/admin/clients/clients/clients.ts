@@ -18,7 +18,7 @@ import { ZSkeleton } from '../../../../shared/z-skeleton/z-skeleton';
 import { ClientsApi } from '../../../../core/api/clients.api';
 import { ResortClient } from '../../../../core/api/resort-client.models';
 import { filterClients } from '../client-filters';
-import { bookingNumber, money } from '../../../../shared/utils/format';
+import { bookingNumber, dayRange, money } from '../../../../shared/utils/format';
 import { BOOKING_STATUS } from '../../../bookings/booking-format';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toUserMessage } from '../../../../core/errors/error-message';
@@ -52,6 +52,7 @@ export class Clients {
 
   protected readonly bookingNumber = bookingNumber;
   protected readonly money = money;
+  protected readonly dayRange = dayRange;
   protected readonly statuses = BOOKING_STATUS;
 
   private loadingStarted = false;
@@ -103,9 +104,5 @@ export class Clients {
   protected closeHistory(): void {
     this.historyDialog()?.nativeElement.close();
     this.selected.set(null);
-  }
-
-  protected date(value: string): string {
-    return value.split('-').reverse().join('/');
   }
 }

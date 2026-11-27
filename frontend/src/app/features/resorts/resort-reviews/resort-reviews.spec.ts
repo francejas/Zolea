@@ -51,8 +51,8 @@ describe('ResortReviews', () => {
         .join(' | '),
     );
     expect(items).toEqual([
-      '5 de 5 estrellas | La carpa estaba lista al llegar. | Santiago R. · 12 de enero de 2026',
-      '3 de 5 estrellas | Lucía M. · 2 de enero de 2026',
+      '5 de 5 estrellas | La carpa estaba lista al llegar. | Santiago R. · lun 12 ene',
+      '3 de 5 estrellas | Lucía M. · vie 2 ene',
     ]);
   });
 
@@ -60,7 +60,7 @@ describe('ResortReviews', () => {
     await respond([review({ updatedAt: '2026-01-14T09:15:00' })]);
 
     expect(page.querySelector('.reviews__byline')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      'Santiago R. · 12 de enero de 2026 · editada',
+      'Santiago R. · lun 12 ene · editada',
     );
   });
 

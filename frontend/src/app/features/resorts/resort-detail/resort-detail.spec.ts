@@ -51,7 +51,7 @@ function resort(overrides: Partial<Resort> = {}): Resort {
   };
 }
 
-/** Los espacios de «$ 8.500,00» son no separables: se comparan como espacios comunes. */
+/** Los espacios de «$ 8.500» son no separables: se comparan como espacios comunes. */
 const text = (el: Element | null | undefined) =>
   (el?.textContent ?? '')
     .replace(/\u00a0/g, ' ')
@@ -217,7 +217,7 @@ describe('ResortDetail', () => {
       expect(text(pick.querySelector('span:not(.z-unit):not(.z-unit__shape)'))).toBe(
         'Fila A · $ 8.500 por día',
       );
-      expect(text(card().querySelector('.z-book-card__lines dd'))).toBe('$ 8.500,00');
+      expect(text(card().querySelector('.z-book-card__lines dd'))).toBe('$ 8.500');
     });
 
     it('con el lugar pero sin fechas, el botón pide las fechas', async () => {
@@ -235,15 +235,15 @@ describe('ResortDetail', () => {
       const lines = Array.from(card().querySelectorAll('.z-book-card__lines dd')).map((d) =>
         text(d),
       );
-      expect(lines).toEqual(['$ 8.500,00', '3 · se cobran los dos extremos']);
-      expect(text(card().querySelector('.z-book-card__total strong'))).toBe('$ 25.500,00');
+      expect(lines).toEqual(['$ 8.500', '3 · se cobran los dos extremos']);
+      expect(text(card().querySelector('.z-book-card__total strong'))).toBe('$ 25.500');
     });
 
     it('un solo día cobra un día, no cero', async () => {
       await pickUnit('C-01');
       await pickDates('2027-01-15', '2027-01-15');
 
-      expect(text(card().querySelector('.z-book-card__total strong'))).toBe('$ 14.500,00');
+      expect(text(card().querySelector('.z-book-card__total strong'))).toBe('$ 14.500');
     });
 
     it('con lugar y fechas, el botón queda habilitado con el lugar elegido', async () => {
@@ -300,7 +300,7 @@ describe('ResortDetail', () => {
       await pickDates('2027-01-15', '2027-01-16');
 
       expect(text(bar.querySelector('strong'))).toBe('Carpa C-01');
-      expect(text(bar.querySelector('span'))).toBe('2 días · $ 29.000,00');
+      expect(text(bar.querySelector('span'))).toBe('2 días · $ 29.000');
 
       bar.querySelector<HTMLButtonElement>('button')!.click();
       expect(router.navigate).toHaveBeenCalledWith(['/book', 1], {
@@ -500,9 +500,7 @@ describe('ResortDetail', () => {
       await respondWith(resort({ averageRating: 5, reviewCount: 1 }));
 
       expect(text(page.querySelector('.reviews__comment'))).toBe('Excelente.');
-      expect(text(page.querySelector('.reviews__byline'))).toBe(
-        'Santiago R. · 12 de enero de 2026',
-      );
+      expect(text(page.querySelector('.reviews__byline'))).toBe('Santiago R. · lun 12 ene');
     });
   });
 });

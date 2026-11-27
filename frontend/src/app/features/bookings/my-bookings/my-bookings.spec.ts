@@ -169,10 +169,10 @@ describe('MyBookings', () => {
       const card = page.querySelector('.z-booking-card')!;
       expect(card.textContent).toContain('Zolea Club de Playa');
       expect(card.textContent).toContain('Sombrilla A-03');
-      expect(card.textContent).toContain('jue 15 ene → sáb 17 ene · 3 días');
+      expect(card.textContent).toContain('15 → 17 ene · 3 días');
       expect(card.querySelector('.z-status')!.textContent).toContain('Confirmada');
       expect(card.querySelector('.z-total')!.textContent!.replace(/\s/g, ' ')).toContain(
-        '$ 36.000,00',
+        '$ 36.000',
       );
     });
 
@@ -203,7 +203,7 @@ describe('MyBookings', () => {
       const refunds = Array.from(page.querySelectorAll('.z-booking-card__refund')).map((p) =>
         p.textContent!.replace(/\s+/g, ' ').trim(),
       );
-      expect(refunds).toEqual(['Se reintegraron $ 25.500,00.', 'Sin reintegro: no estaba paga.']);
+      expect(refunds).toEqual(['Se reintegraron $ 25.500.', 'Sin reintegro: no estaba paga.']);
     });
 
     it('una que no está cancelada no habla de reintegro', async () => {

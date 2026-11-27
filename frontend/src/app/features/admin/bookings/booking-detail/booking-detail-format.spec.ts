@@ -1,11 +1,22 @@
-import { bookingDate, entryStatus, paymentLabel, stayPhase } from './booking-detail-format';
+import {
+  bookingDate,
+  bookingTableDate,
+  entryStatus,
+  paymentLabel,
+  stayPhase,
+} from './booking-detail-format';
 import { aGuest } from '../../../bookings/booking.fixtures';
 
 describe('Formato del detalle administrativo', () => {
   it('conserva la fecha y hora de Buenos Aires sin conversión del navegador', () => {
-    expect(bookingDate('2026-01-10T00:15:00')).toBe('10/01/2026 · 00:15');
-    expect(bookingDate('2026-01-10')).toBe('10/01/2026');
+    expect(bookingDate('2026-01-10T00:15:00')).toBe('sáb 10 ene · 00:15');
+    expect(bookingDate('2026-01-10')).toBe('sáb 10 ene');
     expect(bookingDate(null)).toBe('Sin fecha informada');
+  });
+
+  it('en una tabla, la fecha va sin el día de la semana', () => {
+    expect(bookingTableDate('2026-01-10T10:15:00')).toBe('10 ene · 10:15');
+    expect(bookingTableDate(null)).toBe('Sin fecha informada');
   });
 
   it('traduce los estados conocidos y conserva uno nuevo informado por la pasarela', () => {
@@ -20,7 +31,7 @@ describe('Formato del detalle administrativo', () => {
     ).toEqual({ text: 'Entró hoy a las 10:15', modifier: 'confirmed' });
     expect(
       entryStatus(aGuest({ isEntryValidated: false, lastEntryAt: '2026-11-12T10:15:00' })),
-    ).toEqual({ text: 'Entró por última vez el 12/11 a las 10:15', modifier: 'neutral' });
+    ).toEqual({ text: 'Entró por última vez el jue 12 nov a las 10:15', modifier: 'neutral' });
     expect(entryStatus(aGuest({ isEntryValidated: false, lastEntryAt: null }))).toEqual({
       text: 'Todavía no entró',
       modifier: 'pending',

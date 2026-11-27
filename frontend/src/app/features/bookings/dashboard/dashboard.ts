@@ -21,9 +21,9 @@ import {
 import {
   BOOKING_STATUS,
   dayCount,
+  dayRange,
   money,
   paymentExpired,
-  shortDate,
   unitLabel,
 } from '../booking-format';
 import { bookingFigures, todayBooking, upcomingBookings } from './dashboard-data';
@@ -242,10 +242,7 @@ export class ClientDashboard {
 
   private days(booking: Booking): string {
     const count = dayCount(booking.startDate, booking.endDate);
-    const range =
-      booking.startDate === booking.endDate
-        ? shortDate(booking.startDate)
-        : `${shortDate(booking.startDate)} → ${shortDate(booking.endDate)}`;
+    const range = dayRange(booking.startDate, booking.endDate);
     return `${range} · ${count} ${count === 1 ? 'día' : 'días'}`;
   }
 

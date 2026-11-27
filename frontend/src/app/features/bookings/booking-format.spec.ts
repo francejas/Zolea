@@ -52,7 +52,7 @@ describe('booking-format', () => {
   });
 
   it('muestra la plata en pesos, con centavos', () => {
-    expect(money(36000).replace(/\s/g, ' ')).toBe('$ 36.000,00');
+    expect(money(36000).replace(/\s/g, ' ')).toBe('$ 36.000');
   });
 
   it('numera la reserva con cuatro cifras', () => {
@@ -71,14 +71,14 @@ const plain = (text: string | null) => text?.replace(/\s/g, ' ') ?? null;
 describe('cancelar', () => {
   it('la confirmación dice cuánto se devuelve según el porcentaje', () => {
     expect(plain(refundOffer({ refundAmount: 25500, refundPercent: 100 }))).toBe(
-      'Te devolvemos $ 25.500,00, el 100 % de lo que pagaste.',
+      'Te devolvemos $ 25.500, el 100 % de lo que pagaste.',
     );
     expect(plain(refundOffer({ refundAmount: 12750, refundPercent: 50 }))).toBe(
-      'Te devolvemos $ 12.750,00, el 50 % de lo que pagaste, porque falta un día para la entrada.',
+      'Te devolvemos $ 12.750, el 50 % de lo que pagaste, porque falta un día para la entrada.',
     );
     // El motivo es el de la regla del 50 %: con otro porcentaje, solo cuánto.
     expect(plain(refundOffer({ refundAmount: 19125, refundPercent: 75 }))).toBe(
-      'Te devolvemos $ 19.125,00, el 75 % de lo que pagaste.',
+      'Te devolvemos $ 19.125, el 75 % de lo que pagaste.',
     );
   });
 
@@ -99,10 +99,10 @@ describe('cancelar', () => {
       });
 
     expect(plain(cancellationSummary(canceled()))).toBe(
-      'La cancelaste el vie 9 ene a las 18:30. Se reintegraron $ 25.500,00.',
+      'La cancelaste el vie 9 ene a las 18:30. Se reintegraron $ 25.500.',
     );
     expect(plain(cancellationSummary(canceled({ canceledBy: 'ADMIN' })))).toBe(
-      'La canceló el balneario el vie 9 ene a las 18:30. Se reintegraron $ 25.500,00.',
+      'La canceló el balneario el vie 9 ene a las 18:30. Se reintegraron $ 25.500.',
     );
     expect(cancellationSummary(canceled({ canceledBy: 'SYSTEM', refundAmount: null }))).toBe(
       'Se canceló sola el vie 9 ene a las 18:30, porque no se pagó a tiempo.',
@@ -111,7 +111,7 @@ describe('cancelar', () => {
 
   it('en la tarjeta, el reintegro si hubo; si no, que no había nada que devolver', () => {
     expect(plain(refundLine(aBooking({ status: 'CANCELED', refundAmount: 25500 })))).toBe(
-      'Se reintegraron $ 25.500,00.',
+      'Se reintegraron $ 25.500.',
     );
     expect(refundLine(aBooking({ status: 'CANCELED', refundAmount: null }))).toBe(
       'Sin reintegro: no estaba paga.',

@@ -163,7 +163,7 @@
               @for (booking of history(); track booking.idBooking) {
                 <tr>
                   <td data-label="Fechas">
-                    {{ date(booking.startDate) }} → {{ date(booking.endDate) }}
+                    {{ dayRange(booking.startDate, booking.endDate) }}
                   </td>
 
                   <td data-label="Unidad">

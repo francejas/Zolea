@@ -84,9 +84,7 @@ describe('BookingDetail', () => {
     expect(page.querySelector('h1')!.textContent).toContain('Zolea Club de Playa');
     expect(page.textContent).toContain('Sombrilla A-03');
     expect(page.textContent).toContain('15 → 17 ene · 3 días');
-    expect(page.querySelector('.z-total')!.textContent!.replace(/\s/g, ' ')).toContain(
-      '$ 36.000,00',
-    );
+    expect(page.querySelector('.z-total')!.textContent!.replace(/\s/g, ' ')).toContain('$ 36.000');
     expect(page.querySelector('.z-status')!.textContent).toContain('Confirmada');
   });
 
@@ -165,7 +163,7 @@ describe('BookingDetail', () => {
     expect(button('Cancelar reserva')).toBeUndefined();
     expect(ticketNames()).toEqual([]);
     expect(plain(page.querySelector('.booking__note'))).toBe(
-      'La cancelaste el vie 9 ene a las 18:30. Se reintegraron $ 36.000,00.',
+      'La cancelaste el vie 9 ene a las 18:30. Se reintegraron $ 36.000.',
     );
   });
 
@@ -219,14 +217,14 @@ describe('BookingDetail', () => {
       await respondWith(aBooking());
 
       const dialog = await openCancel(full);
-      expect(plain(dialog)).toContain('Te devolvemos $ 36.000,00, el 100 % de lo que pagaste.');
+      expect(plain(dialog)).toContain('Te devolvemos $ 36.000, el 100 % de lo que pagaste.');
 
       confirmButton().click();
       http.expectOne(`${API}/47/cancel`).flush(canceled(36000));
       await fixture.whenStable();
 
       const notice = page.querySelector('.z-alert--success');
-      expect(plain(notice)).toContain('Tu dinero fue reintegrado: $ 36.000,00.');
+      expect(plain(notice)).toContain('Tu dinero fue reintegrado: $ 36.000.');
       expect(page.querySelector('.z-status')!.textContent).toContain('Cancelada');
       expect(ticketNames()).toEqual([]);
       // El botón ya no está: el foco pasa al cartel.
@@ -239,7 +237,7 @@ describe('BookingDetail', () => {
       const dialog = await openCancel({ ...full, refundAmount: 18000, refundPercent: 50 });
 
       expect(plain(dialog)).toContain(
-        'Te devolvemos $ 18.000,00, el 50 % de lo que pagaste, porque falta un día para la entrada.',
+        'Te devolvemos $ 18.000, el 50 % de lo que pagaste, porque falta un día para la entrada.',
       );
     });
 

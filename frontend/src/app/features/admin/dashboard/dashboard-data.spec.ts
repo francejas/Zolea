@@ -90,7 +90,7 @@ describe('las cifras de hoy', () => {
       'Unidades libres',
       'Ingresos de noviembre',
     ]);
-    expect(figures.map((f) => plain(f.value))).toEqual(['3', '8', '2', '1', '17', '$ 254.000,00']);
+    expect(figures.map((f) => plain(f.value))).toEqual(['3', '8', '2', '1', '17', '$ 254.000']);
     expect(figures[2].context).toBe('De 8 esperados');
     expect(figures[4].context).toBe('De 22 habilitadas');
   });
@@ -151,15 +151,15 @@ describe('ingresos por mes', () => {
     expect(view.config.data.labels).toEqual(['oct', 'nov', 'dic']);
     expect(view.config.data.datasets[0].data).toEqual([100000, 200000, 0]);
     expect(plain(view.summary)).toBe(
-      'Ingresos de octubre a diciembre: $ 300.000,00 en total; el mejor mes, noviembre, con $ 200.000,00.',
+      'Ingresos de octubre a diciembre: $ 300.000 en total; el mejor mes, noviembre, con $ 200.000.',
     );
-    expect(plain(tooltipOf(view, 1).label)).toBe('$ 200.000,00');
+    expect(plain(tooltipOf(view, 1).label)).toBe('$ 200.000');
   });
 
   it('con un solo mes, no compara con ningún otro', () => {
     const view = incomeChart(aStats(), tokens);
 
-    expect(plain(view.summary)).toBe('Ingresos de enero: $ 254.000,00.');
+    expect(plain(view.summary)).toBe('Ingresos de enero: $ 254.000.');
   });
 
   it('si cruza de año, cada mes lleva el suyo', () => {
@@ -239,7 +239,7 @@ describe('avisos de cancelación', () => {
     );
 
     expect(plain(notice.text)).toBe(
-      'Santiago R. canceló la A-03 del 15 al 17/01: se reintegraron $ 25.500,00.',
+      'Santiago R. canceló la A-03, 15 → 17 ene: se reintegraron $ 25.500.',
     );
     expect(notice.when).toBe('vie 9 ene');
   });
@@ -257,7 +257,7 @@ describe('avisos de cancelación', () => {
     );
 
     expect(notice.text).toBe(
-      'Santiago R. canceló la A-03 del 30/01 al 2/02: no estaba paga, sin reintegro.',
+      'Santiago R. canceló la A-03, 30 ene → 2 feb: no estaba paga, sin reintegro.',
     );
   });
 
