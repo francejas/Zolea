@@ -3,7 +3,7 @@ import { Booking } from '../../../core/api/booking.models';
 import { ResortStats, TodayStats } from '../../../core/api/stats.models';
 import { ChartTokens } from '../../../shared/chart/chart-tokens';
 import { parseIsoDate, parseResortDateTime, toIsoDate } from '../../../shared/utils/days';
-import { money, unitLabel } from '../../../shared/utils/format';
+import { dayRange, money, shortDate, unitLabel } from '../../../shared/utils/format';
 
 /**
  * Lo que muestra el Panel, armado desde las respuestas de la API. Son funciones sin estado para
@@ -46,11 +46,6 @@ const compactMoney = new Intl.NumberFormat('es-AR', {
 });
 const dayMonthShort = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' });
 const dayMonthLong = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' });
-const weekdayDayMonth = new Intl.DateTimeFormat('es-AR', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
 const monthShort = new Intl.DateTimeFormat('es-AR', { month: 'short' });
 const monthLong = new Intl.DateTimeFormat('es-AR', { month: 'long' });
 
@@ -125,7 +120,7 @@ export function occupancyChart(stats: ResortStats, tokens: ChartTokens): ChartVi
     const peak = shares.indexOf(Math.max(...shares));
     summary =
       `Ocupación ${range}: promedio ${average} %; el día más lleno, el ` +
-      `${weekdayText(days[peak].date)}, con ${percents[peak]} %.`;
+      `${shortDate(days[peak].date)}, con ${percents[peak]} %.`;
   }
 
   const options = barOptions(tokens, {
@@ -133,7 +128,7 @@ export function occupancyChart(stats: ResortStats, tokens: ChartTokens): ChartVi
     // El tope sale de los datos, hasta 100: con poca ocupación, las barras igual se ven.
     valueMax: percents.some((percent) => percent > 90) ? 100 : undefined,
     valueTick: (value) => `${value} %`,
-    title: (index) => weekdayText(days[index].date),
+    title: (index) => shortDate(days[index].date),
     label: (index) =>
       `${percents[index]} % · ${days[index].occupiedUnits} de ${days[index].totalUnits} unidades`,
   });
@@ -246,9 +241,9 @@ export function recentCancellations(bookings: Booking[], now: number): Cancellat
     .map(({ booking }) => ({
       id: booking.id,
       text:
-        `${shortName(booking.guests[0]?.fullName)} canceló la ${booking.rentalUnitIdentifier} ` +
-        `${stayText(booking.startDate, booking.endDate)}: ${refundText(booking.refundAmount)}`,
-      when: weekdayText(booking.canceledAt!.slice(0, 10)),
+        `${shortName(booking.guests[0]?.fullName)} canceló la ${booking.rentalUnitIdentifier}, ` +
+        `${dayRange(booking.startDate, booking.endDate)}: ${refundText(booking.refundAmount)}`,
+      when: shortDate(booking.canceledAt!.slice(0, 10)),
     }));
 }
 
@@ -377,15 +372,6 @@ function monthYearText(month: string): string {
   return `${monthLong.format(monthDate(month))} de ${month.slice(0, 4)}`;
 }
 
-/** «del 15 al 17/01», «del 30/01 al 02/02» o «el 15/01». */
-function stayText(start: string, end: string): string {
-  const [, startMonth, startDay] = start.split('-');
-  const [, endMonth, endDay] = end.split('-');
-  if (start === end) return `el ${Number(startDay)}/${startMonth}`;
-  if (startMonth === endMonth) return `del ${Number(startDay)} al ${Number(endDay)}/${endMonth}`;
-  return `del ${Number(startDay)}/${startMonth} al ${Number(endDay)}/${endMonth}`;
-}
-
 function refundText(refund: number | null): string {
   return refund !== null && refund > 0
     ? `se reintegraron ${money(refund)}.`
@@ -394,11 +380,6 @@ function refundText(refund: number | null): string {
 
 function daysText(days: number): string {
   return days === 1 ? '1 día' : `${integer.format(days)} días`;
-}
-
-/** «vie 13 nov». */
-function weekdayText(iso: string): string {
-  return withoutDots(weekdayDayMonth.format(parseIsoDate(iso)).replace(',', ''));
 }
 
 /** El día 1 de un mes `YYYY-MM`, como fecha local. */

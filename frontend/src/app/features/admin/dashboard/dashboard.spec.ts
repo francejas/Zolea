@@ -121,7 +121,7 @@ describe('Dashboard', () => {
       'Ya entraron | 2 | De 8 esperados',
       'Pendientes de pago | 1 | Vencen a la hora de hechas',
       'Unidades libres | 17 | De 22 habilitadas',
-      'Ingresos de enero | $ 254.000,00 | Reservas confirmadas que empiezan este mes',
+      'Ingresos de enero | $ 254.000 | Reservas confirmadas que empiezan este mes',
     ]);
   });
 
@@ -173,7 +173,7 @@ describe('Dashboard', () => {
 
     expect(page.querySelector('.panel__grid--refreshing')).toBeNull();
     expect(text()).toContain('Ocupación del 1 al 31 de enero: promedio 100 %');
-    expect(text()).toContain('$ 300.000,00');
+    expect(text()).toContain('$ 300.000');
   });
 
   it('un rango sin reservas confirmadas muestra el aviso en lugar del gráfico', async () => {
@@ -214,7 +214,7 @@ describe('Dashboard', () => {
     expect(links.length).toBe(1);
     expect(links[0].getAttribute('href')).toBe('/admin/bookings/31');
     expect(links[0].textContent!.replace(/\s+/g, ' ')).toContain(
-      'Santiago R. canceló la A-03 del 15 al 17/01: se reintegraron $ 25.500,00.',
+      'Santiago R. canceló la A-03, 15 → 17 ene: se reintegraron $ 25.500.',
     );
   });
 

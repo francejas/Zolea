@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { LucideChevronLeft, LucideChevronRight } from '@lucide/angular';
 import { occupiedDays, parseIsoDate, toIsoDate, todayIso } from '../utils/days';
+import { shortDate } from '../utils/format';
 
 type Field = 'from' | 'to';
 
@@ -41,11 +42,6 @@ interface CalendarDay {
 
 const WEEKDAYS = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do'];
 
-const shortDate = new Intl.DateTimeFormat('es-AR', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
 const longDate = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric' });
 const fullDate = new Intl.DateTimeFormat('es-AR', {
   weekday: 'long',
@@ -261,7 +257,7 @@ export class ZDateRange {
   }
 
   private fieldLabel(iso: string | null): string {
-    return iso === null ? 'Elegí fecha' : shortDate.format(parseIsoDate(iso)).replace(/[.,]/g, '');
+    return iso === null ? 'Elegí fecha' : shortDate(iso);
   }
 
   private focusField(field: Field): void {

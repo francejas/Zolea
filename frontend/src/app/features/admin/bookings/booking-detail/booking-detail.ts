@@ -19,6 +19,7 @@ import { todayIso } from '../../../../shared/utils/days';
 
 import {
   bookingDate,
+  bookingTableDate,
   CANCELED_BY,
   entryStatus,
   manualRefund,
@@ -93,6 +94,7 @@ export class AdminBookingDetail {
   protected readonly number = bookingNumber;
   protected readonly money = money;
   protected readonly date = bookingDate;
+  protected readonly tableDate = bookingTableDate;
   protected readonly days = dayCount;
   protected readonly unitLabel = unitLabel;
   protected readonly holder = bookingHolder;

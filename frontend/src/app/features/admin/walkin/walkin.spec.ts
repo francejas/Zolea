@@ -45,7 +45,7 @@ const myResort: Resort = {
   ],
 };
 
-/** Los espacios de «$ 8.500,00» son no separables: se comparan como espacios comunes. */
+/** Los espacios de «$ 8.500» son no separables: se comparan como espacios comunes. */
 const text = (el: Element | null | undefined) =>
   (el?.textContent ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -180,7 +180,7 @@ describe('WalkIn', () => {
     await chooseUnit('C-01');
 
     expect(summary()).toContain('Carpa C-01');
-    expect(summary()).toContain('$ 14.500,00');
+    expect(summary()).toContain('$ 14.500');
   });
 
   it('manda el titular, la unidad, las fechas y los acompañantes, sin clientId', async () => {
@@ -213,7 +213,7 @@ describe('WalkIn', () => {
     expect(text(tickets[0])).toContain('Juan Pérez');
     expect(text(tickets[1])).toContain('Ana Pérez');
     expect(text(page)).toContain('Reserva #0061 confirmada');
-    expect(text(page)).toContain('$ 8.500,00');
+    expect(text(page)).toContain('$ 8.500');
     expect(page.querySelector('form')).toBeNull();
 
     const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
