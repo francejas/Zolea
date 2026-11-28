@@ -108,7 +108,9 @@
         <p class="amenities__summary">{{ summary() }}</p>
 
         <div class="z-table-wrap">
-          <table class="z-table">
+          <!-- En el celular, cada fila es compacta: el servicio y cuántos lo ofrecen, con el menú
+               de acciones al costado (GH-79). -->
+          <table class="z-table z-table--compact">
             <thead>
               <tr>
                 <th scope="col">Servicio</th>
@@ -120,8 +122,8 @@
             </thead>
             <tbody>
               @for (amenity of amenities(); track amenity.idAmenity) {
-                <tr>
-                  <td data-label="Servicio">
+                <tr [class.is-editing]="editingId() === amenity.idAmenity">
+                  <td data-label="Servicio" class="amenities__cell--name">
                     @if (editingId() === amenity.idAmenity) {
                       <z-field
                         [field]="renameForm.name"
@@ -154,12 +156,25 @@
                   </td>
 
                   @if (usage()) {
-                    <td data-label="Lo ofrecen">
-                      <span class="amenities__usage">{{ usageLabel(amenity) }}</span>
+                    <!-- En el celular, sin la columna, se lee como frase: «3 balnearios lo
+                         ofrecen». -->
+                    <td data-label="Lo ofrecen" class="amenities__cell--usage">
+                      <span class="amenities__usage" [attr.data-verb]="usageVerb(amenity)">{{
+                        usageLabel(amenity)
+                      }}</span>
                     </td>
                   }
 
-                  <td class="is-actions">
+                  <td class="is-actions amenities__cell--actions">
+                    <!-- En el celular, las acciones van en un menú. Mientras se renombra, se ven
+                         Cancelar y Guardar, como en la computadora. -->
+                    @if (editingId() !== amenity.idAmenity) {
+                      <z-row-menu
+                        class="amenities__menu"
+                        [label]="'Acciones de ' + amenity.name"
+                        [actions]="rowActions().get(amenity.idAmenity) ?? []"
+                      />
+                    }
                     <div class="z-table__actions">
                       @if (editingId() === amenity.idAmenity) {
                         <z-btn

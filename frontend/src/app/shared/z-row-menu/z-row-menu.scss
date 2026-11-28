@@ -1,0 +1,62 @@
+/* El menú de acciones de una fila, con el estilo del menú de la persona (site-layout). */
+
+.z-row-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.z-row-menu__trigger {
+  display: inline-grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  padding: 0;
+  border: var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.z-row-menu__trigger:hover,
+.z-row-menu__trigger[aria-expanded='true'] {
+  background: var(--color-sand-soft);
+}
+
+.z-row-menu__list {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 200px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.z-row-menu__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--touch-min);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--color-ink);
+  font: 500 15px/1 var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.z-row-menu__item:hover {
+  background: var(--color-sand-soft);
+}
+
+.z-row-menu__item--danger {
+  color: var(--color-danger-text);
+}

@@ -94,4 +94,40 @@ describe('Bookings', () => {
     expect(page.querySelector('input[type="date"]')).toBeNull();
     expect(page.querySelector('.bookings__dates z-date-range')).not.toBeNull();
   });
+
+  describe('en el celular (GH-79)', () => {
+    const count = () => page.querySelector('.z-filters__count')?.textContent!.trim() ?? null;
+
+    it('los filtros van en el plegable «Filtros», que cuenta los puestos', async () => {
+      const filters = page.querySelector('z-filters')!;
+      expect(filters.querySelector('.z-filters__panel')!.getAttribute('aria-label')).toBe(
+        'Filtrar reservas',
+      );
+      expect(filters.querySelector('.bookings__status')).not.toBeNull();
+      expect(filters.querySelector('.bookings__dates')).not.toBeNull();
+      expect(count()).toBeNull();
+
+      page.querySelectorAll<HTMLInputElement>('.bookings__status input')[2].click();
+      await fixture.whenStable();
+
+      expect(count()).toBe('1 puestos');
+    });
+
+    it('la tabla es compacta y cada fila tiene la flecha que lleva al detalle', () => {
+      expect(page.querySelector('table')!.classList).toContain('z-table--compact');
+
+      const row = page.querySelector('tbody tr')!;
+      const link = row.querySelector<HTMLAnchorElement>('a.bookings__holder')!;
+      expect(link.getAttribute('href')).toMatch(/^\/admin\/bookings\/\d+$/);
+      // La flecha es dibujo: el enlace ya dice adónde va.
+      expect(row.querySelector('.bookings__arrow')!.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('el titular, la unidad, las fechas, el estado y el total tienen su lugar en la fila', () => {
+      const row = page.querySelector('tbody tr')!;
+      for (const area of ['holder', 'unit', 'dates', 'status', 'total', 'actions']) {
+        expect(row.querySelector(`.bookings__cell--${area}`)).not.toBeNull();
+      }
+    });
+  });
 });
