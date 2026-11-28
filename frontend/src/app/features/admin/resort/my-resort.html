@@ -80,8 +80,8 @@
 
             @if (photoBroken()) {
               <p class="my-resort__hint my-resort__hint--warning">
-                No se pudo cargar la imagen de esa dirección: la Portada mostraría el dibujo de
-                cielo, mar y arena.
+                No se pudo cargar la imagen de la portada: la Portada muestra el dibujo de cielo,
+                mar y arena.
               </p>
             }
             @if (!resort.active) {
@@ -136,23 +136,6 @@
                   rows="4"
                   [formField]="resortForm.description"
                 ></textarea>
-              </z-field>
-
-              <z-field
-                [field]="resortForm.coverPhotoUrl"
-                inputId="resort-photo"
-                label="Foto de portada (opcional)"
-                help="La dirección de una imagen ya publicada, por ejemplo en tu web. Se ve en la tarjeta de la Portada."
-              >
-                <input
-                  class="z-input"
-                  type="url"
-                  id="resort-photo"
-                  inputmode="url"
-                  autocomplete="off"
-                  placeholder="https://"
-                  [formField]="resortForm.coverPhotoUrl"
-                />
               </z-field>
             </section>
 
@@ -212,6 +195,17 @@
           </form>
 
           <section
+            class="my-resort__section my-resort__photos my-resort__card"
+            aria-labelledby="my-resort-photos"
+          >
+            <h2 id="my-resort-photos" class="my-resort__subtitle">
+              <svg lucideImages class="z-icon" aria-hidden="true"></svg>
+              Fotos
+            </h2>
+            <app-resort-photos [photos]="resort.photos" (photosChange)="onPhotosChange($event)" />
+          </section>
+
+          <section
             class="my-resort__section my-resort__status my-resort__card"
             [class.my-resort__status--off]="!resort.active"
             aria-labelledby="my-resort-status"
@@ -249,6 +243,7 @@
 
         <dialog
           #deactivateDialog
+          id="deactivate-dialog"
           class="z-modal"
           aria-labelledby="deactivate-title"
           aria-describedby="deactivate-text"

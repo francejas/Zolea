@@ -923,3 +923,12 @@ FROM guest g
 JOIN booking b ON b.id = g.id_booking
 JOIN rental_unit u ON u.id_rental_unit = b.id_rental_unit
 WHERE g.qr_token = 'tok-00063-A1-PNL';
+
+-- =============================================================================
+-- GH-67: fotos del balneario
+-- La demo no trae fotos subidas: cada balneario muestra la direcciÃ³n de su
+-- portada, como antes. Las que se suban probando se borran en cada arranque,
+-- igual que el resto de los datos; sin esto quedarÃ­an pegadas al balneario que
+-- vuelve a tener el mismo id.
+-- =============================================================================
+DELETE FROM resort_photo;

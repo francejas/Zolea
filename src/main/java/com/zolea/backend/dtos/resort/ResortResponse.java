@@ -20,12 +20,20 @@ import java.util.List;
  * <p>{@code availableUnits} solo tiene valor en una búsqueda con fechas: es lo que la portada
  * muestra como «3 lugares libres». Sin fechas no hay contra qué contar, y es {@code null} y no un
  * número, igual que el promedio sin reseñas.
+ *
+ * <p>{@code photos} son las fotos que el administrador subió (GH-67), y la primera es la portada.
+ * Sin fotos, {@code coverPhotoUrl} sigue siendo la dirección que el balneario ya tenía.
  */
 public record ResortResponse(
         Long idResort,
         String name,
         String location,
+        @Schema(description = "La portada: la primera de las fotos subidas o, si no tiene ninguna, la dirección "
+                + "que el balneario tenía cargada. Null si no tiene ninguna de las dos",
+                example = "http://localhost:8080/api/resorts/1/photos/12")
         String coverPhotoUrl,
+        @Schema(description = "Las fotos subidas desde Mi balneario, en el orden elegido. Vacía si no tiene")
+        List<ResortPhotoResponse> photos,
         String description,
         boolean active,
         List<AmenityResponse> amenities,

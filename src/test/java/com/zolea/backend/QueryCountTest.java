@@ -36,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>10 reservas: <b>33</b> consultas antes, <b>5 o menos</b> ahora. Eran 3; la cuarta llegó con
  *       las reseñas (14.1) y averigua cuáles ya se calificaron, y la quinta con los pagos (15.4) y
  *       trae los cobros registrados; cada una, una sola vez para todo el listado.
- *   <li>5 balnearios con 2 unidades cada uno: <b>11</b> consultas antes, <b>4 o menos</b> ahora.
+ *   <li>5 balnearios con 2 unidades cada uno: <b>11</b> consultas antes, <b>5 o menos</b> ahora. Eran
+ *       4; la quinta llegó con las fotos (GH-67) y trae las de todos los balnearios juntas.
  * </ul>
  *
  * <p>Al ser un límite ajustado y no uno holgado, si alguien vuelve a introducir un N+1 en estos
@@ -108,6 +109,6 @@ class QueryCountTest extends IntegrationTest {
         assertThat(consultas)
                 .withFailMessage("el listado disparó %d consultas para 5 balnearios con 2 unidades cada uno",
                         consultas)
-                .isLessThanOrEqualTo(4);
+                .isLessThanOrEqualTo(5);
     }
 }
