@@ -2,6 +2,7 @@ import { Component, computed, ElementRef, inject, input, ViewEncapsulation } fro
 import { LucideDownload } from '@lucide/angular';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { Booking, GuestSummary } from '../../core/api/booking.models';
+import { entryDay, entryHour } from '../../features/entry/entry-format';
 import { ZBtn } from '../z-btn/z-btn';
 import { bookingNumber, dayRange, formatDni, unitLabel } from '../utils/format';
 
@@ -108,18 +109,19 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * El último ingreso de la persona (GH-76): «Entraste hoy a las 10:12», «Entraste el 26/11 a las
- * 18:05» o «Todavía no entraste». La hora llega en la del balneario y sin zona: se muestra tal cual.
+ * El último ingreso de la persona (GH-76): «Entraste hoy a las 10:12», «Entraste el 26 nov a las
+ * 18:05» o «Todavía no entraste». La hora y el día salen de `entry-format`, como en el resto de los
+ * ingresos.
  */
 export function entryLine(guest: GuestSummary, you: boolean): string {
-  const [date, time] = guest.lastEntryAt?.split('T') ?? [];
-  if (!date) return you ? 'Todavía no entraste' : 'Todavía no entró';
+  const enteredAt = guest.lastEntryAt;
+  if (!enteredAt) return you ? 'Todavía no entraste' : 'Todavía no entró';
 
   const verb = you ? 'Entraste' : 'Entró';
-  const hour = time ? ` a las ${time.slice(0, 5)}` : '';
-  if (guest.isEntryValidated) return `${verb} hoy${hour}`;
-  const [, month, day] = date.split('-');
-  return `${verb} el ${day}/${month}${hour}`;
+  const hour = entryHour(enteredAt);
+  const at = hour ? ` a las ${hour}` : '';
+  if (guest.isEntryValidated) return `${verb} hoy${at}`;
+  return `${verb} el ${entryDay(enteredAt)}${at}`;
 }
 
 /** Escribe el texto centrado y, si no entra en el ancho, achica la letra hasta que entre. */

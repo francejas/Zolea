@@ -14,14 +14,15 @@ function entry(id: number, idGuest: number, enteredAt: string): GuestEntry {
 }
 
 describe('entry-format', () => {
-  it('muestra la hora y el día tal como llegan, sin convertirlos', () => {
+  it('muestra la hora tal como llega y el día con el formato corto de las tablas', () => {
     expect(entryHour('2026-11-27T10:12:45.123456')).toBe('10:12');
-    expect(entryDay('2026-11-27T10:12:45')).toBe('27/11');
+    expect(entryDay('2026-11-27T10:12:45', '2026-11-28')).toBe('27 nov');
+    expect(entryDay('2025-12-30T10:12:45', '2026-01-02')).toBe('30 dic 2025');
   });
 
   it('dice «Hoy» si es de hoy y la fecha si no', () => {
     expect(entryMoment('2026-11-27T10:12:00', '2026-11-27')).toBe('Hoy a las 10:12');
-    expect(entryMoment('2026-11-26T18:05:00', '2026-11-27')).toBe('26/11 a las 18:05');
+    expect(entryMoment('2026-11-26T18:05:00', '2026-11-27')).toBe('26 nov a las 18:05');
   });
 
   it('agrupa por persona y conserva el orden', () => {

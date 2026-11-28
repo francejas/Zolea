@@ -196,23 +196,26 @@
   @if (todayError(); as message) {
     <z-problem title="No pudimos traer los ingresos" [text]="message" (retry)="loadToday()" />
   } @else if (today(); as entries) {
-    @if (entries.length === 0) {
-      <p class="entry__muted">Todavía no entró nadie hoy.</p>
-    } @else {
-      <ol class="entry__list" aria-live="polite">
-        @for (entry of entries; track entry.id) {
-          <li class="entry__item">
-            <time class="entry__time" [attr.datetime]="entry.enteredAt">
-              {{ hour(entry.enteredAt) }}
-            </time>
-            <span class="entry__who">{{ entry.fullName }}</span>
-            <span class="entry__meta">
-              {{ entry.rentalUnitIdentifier }} · {{ method[entry.method] }}
-            </span>
-          </li>
-        }
-      </ol>
-    }
+    <!-- La zona que avisa está siempre, así también se anuncia el primer ingreso del día. -->
+    <div aria-live="polite">
+      @if (entries.length === 0) {
+        <p class="entry__muted">Todavía no entró nadie hoy.</p>
+      } @else {
+        <ol class="entry__list">
+          @for (entry of entries; track entry.id) {
+            <li class="entry__item">
+              <time class="entry__time" [attr.datetime]="entry.enteredAt">
+                {{ hour(entry.enteredAt) }}
+              </time>
+              <span class="entry__who">{{ entry.fullName }}</span>
+              <span class="entry__meta">
+                {{ entry.rentalUnitIdentifier }} · {{ method[entry.method] }}
+              </span>
+            </li>
+          }
+        </ol>
+      }
+    </div>
   } @else {
     <div class="entry__list" aria-busy="true" aria-label="Cargando los ingresos de hoy">
       <z-skeleton height="44px" />

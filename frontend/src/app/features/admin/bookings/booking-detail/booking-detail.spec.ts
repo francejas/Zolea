@@ -214,6 +214,8 @@ describe('Detalle de reserva del administrador', () => {
 
       expect(page.querySelector('.detail__count')).toBeNull();
       expect(text(section('entry-title'))).toContain('La estadía todavía no empezó');
+      // Ya dice que no empezó: no repite que todavía no entró nadie.
+      expect(text(section('entry-title'))).not.toContain('Todavía no entró nadie');
       expect(ingreso(rowsOf()[0])).toBe('Todavía no entró');
     });
 
@@ -418,7 +420,7 @@ describe('Detalle de reserva del administrador', () => {
         text,
       );
       expect(guests).toEqual([
-        'Ana Pérez Hoy a las 15:40 · DNI 15/01 a las 09:05 · Código',
+        'Ana Pérez Hoy a las 15:40 · DNI 15 ene a las 09:05 · Código',
         'Luis García Hoy a las 11:00 · QR',
       ]);
     });

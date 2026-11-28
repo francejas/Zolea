@@ -149,7 +149,10 @@
                 <z-skeleton width="40%" />
               </div>
             } @else if (entryGroups().length === 0) {
-              <p class="detail__muted">Todavía no entró nadie.</p>
+              <!-- Si la estadía no empezó, ya lo dice arriba: no se repite. -->
+              @if (stay() !== 'upcoming') {
+                <p class="detail__muted">Todavía no entró nadie.</p>
+              }
             } @else {
               <ul class="detail__entries">
                 @for (group of entryGroups(); track group.idGuest) {

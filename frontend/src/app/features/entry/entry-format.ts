@@ -1,4 +1,6 @@
 import { EntryMethod, GuestEntry } from '../../core/api/entry.models';
+import { todayIso } from '../../shared/utils/days';
+import { tableDate } from '../../shared/utils/format';
 
 /**
  * Cómo se muestran los ingresos (GH-76), en Validar ingreso y en los dos detalles de la reserva.
@@ -17,15 +19,14 @@ export function entryHour(enteredAt: string): string {
   return enteredAt.split('T')[1]?.slice(0, 5) ?? '';
 }
 
-/** «27/11». */
-export function entryDay(enteredAt: string): string {
-  const [, month, day] = enteredAt.split('T')[0].split('-');
-  return `${day}/${month}`;
+/** «27 nov», o «27 nov 2025» si no es de este año: la fecha corta de las tablas (`format.ts`). */
+export function entryDay(enteredAt: string, today: string = todayIso()): string {
+  return tableDate(enteredAt.split('T')[0], today);
 }
 
-/** «Hoy a las 10:12» o «27/11 a las 10:12». */
+/** «Hoy a las 10:12» o «27 nov a las 10:12». */
 export function entryMoment(enteredAt: string, today: string): string {
-  const day = enteredAt.split('T')[0] === today ? 'Hoy' : entryDay(enteredAt);
+  const day = enteredAt.split('T')[0] === today ? 'Hoy' : entryDay(enteredAt, today);
   return `${day} a las ${entryHour(enteredAt)}`;
 }
 

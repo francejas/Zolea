@@ -64,7 +64,7 @@ describe('GuestQr', () => {
   it('a quien mira le habla de vos, y si entró otro día dice cuándo', async () => {
     await render(aGuest({ isEntryValidated: false, lastEntryAt: '2026-01-14T18:05:30' }), true);
 
-    expect(fact('Ingreso')).toBe('Entraste el 14/01 a las 18:05');
+    expect(fact('Ingreso')).toBe('Entraste el 14 ene a las 18:05');
   });
 
   it('a quien mira: «Entraste hoy a las…»', () => {

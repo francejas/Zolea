@@ -579,6 +579,21 @@ describe('Validate', () => {
       ]);
     });
 
+    it('el primer ingreso del día también se anuncia', async () => {
+      await withUnits();
+      // La zona que avisa ya está antes del primer ingreso: si naciera con él, no se anunciaría.
+      const live = page.querySelector('.entry__today [aria-live="polite"]')!;
+      expect(live).not.toBeNull();
+
+      await goTo('DNI');
+      type('#entry-dni', '30123456');
+      await submit();
+      await answer(`${VALIDATE}/dni/30123456`, valentina, 200, [lucia]);
+
+      expect(page.querySelector('.entry__today [aria-live="polite"]')).toBe(live);
+      expect(live.querySelectorAll('.entry__item')).toHaveLength(1);
+    });
+
     it('si no llegan, deja reintentar', async () => {
       http.expectOne(UNITS).flush(units);
       http.expectOne(ENTRIES).flush(null, { status: 500, statusText: 'Error' });
