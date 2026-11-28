@@ -35,6 +35,7 @@ function resort(overrides: Partial<Resort> = {}): Resort {
     name: 'Zolea Club de Playa',
     location: 'Mar del Plata, Buenos Aires',
     coverPhotoUrl: 'https://fotos.test/zolea.jpg',
+    photos: [],
     description: 'El balneario más completo de Mar del Plata.',
     active: true,
     amenities: [
@@ -178,6 +179,34 @@ describe('ResortDetail', () => {
       expect(page.querySelector('.z-photo')).not.toBeNull();
       expect(page.querySelector('.z-photo img')).toBeNull();
       expect(page.textContent).not.toContain('Sobre el balneario');
+    });
+
+    it('con fotos subidas, arriba va el carrusel en su orden', async () => {
+      const photos = [3, 1, 2].map((id) => ({
+        idPhoto: id,
+        url: `http://api.test/fotos/${id}.jpg`,
+      }));
+      await respondWith(resort({ photos, coverPhotoUrl: photos[0].url }));
+
+      const carousel = page.querySelector('z-carousel')!;
+      expect(carousel).not.toBeNull();
+      expect(carousel.querySelector('.z-carousel')!.getAttribute('aria-label')).toBe(
+        'Fotos de Zolea Club de Playa',
+      );
+      expect(
+        Array.from(carousel.querySelectorAll('img')).map((img) => img.getAttribute('src')),
+      ).toEqual(photos.map((p) => p.url));
+      expect(text(carousel.querySelector('.z-carousel__count'))).toBe('Foto 1 de 3');
+      expect(page.querySelector('.detail__photo')).toBeNull();
+    });
+
+    it('sin fotos subidas, la portada de siempre y sin carrusel', async () => {
+      await respondWith(resort());
+
+      expect(page.querySelector('z-carousel')).toBeNull();
+      expect(page.querySelector('.detail__photo img')!.getAttribute('src')).toBe(
+        'https://fotos.test/zolea.jpg',
+      );
     });
 
     it('muestra los servicios, cada uno con su ícono y uno genérico para los que no están', async () => {

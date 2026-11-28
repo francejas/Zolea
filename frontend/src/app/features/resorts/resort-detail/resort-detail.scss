@@ -50,6 +50,10 @@
   aspect-ratio: 16 / 10;
 }
 
+.detail__gallery {
+  --z-carousel-ratio: 16 / 10;
+}
+
 .detail__layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -226,6 +230,10 @@
   .detail__photo,
   .detail__photo-skeleton {
     aspect-ratio: 21 / 8;
+  }
+
+  .detail__gallery {
+    --z-carousel-ratio: 21 / 8;
   }
 
   .detail__layout {

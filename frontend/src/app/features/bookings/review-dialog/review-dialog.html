@@ -101,4 +101,16 @@
       </z-btn>
     </div>
   </form>
+
+  <!-- Cerrar a la vista (GH-80): hace lo mismo que «Ahora no» y, mientras se envía, no cierra. Se
+       ve arriba a la derecha, pero va último: así el foco del diálogo arranca en las estrellas. -->
+  <button
+    class="z-icon-btn review__close"
+    type="button"
+    aria-label="Cerrar"
+    [disabled]="reviewForm().submitting()"
+    (click)="cancel()"
+  >
+    <svg lucideX class="z-icon" aria-hidden="true"></svg>
+  </button>
 </dialog>

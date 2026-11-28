@@ -6,6 +6,7 @@ import {
   Resort,
   ResortActionResponse,
   ResortFilters,
+  ResortPhoto,
   ResortRegistrationRequest,
   ResortRequest,
   ResortSummary,
@@ -64,6 +65,26 @@ export class ResortsApi {
   /** Lo vuelve a publicar en la Portada. */
   activate(id: number): Observable<ResortActionResponse> {
     return this.http.put<ResortActionResponse>(`${this.apiUrl}/${id}/active`, {});
+  }
+
+  /**
+   * Suma fotos al final del balneario del administrador: jpg, png o webp, de hasta 5 MB, hasta 10
+   * en total. Si una no sirve no se guarda ninguna (400, con cuál y por qué). Devuelve todas.
+   */
+  uploadPhotos(files: File[]): Observable<ResortPhoto[]> {
+    const body = new FormData();
+    files.forEach((file) => body.append('files', file, file.name));
+    return this.http.post<ResortPhoto[]>(`${this.apiUrl}/my/photos`, body);
+  }
+
+  /** El orden nuevo: todas las fotos, cada una una vez. La primera es la portada. */
+  orderPhotos(photoIds: number[]): Observable<ResortPhoto[]> {
+    return this.http.put<ResortPhoto[]>(`${this.apiUrl}/my/photos/order`, { photoIds });
+  }
+
+  /** Borra una foto del balneario del administrador. 404 si ya no está. */
+  deletePhoto(photoId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/my/photos/${photoId}`);
   }
 
   /** Los `idRentalUnit` reservados en esas fechas, contando los dos extremos. */

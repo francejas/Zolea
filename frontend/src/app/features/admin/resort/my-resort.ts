@@ -13,7 +13,6 @@ import {
   form,
   FormField,
   maxLength,
-  pattern,
   required,
   SchemaPath,
   submit,
@@ -23,13 +22,14 @@ import {
   LucideCheck,
   LucideDynamicIcon,
   LucideIcon,
+  LucideImages,
   LucideSparkles,
   LucideStore,
   LucideUser,
 } from '@lucide/angular';
 import { catchError, firstValueFrom, forkJoin, map, of } from 'rxjs';
 import { AmenitiesApi } from '../../../core/api/amenities.api';
-import { Amenity, Resort, ResortRequest } from '../../../core/api/resort.models';
+import { Amenity, Resort, ResortPhoto, ResortRequest } from '../../../core/api/resort.models';
 import { ResortsApi } from '../../../core/api/resorts.api';
 import { toFieldErrors, toUserMessage } from '../../../core/errors/error-message';
 import { SessionService } from '../../../core/session/session.service';
@@ -41,6 +41,7 @@ import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 import { ResortCardData, ZResortCard } from '../../../shared/resort-card/z-resort-card';
+import { ResortPhotos } from './resort-photos/resort-photos';
 
 type LoadState = 'loading' | 'ready' | 'no-resort' | 'error';
 
@@ -49,20 +50,16 @@ interface ResortModel {
   name: string;
   location: string;
   description: string;
-  coverPhotoUrl: string;
   amenityIds: number[];
 }
 
 /** Lo que entra en las columnas de texto de la base. */
 const MAX_TEXT = 255;
-/** Una dirección de imagen: vacía o con http(s)://. */
-const PHOTO_URL = /^(https?:\/\/\S+)?$/;
 
 const toModel = (resort: Resort): ResortModel => ({
   name: resort.name,
   location: resort.location,
   description: resort.description ?? '',
-  coverPhotoUrl: resort.coverPhotoUrl ?? '',
   amenityIds: resort.amenities.map((amenity) => amenity.idAmenity),
 });
 
@@ -70,16 +67,14 @@ const emptyModel = (): ResortModel => ({
   name: '',
   location: '',
   description: '',
-  coverPhotoUrl: '',
   amenityIds: [],
 });
 
-/** Siempre completo: el backend conserva lo que llegue vacío, y así no se pierde nada. */
+/** Siempre completo. La foto no va: se sube aparte, y sin el campo el backend deja la que había. */
 const toRequest = (value: ResortModel): ResortRequest => ({
   name: value.name.trim(),
   location: value.location.trim(),
   description: value.description.trim(),
-  coverPhotoUrl: value.coverPhotoUrl.trim(),
   amenityIds: value.amenityIds,
 });
 
@@ -106,8 +101,8 @@ interface ActiveNotice {
 
 /**
  * Mi balneario (`/admin/resort`): la cuenta del administrador, los datos del balneario, los servicios
- * que ofrece y su baja (12.5). A la derecha, la tarjeta de la Portada armada con lo que se está
- * escribiendo, para ver cómo lo encuentran los clientes antes de guardar.
+ * que ofrece, sus fotos (GH-67) y su baja (12.5). A la derecha, la tarjeta de la Portada armada con
+ * lo que se está escribiendo, para ver cómo lo encuentran los clientes antes de guardar.
  *
  * Los servicios los carga la cuenta de Zolea (15.7): acá el balneario solo elige cuáles ofrece.
  */
@@ -116,6 +111,7 @@ interface ActiveNotice {
   imports: [
     FormField,
     LucideCheck,
+    LucideImages,
     LucideSparkles,
     LucideStore,
     LucideUser,
@@ -127,6 +123,7 @@ interface ActiveNotice {
     ZProblem,
     ZResortCard,
     ZSkeleton,
+    ResortPhotos,
   ],
   templateUrl: './my-resort.html',
   styleUrl: './my-resort.scss',
@@ -148,10 +145,6 @@ export class MyResort {
   protected readonly resortForm = form(this.model, (path) => {
     requiredText(path.name, 'Escribí el nombre del balneario.');
     requiredText(path.location, 'Escribí la dirección del balneario.');
-    maxLength(path.coverPhotoUrl, MAX_TEXT, { message: `Hasta ${MAX_TEXT} caracteres.` });
-    pattern(path.coverPhotoUrl, PHOTO_URL, {
-      message: 'Pegá la dirección completa de la imagen, la que empieza con https://.',
-    });
   });
 
   /** Se guardó: el aviso queda mientras no se toque nada. */
@@ -167,8 +160,8 @@ export class MyResort {
   /** La dirección de la foto que no se pudo cargar: la tarjeta vuelve al dibujo de cielo y mar. */
   protected readonly brokenPhoto = signal<string | null>(null);
   protected readonly photoBroken = computed(() => {
-    const photo = this.model().coverPhotoUrl.trim();
-    return photo !== '' && photo === this.brokenPhoto();
+    const photo = this.resort()?.coverPhotoUrl;
+    return !!photo && photo === this.brokenPhoto();
   });
 
   protected readonly account = computed(() => {
@@ -186,15 +179,13 @@ export class MyResort {
       value.name.trim() !== saved.name ||
       value.location.trim() !== saved.location ||
       value.description.trim() !== saved.description ||
-      value.coverPhotoUrl.trim() !== saved.coverPhotoUrl ||
       !sameIds(value.amenityIds, saved.amenityIds)
     );
   });
 
-  /** La tarjeta de la Portada, con lo que hay escrito ahora. */
+  /** La tarjeta de la Portada, con lo que hay escrito ahora y la portada que tiene. */
   protected readonly preview = computed<ResortCardData>(() => {
     const value = this.model();
-    const photo = value.coverPhotoUrl.trim();
     // Por id, como la Portada: el catálogo y el backend no garantizan el orden.
     const offered = this.catalog()
       .filter((amenity) => value.amenityIds.includes(amenity.idAmenity))
@@ -203,7 +194,7 @@ export class MyResort {
     return {
       name: value.name.trim() || 'Nombre del balneario',
       location: value.location.trim() || 'Dirección del balneario',
-      coverPhotoUrl: photo && PHOTO_URL.test(photo) ? photo : null,
+      coverPhotoUrl: this.resort()?.coverPhotoUrl ?? null,
       amenities: offered,
       rentalUnits: this.resort()?.rentalUnits ?? [],
       averageRating: this.resort()?.averageRating,
@@ -260,6 +251,25 @@ export class MyResort {
 
   protected onPhotoError(url: string): void {
     this.brokenPhoto.set(url);
+  }
+
+  /**
+   * Las fotos cambiaron (se subieron, se ordenaron o se borraron): la portada es la primera. Sin
+   * fotos, la portada vuelve a ser la dirección que el balneario tenía, que solo sabe el backend.
+   * El formulario no se toca: lo que se esté escribiendo sigue ahí.
+   */
+  protected onPhotosChange(photos: ResortPhoto[]): void {
+    this.resort.update((resort) =>
+      resort ? { ...resort, photos, coverPhotoUrl: photos[0]?.url ?? null } : resort,
+    );
+    if (photos.length > 0) return;
+    this.resortsApi.mine().subscribe({
+      next: (fresh) =>
+        this.resort.update((resort) =>
+          resort ? { ...resort, photos: fresh.photos, coverPhotoUrl: fresh.coverPhotoUrl } : resort,
+        ),
+      error: () => undefined,
+    });
   }
 
   protected onSubmit(event: Event): void {

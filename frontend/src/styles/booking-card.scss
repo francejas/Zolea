@@ -43,6 +43,13 @@
   color: var(--color-ink);
 }
 
+/* Una estadía que ya terminó (GH-80): en espuma y con borde, para que no parezca vigente al lado de
+   las que vienen, que van en arena. */
+.z-booking-card--past {
+  background: var(--color-surface);
+  border: var(--border-strong);
+}
+
 .z-facts {
   display: grid;
   gap: var(--space-2);

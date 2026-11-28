@@ -45,12 +45,17 @@ class GuestEntryTest extends IntegrationTest {
         return guest.getBooking().getRentalUnit().getResort().getIdResort();
     }
 
+    /** Quién valida: un administrador cualquiera, que queda en el registro del ingreso. */
+    private Long admin() {
+        return anAdmin().getIdClient();
+    }
+
     @Test
     @DisplayName("un QR de una reserva vigente permite el ingreso y queda marcado")
     void validateQr_currentBooking_allowsEntry() {
         Guest guest = huespedDeReservaVigente();
 
-        GuestValidationResponse response = guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest));
+        GuestValidationResponse response = guestService.validateGuestEntry(guest.getQrToken(), false, resortOf(guest), admin());
 
         assertThat(response.fullName()).isEqualTo("Titular Vigente");
         assertThat(guestRepository.findById(guest.getIdGuest()).orElseThrow().getLastEntryAt())
@@ -61,9 +66,9 @@ class GuestEntryTest extends IntegrationTest {
     @DisplayName("el mismo QR sirve otra vez durante la estadía")
     void validateQr_twice_allowsEntry() {
         Guest guest = huespedDeReservaVigente();
-        guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest));
+        guestService.validateGuestEntry(guest.getQrToken(), false, resortOf(guest), admin());
 
-        assertThat(guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest)).fullName())
+        assertThat(guestService.validateGuestEntry(guest.getQrToken(), false, resortOf(guest), admin()).fullName())
                 .isEqualTo("Titular Vigente");
     }
 
@@ -72,7 +77,7 @@ class GuestEntryTest extends IntegrationTest {
     void validateQr_unknown_rejected() {
         Long resortId = aResort().getIdResort();
 
-        assertThatThrownBy(() -> guestService.validateGuestEntry("no-existe-este-token", resortId))
+        assertThatThrownBy(() -> guestService.validateGuestEntry("no-existe-este-token", false, resortId, admin()))
                 .isInstanceOf(GuestNotFoundException.class);
     }
 
@@ -85,7 +90,7 @@ class GuestEntryTest extends IntegrationTest {
                 Status.CONFIRMED, now());
         Guest guest = aGuest(futura, "Titular Futuro", client.getDni());
 
-        assertThatThrownBy(() -> guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest)))
+        assertThatThrownBy(() -> guestService.validateGuestEntry(guest.getQrToken(), false, resortOf(guest), admin()))
                 .isInstanceOf(BookingNotInValidPeriodException.class);
     }
 
@@ -98,7 +103,7 @@ class GuestEntryTest extends IntegrationTest {
                 Status.CONFIRMED, now().minusDays(20));
         Guest guest = aGuest(vencida, "Titular Vencido", client.getDni());
 
-        assertThatThrownBy(() -> guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest)))
+        assertThatThrownBy(() -> guestService.validateGuestEntry(guest.getQrToken(), false, resortOf(guest), admin()))
                 .isInstanceOf(BookingNotInValidPeriodException.class);
     }
 
@@ -111,7 +116,7 @@ class GuestEntryTest extends IntegrationTest {
                 Status.PENDING, now());
         Guest guest = aGuest(pendiente, "Titular Impago", client.getDni());
 
-        assertThatThrownBy(() -> guestService.validateGuestEntry(guest.getQrToken(), resortOf(guest)))
+        assertThatThrownBy(() -> guestService.validateGuestEntry(guest.getQrToken(), false, resortOf(guest), admin()))
                 .isInstanceOf(BookingNotPaidException.class);
     }
 
@@ -120,7 +125,7 @@ class GuestEntryTest extends IntegrationTest {
     void validateId_currentBooking_allowsEntry() {
         Guest guest = huespedDeReservaVigente();
 
-        GuestValidationResponse response = guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest));
+        GuestValidationResponse response = guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest), admin());
 
         assertThat(response.fullName()).isEqualTo("Titular Vigente");
         assertThat(guestRepository.findById(guest.getIdGuest()).orElseThrow().getLastEntryAt())
@@ -131,9 +136,9 @@ class GuestEntryTest extends IntegrationTest {
     @DisplayName("un DNI ya validado sirve otra vez durante la estadía")
     void validateId_twice_allowsEntry() {
         Guest guest = huespedDeReservaVigente();
-        guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest));
+        guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest), admin());
 
-        assertThat(guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest)).fullName())
+        assertThat(guestService.validateGuestEntryByDni(guest.getDni(), resortOf(guest), admin()).fullName())
                 .isEqualTo("Titular Vigente");
     }
 
@@ -142,7 +147,7 @@ class GuestEntryTest extends IntegrationTest {
     void validateId_withoutBooking_rejected() {
         Long resortId = aResort().getIdResort();
 
-        assertThatThrownBy(() -> guestService.validateGuestEntryByDni("99999999", resortId))
+        assertThatThrownBy(() -> guestService.validateGuestEntryByDni("99999999", resortId, admin()))
                 .isInstanceOf(GuestNotFoundException.class);
     }
 
@@ -160,7 +165,7 @@ class GuestEntryTest extends IntegrationTest {
         aGuest(walkIn, "Persona De Mostrador", null);
 
         GuestValidationResponse response =
-                guestService.validateGuestEntryByDni("38421567", unit.getResort().getIdResort());
+                guestService.validateGuestEntryByDni("38421567", unit.getResort().getIdResort(), admin());
 
         assertThat(response.fullName()).isEqualTo("Persona De Mostrador");
     }

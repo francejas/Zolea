@@ -79,6 +79,22 @@ class MyResortUpdateTest extends IntegrationTest {
     }
 
     @Test
+    @DisplayName("sin coverPhotoUrl, la dirección de la portada queda como estaba")
+    void missingPhotoUrl_keepsTheOldOne() throws Exception {
+        // Desde que las fotos se suben (GH-67), Mi balneario ya no tiene el campo de la dirección:
+        // la que había queda como portada mientras el balneario no tenga fotos subidas.
+        mockMvc.perform(json(put("/api/resorts/my"), """
+                        {"name":"%s","location":"%s","description":"Parador nuevo.","amenityIds":[]}"""
+                        .formatted(resort.getName(), resort.getLocation())))
+                .andExpect(status().isOk());
+
+        syncWithDatabase();
+        Resort saved = resortRepository.findById(resort.getIdResort()).orElseThrow();
+        assertThat(saved.getCoverPhotoUrl()).isEqualTo("https://ejemplo.test/portada.jpg");
+        assertThat(saved.getDescription()).isEqualTo("Parador nuevo.");
+    }
+
+    @Test
     @DisplayName("el PUT con el id sigue conservando lo que llega vacío")
     void putById_stillKeepsEmptyFields() throws Exception {
         mockMvc.perform(json(put("/api/resorts/" + resort.getIdResort()), """

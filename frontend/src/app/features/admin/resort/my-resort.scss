@@ -1,5 +1,5 @@
-/* Mi balneario. Se diseña desde la computadora: a la izquierda la cuenta, los datos, los servicios y
-   la baja, cada uno en su tarjeta para que se lean por separado; a la derecha, fija mientras se
+/* Mi balneario. Se diseña desde la computadora: a la izquierda la cuenta, los datos, los servicios,
+   las fotos y la baja, cada uno en su tarjeta para que se lean por separado; a la derecha, fija mientras se
    baja, la tarjeta de la Portada armada con lo que hay escrito. Debajo de 960 px va todo en una
    columna, con la tarjeta de la Portada después del formulario. */
 
@@ -42,6 +42,7 @@
   grid-template-areas:
     'account'
     'form'
+    'photos'
     'preview'
     'status';
   gap: var(--space-6);
@@ -53,8 +54,9 @@
     grid-template-areas:
       'account preview'
       'form preview'
+      'photos preview'
       'status preview';
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     column-gap: var(--space-7);
   }
 
@@ -77,6 +79,10 @@
   grid-area: form;
   display: grid;
   gap: var(--space-5);
+}
+
+.my-resort__photos {
+  grid-area: photos;
 }
 
 .my-resort__status {

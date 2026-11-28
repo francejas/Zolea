@@ -1,10 +1,12 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { Amenity, RentalUnit, Resort } from '../../../core/api/resort.models';
 import { SessionService } from '../../../core/session/session.service';
+import { ResortPhotos } from './resort-photos/resort-photos';
 import { MyResort } from './my-resort';
 
 const RESORTS = `${environment.apiUrl}/api/resorts`;
@@ -33,6 +35,7 @@ const myResort: Resort = {
   name: 'Zolea Club de Playa',
   location: 'Mar del Plata, Buenos Aires',
   coverPhotoUrl: 'https://ejemplo.com/portada.jpg',
+  photos: [],
   description: 'Carpas y sombrillas frente al mar.',
   active: true,
   amenities: [catalog[0], catalog[2]],
@@ -140,9 +143,8 @@ describe('MyResort', () => {
     expect(page.querySelector<HTMLTextAreaElement>('#resort-description')!.value).toBe(
       'Carpas y sombrillas frente al mar.',
     );
-    expect(page.querySelector<HTMLInputElement>('#resort-photo')!.value).toBe(
-      'https://ejemplo.com/portada.jpg',
-    );
+    // La foto ya no es una dirección escrita: las fotos se suben en su sección (GH-67).
+    expect(page.querySelector('#resort-photo')).toBeNull();
     expect(catalog.map((a) => amenity(a.name).checked)).toEqual([true, false, true, false, false]);
     // Los servicios los carga Zolea: el balneario solo elige, y no hay enlace para pedirlos.
     const missing = page.querySelector('.my-resort__missing')!;
@@ -165,7 +167,6 @@ describe('MyResort', () => {
       name: 'Zolea Club de Playa',
       location: 'Mar del Plata, Buenos Aires',
       description: 'Carpas, sombrillas y parador.',
-      coverPhotoUrl: 'https://ejemplo.com/portada.jpg',
       amenityIds: [3, 4],
     });
     put.flush({
@@ -181,27 +182,55 @@ describe('MyResort', () => {
     expect(text(page.querySelector('.z-alert--success'))).toContain('Guardamos los cambios');
   });
 
-  it('vaciar la descripción y la foto las borra: el pedido las manda vacías', async () => {
+  it('vaciar la descripción la borra: el pedido la manda vacía, y la foto no viaja', async () => {
     await open();
 
     await type('#resort-description', '');
-    await type('#resort-photo', '');
     await save();
 
     const put = http.expectOne(`${RESORTS}/my`);
     expect(put.request.body.description).toBe('');
-    expect(put.request.body.coverPhotoUrl).toBe('');
-    put.flush({
-      message: 'ok',
-      resort: { ...myResort, description: null, coverPhotoUrl: null },
-    });
+    // Sin el campo, el backend deja la dirección de la portada que tenía.
+    expect('coverPhotoUrl' in put.request.body).toBe(false);
+    put.flush({ message: 'ok', resort: { ...myResort, description: null } });
     await settle();
 
     expect(page.querySelector<HTMLTextAreaElement>('#resort-description')!.value).toBe('');
-    expect(page.querySelector<HTMLInputElement>('#resort-photo')!.value).toBe('');
-    // Sin foto, la tarjeta queda con el dibujo de cielo, mar y arena, como en la Portada.
-    expect(page.querySelector('.my-resort__preview img')).toBeNull();
     expect(text(page.querySelector('.z-alert--success'))).toContain('Guardamos los cambios');
+  });
+
+  describe('fotos', () => {
+    const photo = (id: number) => ({ idPhoto: id, url: `http://api.test/fotos/${id}.jpg` });
+
+    it('subir fotos cambia la portada de la vista previa sin tocar lo que se está escribiendo', async () => {
+      await open();
+      await type('#resort-name', 'Zolea Playa Norte');
+
+      const photos = fixture.debugElement.query(By.directive(ResortPhotos)).componentInstance;
+      photos.photosChange.emit([photo(5), photo(6)]);
+      await fixture.whenStable();
+
+      expect(page.querySelector('.my-resort__preview img')!.getAttribute('src')).toBe(
+        'http://api.test/fotos/5.jpg',
+      );
+      expect(page.querySelector<HTMLInputElement>('#resort-name')!.value).toBe('Zolea Playa Norte');
+      expect(page.querySelectorAll('.photos__item').length).toBe(2);
+    });
+
+    it('al borrar la última, la portada vuelve a la dirección que tenía el balneario', async () => {
+      await open({ ...myResort, photos: [photo(5)], coverPhotoUrl: photo(5).url });
+
+      const photos = fixture.debugElement.query(By.directive(ResortPhotos)).componentInstance;
+      photos.photosChange.emit([]);
+      await fixture.whenStable();
+      // La dirección vieja la sabe el backend: se pide de nuevo el balneario.
+      http.expectOne(`${RESORTS}/my`).flush(myResort);
+      await settle();
+
+      expect(page.querySelector('.my-resort__preview img')!.getAttribute('src')).toBe(
+        'https://ejemplo.com/portada.jpg',
+      );
+    });
   });
 
   it('el campo de ubicación es la dirección, como la buscarías en un mapa', async () => {
@@ -316,7 +345,7 @@ describe('MyResort', () => {
       button('Desactivar el balneario')!.click();
       await fixture.whenStable();
       const confirm = page.querySelector<HTMLButtonElement>(
-        'dialog z-btn[variant="danger"] button',
+        '#deactivate-dialog z-btn[variant="danger"] button',
       );
       expect(confirm!.classList).toContain('z-btn--danger');
     });
@@ -326,7 +355,7 @@ describe('MyResort', () => {
 
       button('Desactivar el balneario')!.click();
       await fixture.whenStable();
-      const dialog = page.querySelector('dialog')!;
+      const dialog = page.querySelector('#deactivate-dialog')!;
       expect(dialog.hasAttribute('open')).toBe(true);
       expect(text(dialog)).toContain('Deja de aparecer en la Portada');
       expect(text(dialog)).toContain('las reservas que ya tiene siguen valiendo');
@@ -344,7 +373,9 @@ describe('MyResort', () => {
 
       button('Desactivar el balneario')!.click();
       await fixture.whenStable();
-      page.querySelector<HTMLButtonElement>('dialog z-btn[variant="danger"] button')!.click();
+      page
+        .querySelector<HTMLButtonElement>('#deactivate-dialog z-btn[variant="danger"] button')!
+        .click();
       const put = http.expectOne(`${RESORTS}/1/inactive`);
       expect(put.request.method).toBe('PUT');
       put.flush({ message: 'ok', resort: { ...myResort, active: false } });
@@ -387,7 +418,9 @@ describe('MyResort', () => {
 
       button('Desactivar el balneario')!.click();
       await fixture.whenStable();
-      page.querySelector<HTMLButtonElement>('dialog z-btn[variant="danger"] button')!.click();
+      page
+        .querySelector<HTMLButtonElement>('#deactivate-dialog z-btn[variant="danger"] button')!
+        .click();
       http
         .expectOne(`${RESORTS}/1/inactive`)
         .flush({ message: 'ok', resort: { ...myResort, active: false } });
@@ -401,7 +434,9 @@ describe('MyResort', () => {
 
       button('Desactivar el balneario')!.click();
       await fixture.whenStable();
-      page.querySelector<HTMLButtonElement>('dialog z-btn[variant="danger"] button')!.click();
+      page
+        .querySelector<HTMLButtonElement>('#deactivate-dialog z-btn[variant="danger"] button')!
+        .click();
       http
         .expectOne(`${RESORTS}/1/inactive`)
         .flush({ error: 'Sin conexión' }, { status: 500, statusText: 'Error' });

@@ -4,7 +4,7 @@
    Reglas del sistema de diseño: números a la derecha y tabulares, códigos en mono, cabecera en mono
    mayúscula sobre arena suave, acciones con texto. Las tablas son del administrador y se diseñan
    en escritorio: debajo de 768 px cada fila pasa a ser una tarjeta, con la cabecera de cada dato
-   tomada del `data-label` de su celda. */
+   tomada del `data-label` de su celda, o una fila compacta con `.z-table--compact`. */
 
 .z-table-wrap {
   position: relative; /* contiene al texto oculto de la cabecera: si no, se escapa y ensancha la página */
@@ -145,5 +145,37 @@
   /* El botón chico es solo para escritorio: en el celular, de 44 px de alto para el dedo. */
   .z-table .z-btn--small {
     height: var(--touch-min);
+  }
+
+  /* --- Filas compactas (GH-79) ------------------------------------------------------------
+     Con .z-table--compact, cada fila es una ficha baja, sin las etiquetas en mayúscula: cada
+     pantalla ubica sus celdas con grid-template-areas sobre el tr. La tabla de la computadora no
+     cambia. */
+  .z-table--compact tbody tr {
+    position: relative;
+    display: grid;
+    align-items: center;
+    gap: 2px var(--space-3);
+    margin-bottom: var(--space-2);
+    padding: 8px var(--space-4);
+  }
+
+  .z-table--compact td,
+  .z-table--compact .is-num,
+  .z-table--compact .is-actions {
+    display: block;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .z-table--compact .is-num {
+    text-align: right;
+  }
+
+  .z-table--compact td[data-label]::before {
+    content: none;
   }
 }

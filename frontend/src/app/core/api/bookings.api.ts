@@ -11,6 +11,7 @@ import {
   WalkInBookingRequest,
   WalkInBookingResponse,
 } from './booking.models';
+import { GuestEntry } from './entry.models';
 
 /** Las reservas. Lo usan el Detalle, Reservar y las reservas del balneario: cada uno suma lo suyo. */
 @Injectable({
@@ -22,6 +23,14 @@ export class BookingsApi {
 
   get(id: string | number): Observable<Booking> {
     return this.http.get<Booking>(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * Cada ingreso de las personas de la reserva, del más nuevo al más viejo. Los ve el
+   * administrador del balneario y el cliente dueño.
+   */
+  entries(id: string | number): Observable<GuestEntry[]> {
+    return this.http.get<GuestEntry[]>(`${this.apiUrl}/${id}/entries`);
   }
 
   /** Las reservas de un cliente. Tiene que ser el de la sesión: las de otro responden 403. */

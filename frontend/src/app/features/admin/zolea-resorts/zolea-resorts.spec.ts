@@ -41,6 +41,7 @@ const resort = (overrides: Partial<Resort> = {}): Resort => ({
   name: 'Balneario Pinamar Norte',
   location: 'Av. Bunge 1200, Pinamar, Buenos Aires',
   coverPhotoUrl: null,
+  photos: [],
   description: null,
   active: true,
   amenities: [],

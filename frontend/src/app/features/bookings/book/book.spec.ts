@@ -45,6 +45,7 @@ function resort(overrides: Partial<Resort> = {}): Resort {
     name: 'Zolea Club de Playa',
     location: 'Mar del Plata, Buenos Aires',
     coverPhotoUrl: null,
+    photos: [],
     description: null,
     active: true,
     amenities: [],
