@@ -253,13 +253,13 @@ public class GlobalExceptionHandler {
         return respuesta(HttpStatus.NOT_FOUND, "No existe la dirección pedida.");
     }
 
-    /** Un alta de balneario con datos inválidos (#71): igual que un error de validación. */
     /** Un pedido de la cuenta de Zolea sobre una cuenta, con datos inválidos (#72): 400 con {@code campos}. */
     @ExceptionHandler(AccountRequestInvalidException.class)
     public ResponseEntity<Map<String, Object>> handleCuentaInvalida(AccountRequestInvalidException ex) {
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage(), "campos", ex.getFields()));
     }
 
+    /** Un alta de balneario con datos inválidos (#71): igual que un error de validación. */
     @ExceptionHandler(ResortRegistrationInvalidException.class)
     public ResponseEntity<Map<String, Object>> handleAltaDeBalnearioInvalida(ResortRegistrationInvalidException ex) {
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage(), "campos", ex.getFields()));

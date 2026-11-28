@@ -312,6 +312,22 @@ describe('ZoleaUserDetail', () => {
       http.expectNone(`${ACCOUNTS}/16/managed-resort`);
     });
 
+    it('las dos acciones destructivas de la página van con contorno rojo (#70)', async () => {
+      await open();
+      await respondWith(
+        account({
+          type: 'RESORT_ADMIN',
+          managedResort: { idResort: 1, name: 'Zolea Club de Playa', active: true },
+        }),
+      );
+
+      const actions = page.querySelector('.user__actions')!;
+      expect(button('Quitarle el balneario', actions)!.classList).toContain(
+        'z-btn--danger-outline',
+      );
+      expect(button('Desactivar la cuenta', actions)!.classList).toContain('z-btn--danger-outline');
+    });
+
     it('quitarle el balneario pide confirmación y la vuelve cliente', async () => {
       await open();
       await respondWith(
