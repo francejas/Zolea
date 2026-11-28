@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { Amenity, Resort } from '../../../core/api/resort.models';
-import { dayRange } from '../../../shared/utils/format';
+import { dayRange, money } from '../../../shared/utils/format';
 import { ResortList } from './resort-list';
 
 const API = `${environment.apiUrl}/api/resorts`;
@@ -477,6 +477,28 @@ describe('ResortList', () => {
         expect(router.navigate).toHaveBeenCalledWith(['/'], {
           queryParams: { stars: 5, sort: 'rating' },
         });
+      });
+
+      it('con Carpa y Sombrilla marcadas, que es cualquiera, no hay chip de tipo', async () => {
+        await arriveWith({ type: 'TENT,UMBRELLA', maxPrice: '9000' });
+        http.expectOne(`${API}?maxPrice=9000`).flush([]);
+        await fixture.whenStable();
+
+        expect(chips()).toEqual([`Hasta ${money(9000)}`.replace(/\s+/g, ' ')]);
+      });
+
+      it('la × del único tipo marcado amplía la búsqueda a los dos', async () => {
+        await arriveWith({ type: 'UMBRELLA', maxPrice: '9000' });
+        http.expectOne(`${API}?type=UMBRELLA&maxPrice=9000`).flush([]);
+        await fixture.whenStable();
+
+        const typeChip = Array.from(
+          page.querySelectorAll<HTMLButtonElement>('.filters__chip'),
+        ).find((chip) => chip.textContent!.includes('Sombrilla'))!;
+        typeChip.click();
+        await fixture.whenStable();
+
+        expect(router.navigate).toHaveBeenCalledWith(['/'], { queryParams: { maxPrice: 9000 } });
       });
 
       it('cada filtro puesto es un chip; el orden no', async () => {

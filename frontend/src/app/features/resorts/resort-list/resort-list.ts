@@ -267,11 +267,14 @@ export class ResortList {
         without: (f) => ({ ...f, from: null, to: null }),
       });
     }
-    for (const type of filters.types) {
+    // Con los dos tipos marcados es «cualquiera»: no saca ningún balneario, así que no es un chip
+    // (al backend tampoco viaja, ver `toApiFilters`). Con uno solo, su × los deja a los dos.
+    if (filters.types.length === 1) {
+      const [type] = filters.types;
       chips.push({
         key: `type-${type}`,
         label: UNIT_TYPE_LABEL[type],
-        without: (f) => ({ ...f, types: f.types.filter((other) => other !== type) }),
+        without: (f) => ({ ...f, types: [] }),
       });
     }
     if (filters.maxPrice) {
