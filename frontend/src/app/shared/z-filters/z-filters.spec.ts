@@ -6,7 +6,10 @@ import { ZFilters } from './z-filters';
   imports: [ZFilters],
   template: `
     <z-filters label="Filtrar reservas" [count]="count()">
-      <label>Estado <select id="estado"></select></label>
+      <label
+        >Estado
+        <select id="estado"></select
+      ></label>
     </z-filters>
   `,
 })
