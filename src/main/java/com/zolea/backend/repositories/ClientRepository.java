@@ -28,4 +28,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     Optional<Client> findByDni(String dni);
 
+    /** Los administradores de balneario: la lista de balnearios de la cuenta de Zolea dice quién lleva cada uno. */
+    List<Client> findByManagedResortIsNotNull();
+
 }

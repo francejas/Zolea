@@ -22,6 +22,7 @@ import com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitRetiredException;
 import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
+import com.zolea.backend.exceptions.resort.ResortRegistrationInvalidException;
 import com.zolea.backend.exceptions.review.ReviewNotFoundException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -247,6 +248,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, String>> handleDireccionInexistente(NoResourceFoundException ex) {
         return respuesta(HttpStatus.NOT_FOUND, "No existe la dirección pedida.");
+    }
+
+    /** Un alta de balneario con datos inválidos (#71): igual que un error de validación. */
+    @ExceptionHandler(ResortRegistrationInvalidException.class)
+    public ResponseEntity<Map<String, Object>> handleAltaDeBalnearioInvalida(ResortRegistrationInvalidException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage(), "campos", ex.getFields()));
     }
 
     /**

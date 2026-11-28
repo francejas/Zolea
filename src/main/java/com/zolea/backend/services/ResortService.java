@@ -1,24 +1,30 @@
 package com.zolea.backend.services;
 
 import com.zolea.backend.dtos.amenity.AmenityResponse;
+import com.zolea.backend.dtos.client.AdminAccountRequest;
 import com.zolea.backend.dtos.rentalunit.RentalUnitResponse;
 import com.zolea.backend.dtos.resort.*;
 import com.zolea.backend.exceptions.booking.InvalidBookingRangeException;
+import com.zolea.backend.exceptions.client.ClientDataTakenException;
 import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
 import com.zolea.backend.models.Amenity;
 import com.zolea.backend.models.Booking;
+import com.zolea.backend.models.Client;
 import com.zolea.backend.models.Guest;
 import com.zolea.backend.models.RentalUnit;
 import com.zolea.backend.models.Resort;
 import com.zolea.backend.repositories.AmenityRepository;
 import com.zolea.backend.repositories.BookingRepository;
+import com.zolea.backend.repositories.ClientRepository;
 import com.zolea.backend.repositories.RentalUnitRepository;
 import com.zolea.backend.repositories.ResortAvailability;
 import com.zolea.backend.repositories.ResortRating;
 import com.zolea.backend.repositories.ResortRepository;
 import com.zolea.backend.repositories.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +35,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -56,6 +63,8 @@ public class ResortService {
     private final ReviewRepository reviewRepository;
     private final RentalUnitRepository rentalUnitRepository;
     private final BookingRepository bookingRepository;
+    private final ClientRepository clientRepository;
+    private final PasswordEncoder passwordEncoder;
     private final Clock clock;
 
     /**
@@ -206,27 +215,94 @@ public class ResortService {
         return mapToResponse(resort);
     }
 
+    /**
+     * Todos los balnearios, activos e inactivos, para la cuenta de Zolea (#71): con su administrador
+     * y cuántas unidades tienen, sin las dadas de baja. Ordenados por nombre.
+     *
+     * <p>Si un balneario tiene más de un administrador, va el que figura en su {@code adminEmail}
+     * (con el que se dio de alta); si ninguno coincide, el primero.
+     */
+    public List<ResortSummaryResponse> getAllForZolea() {
+        Map<Long, List<Client>> adminsByResort = clientRepository.findByManagedResortIsNotNull().stream()
+                .sorted(Comparator.comparing(Client::getIdClient))
+                .collect(Collectors.groupingBy(c -> c.getManagedResort().getIdResort()));
+
+        return resortRepository.findAll(Sort.by("name")).stream()
+                .map(r -> new ResortSummaryResponse(
+                        r.getIdResort(),
+                        r.getName(),
+                        r.getLocation(),
+                        r.isActive(),
+                        r.getRentalUnits() == null ? 0
+                                : r.getRentalUnits().stream().filter(u -> !u.isRetired()).count(),
+                        adminOf(r, adminsByResort.getOrDefault(r.getIdResort(), List.of()))))
+                .toList();
+    }
+
+    private static ResortSummaryResponse.ResortAdminResponse adminOf(Resort resort, List<Client> admins) {
+        return admins.stream()
+                .filter(a -> a.getEmail().equalsIgnoreCase(String.valueOf(resort.getAdminEmail())))
+                .findFirst()
+                .or(() -> admins.stream().findFirst())
+                .map(a -> new ResortSummaryResponse.ResortAdminResponse(
+                        a.getIdClient(), a.getFirstName(), a.getLastName(), a.getEmail()))
+                .orElse(null);
+    }
+
+    /**
+     * Da de alta un balneario junto con su administrador (#71): crea la cuenta del administrador
+     * con el balneario asignado, para que ingrese con la contraseña provisoria y vea su Mi balneario.
+     * Nace activo.
+     *
+     * @throws ResortInvalidRegisterException si ya hay un balneario con ese nombre.
+     * @throws ClientDataTakenException       si el email, el teléfono o el DNI ya son de otra cuenta:
+     *                                        el campo va como {@code admin.email}, como en el pedido.
+     */
     @Transactional
-    public ResortResponse registerResort(ResortRequest request) {
+    public ResortResponse registerResort(ResortRegistrationRequest request) {
         if (resortRepository.findByName(request.name()).isPresent()) {
-            throw new ResortInvalidRegisterException("Resort with name " + request.name() + " already exists");
+            throw new ResortInvalidRegisterException("Ya hay un balneario con ese nombre.");
+        }
+
+        // Antes de guardar: cada prueba corre en una transacción que se revierte y la restricción
+        // única de la base no saltaría, y en la app el 409 de la base no dice cuál de los datos es.
+        AdminAccountRequest admin = request.admin();
+        if (clientRepository.findByEmail(admin.email()).isPresent()
+                || resortRepository.findByAdminEmail(admin.email()).isPresent()) {
+            throw new ClientDataTakenException("admin.email", "Ya hay otra cuenta con ese email.");
+        }
+        if (clientRepository.findByPhone(admin.phone()).isPresent()) {
+            throw new ClientDataTakenException("admin.phone", "Ya hay otra cuenta con ese teléfono.");
+        }
+        if (clientRepository.findByDni(admin.dni()).isPresent()) {
+            throw new ClientDataTakenException("admin.dni", "Ya hay otra cuenta con ese DNI.");
         }
 
         Resort resort = new Resort();
-        resort.setName(request.name());
-        resort.setLocation(request.location());
-        resort.setAdminEmail(request.adminEmail());
-        resort.setCoverPhotoUrl(request.coverPhotoUrl());
-        resort.setDescription(request.description());
+        resort.setName(request.name().trim());
+        resort.setLocation(request.location().trim());
+        // Mi balneario lo busca por este email: es el de su administrador.
+        resort.setAdminEmail(admin.email());
+        resort.setCoverPhotoUrl(blankToNull(request.coverPhotoUrl()));
+        resort.setDescription(blankToNull(request.description()));
         resort.setActive(true);
-
-        // Buscar y asignar amenities si enviaron la lista de IDs (notar que usamos request.amenityIds())
         if (request.amenityIds() != null && !request.amenityIds().isEmpty()) {
-            List<Amenity> amenities = amenityRepository.findAllById(request.amenityIds());
-            resort.setAmenities(amenities);
+            resort.setAmenities(amenityRepository.findAllById(request.amenityIds()));
         }
+        Resort saved = resortRepository.save(resort);
 
-        return mapToResponse(resortRepository.save(resort));
+        Client account = new Client();
+        account.setFirstName(admin.firstName().trim());
+        account.setLastName(admin.lastName().trim());
+        account.setEmail(admin.email());
+        account.setPhone(admin.phone());
+        account.setDni(admin.dni());
+        account.setPasswordHash(passwordEncoder.encode(admin.password()));
+        account.setRole("ADMIN");
+        account.setManagedResort(saved);
+        clientRepository.save(account);
+
+        return mapToResponse(saved);
     }
 
     @Transactional

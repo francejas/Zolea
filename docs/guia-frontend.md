@@ -154,13 +154,23 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
 - **Mi balneario** (`PUT /api/resorts/my`) manda el formulario entero: la descripción y la foto se
   reemplazan siempre, y vacías se borran. `PUT /api/resorts/{id}` es parcial: lo que llega vacío
   o no viene se conserva.
-- **Dar de alta un balneario** (`POST /api/resorts`) también es solo de la cuenta de Zolea, y solo
-  por la API: no tiene pantalla. El administrador de un balneario recibe `403`. Esa cuenta carga
-  el catálogo y da de alta balnearios, y nada más: el panel le sigue respondiendo `403`.
+- **Los balnearios** son de la cuenta de Zolea (#71), en la pantalla Balnearios
+  (`/admin/resorts`). El administrador de un balneario recibe `403` en el listado y en el alta.
+  - `GET /api/resorts/all`: todos, activos e inactivos, ordenados por nombre, con su
+    administrador (`admin`, o `null` si no tiene) y `unitCount`, sin las unidades dadas de baja.
+  - `POST /api/resorts`: da de alta el balneario **junto con su administrador**. Lleva `name`,
+    `location` y opcionalmente `coverPhotoUrl`, `description` y `amenityIds`, más `admin` con
+    `firstName`, `lastName`, `email`, `phone`, `dni` (7 u 8 números) y `password` (provisoria).
+    Crea la cuenta ADMIN con ese balneario asignado, que ingresa con esa contraseña y ve su Mi
+    balneario. Los errores de un campo del administrador van en `campos` como `admin.email`; un
+    email, teléfono o DNI que ya es de otra cuenta responde `409` con el campo.
+  - `PUT /api/resorts/{id}/inactive` y `/active`: la cuenta de Zolea desactiva y reactiva
+    cualquiera; el administrador de un balneario, solo el suyo.
+  Esa cuenta maneja el catálogo y los balnearios, y nada más: el panel le sigue respondiendo `403`.
 - En el frontend, la cuenta de Zolea se reconoce por `/me` con `role: ADMIN` e `idManagedResort`
-  vacío. Al ingresar va directo a `/admin/amenities`, su barra lateral solo tiene el catálogo, y
-  cualquier otra pantalla de `/admin` la devuelve ahí. El administrador de un balneario no ve el
-  catálogo: `/admin/amenities` lo lleva a su Panel (`adminAreaGuard`).
+  vacío. Al ingresar va directo a `/admin/amenities`, su barra lateral tiene el catálogo y
+  Balnearios, y cualquier otra pantalla de `/admin` le muestra la página 403. El administrador de un
+  balneario, en esas dos, ve la página 403 (`adminAreaGuard`).
 - Un administrador **no reserva por `POST /api/bookings`**, ni a su nombre: usa la de mostrador. Y
   por `GET /api/clients/{id}`, `PUT /api/clients/{id}` y `GET /api/bookings/client/{id}` solo llega
   a **su propio** perfil: a sus clientes los ve en `GET /api/clients`.
