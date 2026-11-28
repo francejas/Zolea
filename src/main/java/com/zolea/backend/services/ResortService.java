@@ -7,6 +7,7 @@ import com.zolea.backend.dtos.resort.*;
 import com.zolea.backend.exceptions.booking.InvalidBookingRangeException;
 import com.zolea.backend.exceptions.client.ClientDataTakenException;
 import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
+import com.zolea.backend.exceptions.resort.InvalidResortSearchException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
 import com.zolea.backend.models.Amenity;
 import com.zolea.backend.models.Booking;
@@ -98,9 +99,56 @@ public class ResortService {
      */
     public List<ResortResponse> search(ResortSearch search) {
         validateDates(search.from(), search.to(), false);
-        if (search.isEmpty()) {
-            return getAll();
+        validateRating(search);
+        List<ResortResponse> found = search.isEmpty() ? getAll() : searchUnits(search);
+        return byRating(found, search);
+    }
+
+    /**
+     * El puntaje y el orden de la búsqueda (#73), sobre lo que ya pasó los demás filtros. Se mira el
+     * promedio que muestra la tarjeta, con un decimal: así «4 o más» deja lo que se ve como 4,0 o
+     * más, y las estrellas exactas van de 4,0 a 4,9.
+     */
+    private static List<ResortResponse> byRating(List<ResortResponse> resorts, ResortSearch search) {
+        if (!search.hasRatingFilter() && !search.sortsByRating()) {
+            return resorts;
         }
+        var stream = resorts.stream();
+        if (search.minRating() != null) {
+            stream = stream.filter(r -> r.averageRating() != null
+                    && r.averageRating().compareTo(search.minRating()) >= 0);
+        }
+        if (search.stars() != null) {
+            stream = stream.filter(r -> r.averageRating() != null
+                    && r.averageRating().intValue() == search.stars());
+        }
+        if (search.sortsByRating()) {
+            // Los que no tienen reseñas, al final; a igual promedio, el que tiene más reseñas.
+            stream = stream.sorted(Comparator
+                    .comparing(ResortResponse::averageRating, Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(ResortResponse::reviewCount, Comparator.reverseOrder()));
+        }
+        return stream.toList();
+    }
+
+    /** El puntaje va de 1 a 5, las estrellas son enteras y el único orden es por puntaje. */
+    private static void validateRating(ResortSearch search) {
+        BigDecimal min = search.minRating();
+        if (min != null && (min.compareTo(BigDecimal.ONE) < 0 || min.compareTo(BigDecimal.valueOf(5)) > 0)) {
+            throw new InvalidResortSearchException("El minRating va de 1 a 5: llegó " + min.toPlainString() + ".");
+        }
+        Integer stars = search.stars();
+        if (stars != null && (stars < 1 || stars > 5)) {
+            throw new InvalidResortSearchException("Las stars van de 1 a 5: llegó " + stars + ".");
+        }
+        if (search.sort() != null && !search.sortsByRating()) {
+            throw new InvalidResortSearchException(
+                    "El sort solo puede ser rating, o no mandarse: llegó «" + search.sort() + "».");
+        }
+    }
+
+    /** Los balnearios con al menos una unidad que cumple los filtros de la búsqueda. */
+    private List<ResortResponse> searchUnits(ResortSearch search) {
 
         Map<Long, Long> unitsByResort = rentalUnitRepository.countMatchingUnitsByResort(
                         search.q() == null ? null : likePattern(search.q()),

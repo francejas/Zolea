@@ -50,10 +50,12 @@ public class ResortController {
                     + "Con cualquier filtro, solo los activos que tienen al menos una unidad no bloqueada que "
                     + "cumpla el tipo y el precio y, si vienen fechas, esté libre en esas fechas: sin una reserva "
                     + "pendiente o confirmada que se pise con ellas, contando los dos extremos. Con fechas, "
-                    + "availableUnits dice cuántas unidades cumplen; sin fechas es null.")
+                    + "availableUnits dice cuántas unidades cumplen; sin fechas es null. El puntaje (minRating, "
+                    + "stars) y el orden (sort) se aplican sobre ese resultado, con el promedio que muestra "
+                    + "cada balneario, con un decimal.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Los balnearios que cumplen; la lista vacía si ninguno"),
-            @ApiResponse(responseCode = "400", description = "Una sola de las dos fechas, from después de to, from en el pasado, un type que no existe o un parámetro mal escrito", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Una sola de las dos fechas, from después de to, from en el pasado, un type que no existe, minRating o stars fuera de 1 a 5, un sort que no es rating o un parámetro mal escrito", content = @Content)
     })
     public ResponseEntity<List<ResortResponse>> getResorts(
             @Parameter(description = "Nombre o ubicación, sin distinguir mayúsculas", example = "mar del plata")
@@ -68,9 +70,18 @@ public class ResortController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @Parameter(description = "Servicios que tiene que tener el balneario, todos. Separados por coma "
                     + "o repitiendo el parámetro", example = "[1, 2]")
-            @RequestParam(required = false) List<Long> amenityIds) {
+            @RequestParam(required = false) List<Long> amenityIds,
+            @Parameter(description = "Promedio mínimo de las reseñas, de 1 a 5. Los que no tienen reseñas no pasan",
+                    example = "4.5")
+            @RequestParam(required = false) BigDecimal minRating,
+            @Parameter(description = "Estrellas exactas, de 1 a 5: un promedio de 4 a 4,9 cuenta como 4. "
+                    + "Los que no tienen reseñas no pasan", example = "4")
+            @RequestParam(required = false) Integer stars,
+            @Parameter(description = "rating: por promedio, de mayor a menor, y a igual promedio el de más reseñas; "
+                    + "los que no tienen reseñas, al final. Sin mandar, el orden de siempre", example = "rating")
+            @RequestParam(required = false) String sort) {
         return ResponseEntity.ok(resortService.search(
-                new ResortSearch(q, from, to, type, maxPrice, amenityIds)));
+                new ResortSearch(q, from, to, type, maxPrice, amenityIds, minRating, stars, sort)));
     }
 
     @GetMapping("/{id}")

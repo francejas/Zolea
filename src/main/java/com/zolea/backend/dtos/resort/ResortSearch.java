@@ -17,6 +17,10 @@ import java.util.Objects;
  * @param type       el tipo de unidad.
  * @param maxPrice   el precio diario máximo, incluido.
  * @param amenityIds los servicios que el balneario tiene que tener, todos.
+ * @param minRating  el promedio mínimo de las reseñas, de 1 a 5 (#73).
+ * @param stars      las estrellas exactas, de 1 a 5: un promedio de 4 a 4,9 cuenta como 4 (#73).
+ * @param sort       {@code rating} ordena por promedio, de mayor a menor; sin mandar, el orden de
+ *                   siempre (#73).
  */
 public record ResortSearch(
         String q,
@@ -24,8 +28,14 @@ public record ResortSearch(
         LocalDate to,
         UnitType type,
         BigDecimal maxPrice,
-        List<Long> amenityIds
+        List<Long> amenityIds,
+        BigDecimal minRating,
+        Integer stars,
+        String sort
 ) {
+
+    /** El único orden que se puede pedir, además del de siempre. */
+    public static final String SORT_BY_RATING = "rating";
 
     /**
      * Un texto en blanco cuenta como que no vino —{@code ?q=} es lo que manda un buscador que se
@@ -34,14 +44,27 @@ public record ResortSearch(
      */
     public ResortSearch {
         q = (q == null || q.isBlank()) ? null : q.strip();
+        sort = (sort == null || sort.isBlank()) ? null : sort.strip();
         amenityIds = (amenityIds == null) ? List.of()
                 : amenityIds.stream().filter(Objects::nonNull).distinct().toList();
     }
 
-    /** Si no vino ningún filtro. */
+    /**
+     * Si no vino ningún filtro sobre las unidades. El puntaje y el orden no cuentan: se aplican
+     * sobre el resultado, con el promedio de cada balneario.
+     */
     public boolean isEmpty() {
         return q == null && from == null && to == null && type == null && maxPrice == null
                 && amenityIds.isEmpty();
+    }
+
+    /** Si vino algún filtro de puntaje. */
+    public boolean hasRatingFilter() {
+        return minRating != null || stars != null;
+    }
+
+    public boolean sortsByRating() {
+        return SORT_BY_RATING.equals(sort);
     }
 
     public boolean hasDates() {
