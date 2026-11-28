@@ -35,6 +35,8 @@ export class BookingCard {
   total = input.required<string>();
   heading = input<'h2' | 'h3'>('h2');
   today = input(false);
+  /** La estadía ya terminó: la tarjeta va en espuma, para no parecer vigente (GH-80). */
+  finished = input(false);
   notice = input<BookingCardNotice | null>(null);
   refund = input<string | null>(null);
   paymentError = input<string | null>(null);

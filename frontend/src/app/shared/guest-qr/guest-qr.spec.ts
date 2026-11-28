@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { aBooking, aGuest } from '../../features/bookings/booking.fixtures';
-import { GuestQr } from './guest-qr';
+import { entryLine, GuestQr } from './guest-qr';
 
 // Las fechas del año en curso se muestran sin el año: el reloj queda fijo para que las pruebas
 // no cambien de resultado cuando cambia el año.
@@ -19,12 +19,13 @@ describe('GuestQr', () => {
   let fixture: ComponentFixture<GuestQr>;
   let page: HTMLElement;
 
-  async function render(guest = aGuest()): Promise<void> {
+  async function render(guest = aGuest(), you = false): Promise<void> {
     await TestBed.configureTestingModule({ imports: [GuestQr] }).compileComponents();
     fixture = TestBed.createComponent(GuestQr);
     page = fixture.nativeElement;
     fixture.componentRef.setInput('booking', aBooking({ guests: [guest] }));
     fixture.componentRef.setInput('guest', guest);
+    fixture.componentRef.setInput('you', you);
     await fixture.whenStable();
   }
 
@@ -51,13 +52,26 @@ describe('GuestQr', () => {
     expect(fact('Unidad')).toBe('Sombrilla A-03');
     expect(fact('Días')).toBe('15 → 17 ene');
     expect(fact('Reserva')).toBe('#0047');
-    expect(fact('Ingreso')).toBe('Todavía no entró hoy');
+    expect(fact('Ingreso')).toBe('Todavía no entró');
   });
 
-  it('si ya entró hoy lo dice', async () => {
+  it('si ya entró hoy dice a qué hora', async () => {
     await render(aGuest({ isEntryValidated: true, lastEntryAt: '2026-01-15T10:00:00' }));
 
-    expect(fact('Ingreso')).toBe('Entró hoy');
+    expect(fact('Ingreso')).toBe('Entró hoy a las 10:00');
+  });
+
+  it('a quien mira le habla de vos, y si entró otro día dice cuándo', async () => {
+    await render(aGuest({ isEntryValidated: false, lastEntryAt: '2026-01-14T18:05:30' }), true);
+
+    expect(fact('Ingreso')).toBe('Entraste el 14 ene a las 18:05');
+  });
+
+  it('a quien mira: «Entraste hoy a las…»', () => {
+    expect(
+      entryLine(aGuest({ isEntryValidated: true, lastEntryAt: '2026-01-15T10:12:00' }), true),
+    ).toBe('Entraste hoy a las 10:12');
+    expect(entryLine(aGuest({ lastEntryAt: null }), true)).toBe('Todavía no entraste');
   });
 
   it('sin DNI no muestra la línea del DNI', async () => {

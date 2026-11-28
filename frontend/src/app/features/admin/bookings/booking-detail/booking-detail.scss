@@ -53,10 +53,32 @@ p {
   gap: var(--space-3);
 }
 
+/* Cada tarjeta mide lo que su contenido: la de Ingresos no se estira hasta la de la estadía (ZV-10). */
 .detail__overview {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
   gap: var(--space-5);
+}
+
+.detail__entries {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detail__entry-guest {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.detail__entry-times {
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .detail__stack,

@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 
 import { environment } from '../../../../../environments/environment';
 import { PaymentSummary } from '../../../../core/api/booking.models';
+import { GuestEntry } from '../../../../core/api/entry.models';
 
 import { aBooking, aGuest } from '../../../bookings/booking.fixtures';
 
@@ -38,8 +39,12 @@ describe('Detalle de reserva del administrador', () => {
 
   const dialog = () => page.querySelector('dialog')!;
 
-  async function respond(booking = aBooking()) {
+  /** Responde la reserva y, si no es pendiente, sus ingresos (GH-76). */
+  async function respond(booking = aBooking(), entries: GuestEntry[] = []) {
     http.expectOne(`${API}/47`).flush(booking);
+    await fixture.whenStable();
+    if (booking.status === 'PENDING') return;
+    http.expectOne(`${API}/${booking.id}/entries`).flush(entries);
     await fixture.whenStable();
   }
 
@@ -209,6 +214,8 @@ describe('Detalle de reserva del administrador', () => {
 
       expect(page.querySelector('.detail__count')).toBeNull();
       expect(text(section('entry-title'))).toContain('La estadía todavía no empezó');
+      // Ya dice que no empezó: no repite que todavía no entró nadie.
+      expect(text(section('entry-title'))).not.toContain('Todavía no entró nadie');
       expect(ingreso(rowsOf()[0])).toBe('Todavía no entró');
     });
 
@@ -389,6 +396,61 @@ describe('Detalle de reserva del administrador', () => {
     expect(text(section('entry-title'))).toContain(money(0));
   });
 
+  describe('la tarjeta Ingresos (GH-76)', () => {
+    const card = () => text(section('entry-title'));
+    const entry = (overrides: Partial<GuestEntry>): GuestEntry => ({
+      id: 1,
+      idGuest: 1,
+      fullName: 'Ana Pérez',
+      bookingId: 47,
+      rentalUnitIdentifier: 'A-03',
+      enteredAt: '2026-01-16T10:12:00',
+      method: 'QR',
+      ...overrides,
+    });
+
+    it('lista cada ingreso de cada persona, con la hora y cómo entró', async () => {
+      await respond(aBooking(), [
+        entry({ id: 3, enteredAt: '2026-01-16T15:40:00', method: 'DNI' }),
+        entry({ id: 2, idGuest: 2, fullName: 'Luis García', enteredAt: '2026-01-16T11:00:00' }),
+        entry({ id: 1, enteredAt: '2026-01-15T09:05:00', method: 'CODE' }),
+      ]);
+
+      const guests = [...section('entry-title').querySelectorAll('.detail__entries > li')].map(
+        text,
+      );
+      expect(guests).toEqual([
+        'Ana Pérez Hoy a las 15:40 · DNI 15 ene a las 09:05 · Código',
+        'Luis García Hoy a las 11:00 · QR',
+      ]);
+    });
+
+    it('sin ingresos dice que todavía no entró nadie', async () => {
+      await respond(aBooking());
+
+      expect(card()).toContain('Todavía no entró nadie');
+    });
+
+    it('en una pendiente dice que se registran al confirmarla, sin pedirlos', async () => {
+      await respond(aBooking({ status: 'PENDING' }));
+
+      expect(card()).toContain('Los ingresos se registran cuando la reserva está confirmada.');
+    });
+
+    it('si no llegan, deja reintentar', async () => {
+      http.expectOne(`${API}/47`).flush(aBooking());
+      await fixture.whenStable();
+      http.expectOne(`${API}/47/entries`).flush(null, { status: 500, statusText: 'Error' });
+      await fixture.whenStable();
+
+      expect(card()).toContain('No pudimos traer los ingresos');
+      button('Reintentar', section('entry-title')).click();
+      http.expectOne(`${API}/47/entries`).flush([entry({})]);
+      await fixture.whenStable();
+      expect(card()).toContain('Hoy a las 10:12');
+    });
+  });
+
   it('maneja una lista vacía de personas', async () => {
     await respond(aBooking({ guests: [] }));
 
@@ -436,6 +498,8 @@ describe('Detalle de reserva del administrador', () => {
       }),
     );
 
+    await fixture.whenStable();
+    http.expectOne(`${API}/48/entries`).flush([]);
     await fixture.whenStable();
 
     expect(text(page.querySelector('h1'))).toBe('Reserva nueva');
