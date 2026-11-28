@@ -131,9 +131,20 @@ describe('guards', () => {
       expect(run(adminAreaGuard, '/admin/amenities?x=1')).toBe(true);
     });
 
+    it('deja a la cuenta de Zolea en Balnearios', () => {
+      user.set(zolea);
+      expect(run(adminAreaGuard, '/admin/resorts')).toBe(true);
+    });
+
     it('a la cuenta de Zolea, en otra pantalla del panel, le muestra el 403', () => {
       user.set(zolea);
-      for (const url of ['/admin', '/admin/units', '/admin/bookings/4', '/admin/validate']) {
+      for (const url of [
+        '/admin',
+        '/admin/resort',
+        '/admin/units',
+        '/admin/bookings/4',
+        '/admin/validate',
+      ]) {
         expect(isForbidden(run(adminAreaGuard, url), url)).toBe(true);
       }
     });
@@ -148,6 +159,11 @@ describe('guards', () => {
     it('al administrador de un balneario que pide el catálogo le muestra el 403', () => {
       user.set(admin);
       expect(isForbidden(run(adminAreaGuard, '/admin/amenities'), '/admin/amenities')).toBe(true);
+    });
+
+    it('al administrador de un balneario que pide Balnearios le muestra el 403', () => {
+      user.set(admin);
+      expect(isForbidden(run(adminAreaGuard, '/admin/resorts'), '/admin/resorts')).toBe(true);
     });
   });
 });

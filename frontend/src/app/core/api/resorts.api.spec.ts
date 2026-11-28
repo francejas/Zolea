@@ -91,6 +91,33 @@ describe('ResortsApi', () => {
     req.flush({ message: 'ok', resort: {} });
   });
 
+  it('all hace GET /api/resorts/all', () => {
+    api.all().subscribe();
+    const req = http.expectOne(`${URL}/all`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('register hace POST /api/resorts con el balneario y su administrador', () => {
+    const request = {
+      name: 'Balneario Pinamar Norte',
+      location: 'Av. Bunge 1200, Pinamar, Buenos Aires',
+      admin: {
+        firstName: 'Laura',
+        lastName: 'Gómez',
+        email: 'laura.gomez@pinamar.com',
+        phone: '+54 2254123456',
+        dni: '30111222',
+        password: 'provisoria1',
+      },
+    };
+    api.register(request).subscribe();
+    const req = http.expectOne(URL);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(request);
+    req.flush({ message: 'ok', resort: {} });
+  });
+
   it('deactivate y activate hacen PUT con el id del balneario', () => {
     api.deactivate(3).subscribe();
     const off = http.expectOne(`${URL}/3/inactive`);

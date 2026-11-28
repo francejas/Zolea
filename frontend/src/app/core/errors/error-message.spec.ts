@@ -74,6 +74,22 @@ describe('Error Utilities', () => {
       expect(toFieldErrors(f, new HttpErrorResponse({ status: 0 }))).toEqual([]);
     });
 
+    it('un campo anidado, como admin.email, cae en su campo del subformulario', async () => {
+      const f = TestBed.runInInjectionContext(() =>
+        form(signal({ name: 'Balneario', admin: { email: 'laura@pinamar.com' } })),
+      );
+
+      await submit(f, async () =>
+        toFieldErrors(f, badRequest({ 'admin.email': 'Ya hay otra cuenta con ese email.' })),
+      );
+
+      expect(f.admin.email().errors()).toEqual([
+        expect.objectContaining({ kind: 'server', message: 'Ya hay otra cuenta con ese email.' }),
+      ]);
+      expect(f.name().errors()).toEqual([]);
+      expect(toFieldErrors(f, badRequest({ 'admin.nada': 'x', 'nada.email': 'y' }))).toEqual([]);
+    });
+
     it('un campo que no está en el formulario no rompe nada', async () => {
       const f = createForm();
       const err = badRequest({ dni: 'DNI inválido', email: 'El email ya está en uso' });

@@ -9,34 +9,26 @@ Proyecto académico · Programación 4 · Universidad Tecnológica Nacional (UTN
 
 Zolea es una plataforma completa para la administración de balnearios y la reserva de carpas y sombrillas. Los clientes pueden explorar balnearios, elegir su unidad en un mapa interactivo, pagar online con MercadoPago y acceder al balneario con un código QR. Los administradores cuentan con un panel completo para gestionar reservas, unidades, precios y validar el ingreso de huéspedes.
 
-### Sobre esta versión (v2)
-
-Este repositorio es la **segunda versión**, y lo que cambia es el backend: se reescribieron las
-reglas del negocio, los permisos, las relaciones entre entidades y el cobro, con una batería de
-pruebas automáticas que los sostienen. El detalle de qué se arregló y por qué está en
+El backend está hecho en Spring Boot y el frontend en Angular 22, los dos en este repositorio: el
+frontend vive en `frontend/`. Las reglas del negocio, los permisos y el cobro están cubiertos por
+pruebas automáticas, y el porqué de cada decisión de arquitectura está en
 [docs/decisiones.md](docs/decisiones.md).
 
-**El frontend está hecho en Angular 22 y vive en `frontend/`, en este mismo repositorio.**
-
-La interfaz de la **v1 en React**, que ocupaba esa carpeta, se quitó de acá: ya no funciona contra
-este backend —cada administrador ve solo su balneario, `ResortResponse` cambió de campos, los
-errores traen el detalle por campo— y sigue publicada en el repositorio del proyecto anterior,
-[francejas/BeachG.v2](https://github.com/francejas/BeachG.v2), como referencia de las pantallas.
-
-Para consumir esta API desde el frontend, la guía es
+Para consumir la API desde el frontend, la guía es
 [docs/guia-frontend.md](docs/guia-frontend.md).
 
 ---
 
 ## 🌐 Demo
 
-Las direcciones de abajo son el despliegue de la **v1**, que sigue en pie. La v2 todavía no
-tiene despliegue propio.
+Zolea no tiene despliegue público: se levanta en la computadora. El backend, como se explica en
+«Instalación y desarrollo local», más abajo; el frontend, como dice
+[frontend/README.md](frontend/README.md). Con todo corriendo:
 
 | Recurso | URL |
 |---|---|
-| Frontend de la v1 — despliegue viejo, queda como muestra de las pantallas | [beach-g.vercel.app](https://beach-g.vercel.app) |
-| API Swagger (local) | `http://localhost:8080/swagger-ui/index.html` |
+| Frontend | `http://localhost:4200` |
+| API Swagger | `http://localhost:8080/swagger-ui/index.html` |
 
 ### Cuentas de prueba
 
@@ -298,7 +290,7 @@ MP_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxxxxxx
 # URL pública del backend — usá ngrok para desarrollo local
 NGROK_BASE_URL=https://xxxx.ngrok-free.app
 
-# URL del frontend — 4200 es el puerto de Angular (3000 era el del frontend de la v1)
+# URL del frontend — 4200 es el puerto de Angular
 FRONTEND_URL=http://localhost:4200
 
 # JWT — usá una clave larga y aleatoria en producción
