@@ -29,13 +29,16 @@ import {
   LucideScanLine,
   LucideX,
 } from '@lucide/angular';
-import { catchError, firstValueFrom, of } from 'rxjs';
+import { catchError, firstValueFrom, of, Subscription } from 'rxjs';
 import { ApiError } from '../../../core/api/api-error';
 import { EntryApi } from '../../../core/api/entry.api';
 import { UnitType } from '../../../core/api/resort.models';
 import { UnitsApi } from '../../../core/api/units.api';
 import { toUserMessage } from '../../../core/errors/error-message';
-import { unitLabel } from '../../../shared/utils/format';
+import { formatDni, unitLabel } from '../../../shared/utils/format';
+import { GuestEntry } from '../../../core/api/entry.models';
+import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { ENTRY_METHOD, entryHour } from '../entry-format';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
@@ -48,9 +51,9 @@ const MODES: Mode[] = ['camera', 'code', 'dni'];
 /** Lo que se ve después de validar. */
 export type Outcome =
   /** Verde: entra. */
-  | { kind: 'in'; name: string; unit: string }
+  | { kind: 'in'; name: string; unit: string; lookup: string }
   /** Rojo: no entra, con el motivo. */
-  | { kind: 'out'; reason: string; hint: string | null }
+  | { kind: 'out'; reason: string; hint: string | null; lookup: string | null }
   /** No hubo respuesta: todavía no se sabe si puede pasar. */
   | { kind: 'error'; message: string };
 
@@ -74,6 +77,11 @@ const NOT_FOUND_HINT: Record<Mode, string> = {
   code: 'Revisá que el código esté bien escrito.',
   dni: 'Revisá el número, o validá con el QR de la entrada.',
 };
+
+/** La línea del resultado con lo que se buscó: «DNI 12.345.678» o «Código tok-…» (ZV-21). */
+function lookupLine(mode: Mode, value: string): string {
+  return mode === 'dni' ? `DNI ${formatDni(value)}` : `Código ${value}`;
+}
 
 /** El botón del resultado, que vuelve a validar. */
 const AGAIN_LABEL: Record<Mode, string> = {
@@ -107,6 +115,7 @@ const AGAIN_LABEL: Record<Mode, string> = {
     ZBtn,
     ZField,
     ZProblem,
+    ZSkeleton,
   ],
   templateUrl: './validate.html',
   styleUrl: './validate.scss',
@@ -177,7 +186,35 @@ export class Validate {
   /** Lo último que se mandó a validar, para reintentarlo si no hubo respuesta. */
   private lastAttempt: { mode: Mode; value: string } | null = null;
 
+  // --- Ingresos de hoy --------------------------------------------------------------------
+
+  /** Los ingresos de hoy en el balneario, del más nuevo al más viejo; null mientras carga. */
+  protected readonly today = signal<GuestEntry[] | null>(null);
+  protected readonly todayError = signal('');
+  protected readonly method = ENTRY_METHOD;
+  protected readonly hour = entryHour;
+  private todayRequest: Subscription | null = null;
+
+  /**
+   * Trae los ingresos de hoy. Después de validar se vuelve a pedir sin vaciar la lista: lo que ya
+   * se veía queda hasta que llega lo nuevo.
+   */
+  protected loadToday(): void {
+    this.todayRequest?.unsubscribe();
+    this.todayError.set('');
+    this.todayRequest = this.entryApi.today().subscribe({
+      next: (entries) => this.today.set(entries),
+      error: (error: HttpErrorResponse) => {
+        this.today.set(null);
+        this.todayError.set(toUserMessage(error));
+      },
+    });
+  }
+
   constructor() {
+    this.loadToday();
+    inject(DestroyRef).onDestroy(() => this.todayRequest?.unsubscribe());
+
     // El tipo de la unidad es un dato de más: si no llega, el resultado dice «Unidad A-03».
     this.unitsApi
       .list()
@@ -309,22 +346,28 @@ export class Validate {
 
     // Un QR que no tiene forma de código no se manda: no es una entrada de Zolea.
     if (mode !== 'dni' && !TOKEN_SHAPE.test(value)) {
-      this.show({ kind: 'out', reason: NOT_ZOLEA, hint: NOT_ZOLEA_HINT });
+      this.show({ kind: 'out', reason: NOT_ZOLEA, hint: NOT_ZOLEA_HINT, lookup: null });
       return;
     }
 
     this.checking.set(true);
     try {
       const request =
-        mode === 'dni' ? this.entryApi.validateDni(value) : this.entryApi.validateQr(value);
+        mode === 'dni'
+          ? this.entryApi.validateDni(value)
+          : this.entryApi.validateQr(value, mode === 'code');
       const guest = await firstValueFrom(request);
       this.show({
         kind: 'in',
         name: guest.fullName,
         unit: this.unitName(guest.rentalUnitIdentifier),
+        lookup: lookupLine(mode, value),
       });
+      // Se suma a «Ingresos de hoy» al momento.
+      this.loadToday();
     } catch (error) {
-      this.show(this.toOutcome(error, mode));
+      const outcome = this.toOutcome(error, mode);
+      this.show(outcome.kind === 'out' ? { ...outcome, lookup: lookupLine(mode, value) } : outcome);
     } finally {
       this.checking.set(false);
     }
@@ -342,8 +385,10 @@ export class Validate {
     }
 
     const reason = (error.error as ApiError | null)?.error;
-    if (error.status === 400 && reason) return { kind: 'out', reason, hint: null };
-    if (error.status === 404 && reason) return { kind: 'out', reason, hint: NOT_FOUND_HINT[mode] };
+    if (error.status === 400 && reason) return { kind: 'out', reason, hint: null, lookup: null };
+    if (error.status === 404 && reason) {
+      return { kind: 'out', reason, hint: NOT_FOUND_HINT[mode], lookup: null };
+    }
     if (error.status === 403) return { kind: 'error', message: NO_RESORT };
     return { kind: 'error', message: toUserMessage(error) };
   }

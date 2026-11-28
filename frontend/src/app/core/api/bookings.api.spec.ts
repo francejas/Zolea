@@ -20,6 +20,14 @@ describe('BookingsApi', () => {
 
   afterEach(() => http.verify());
 
+  it('entries hace GET /api/bookings/{id}/entries', () => {
+    api.entries(62).subscribe();
+
+    const req = http.expectOne(`${URL}/62/entries`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
   it('walkIn hace POST /api/bookings/walkin con el titular de mostrador y sin clientId', () => {
     const request = {
       startDate: '2027-01-10',
