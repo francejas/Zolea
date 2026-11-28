@@ -176,6 +176,23 @@ describe('MyBookings', () => {
       );
     });
 
+    it('una estadía que terminó se ve distinta de una que viene: espuma y «Terminada» (GH-80)', async () => {
+      await respondWith(mixed);
+
+      const upcoming = page.querySelector('.z-booking-card')!;
+      expect(upcoming.classList).not.toContain('z-booking-card--past');
+      expect(upcoming.querySelector('.z-status')!.textContent!.trim()).toBe('Confirmada');
+
+      await open('Pasadas');
+      const past = page.querySelector('.z-booking-card')!;
+      expect(past.classList).toContain('z-booking-card--past');
+      const status = past.querySelector('.z-status')!;
+      expect(status.textContent!.trim()).toBe('Terminada');
+      expect(status.classList).toContain('z-status--neutral');
+      // Cambia solo lo que se ve: sigue siendo una confirmada, con su reserva y su reseña.
+      expect(link('Ver reserva')?.getAttribute('href')).toBe('/bookings/4');
+    });
+
     it('confirmada: lleva a las entradas; si ya pasó, a la reserva', async () => {
       await respondWith(mixed);
 
