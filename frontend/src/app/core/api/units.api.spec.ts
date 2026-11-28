@@ -93,4 +93,25 @@ describe('UnitsApi', () => {
     req.flush({ ...unit, retired: true });
     expect(result?.retired).toBe(true);
   });
+
+  it('savePlan hace PUT /api/resorts/my/plan con la casilla de cada unidad y devuelve las unidades', () => {
+    let result: RentalUnit[] | undefined;
+    api
+      .savePlan([
+        { idRentalUnit: 7, posX: 3, posY: 1 },
+        { idRentalUnit: 8, posX: null, posY: null },
+      ])
+      .subscribe((r) => (result = r));
+
+    const req = http.expectOne(`${environment.apiUrl}/api/resorts/my/plan`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({
+      units: [
+        { idRentalUnit: 7, posX: 3, posY: 1 },
+        { idRentalUnit: 8, posX: null, posY: null },
+      ],
+    });
+    req.flush([{ ...unit, posX: 3, posY: 1 }]);
+    expect(result?.[0].posX).toBe(3);
+  });
 });

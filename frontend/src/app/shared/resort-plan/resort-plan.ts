@@ -22,6 +22,8 @@ interface PlanRow {
   name: string;
   /** «$ 8.500 por día», o «desde $ 7.000 por día» si no todas cuestan lo mismo. */
   priceLabel: string;
+  /** «$ 14.500/día», sin «desde»: el pie de una columna de carpas, que no se parte (ZV-04). */
+  footPrice: string;
   samePrice: boolean;
   units: RentalUnit[];
   /** Las mismas unidades de a dos, para las columnas de carpas. El último renglón puede ir a medias. */
@@ -39,6 +41,16 @@ interface PlanZone {
   rows: PlanRow[];
 }
 
+/** Un grupo de la pestaña «Lista»: una fila del plano, o un tipo entero en el plano libre. */
+interface ListGroup {
+  key: string;
+  /** «Sombrillas · Fila A», o «Carpas» en el plano libre. */
+  legend: string;
+  priceLabel: string;
+  samePrice: boolean;
+  units: RentalUnit[];
+}
+
 type PlanView = 'plan' | 'list';
 
 const TYPE_NAME: Record<UnitType, string> = { UMBRELLA: 'Sombrilla', TENT: 'Carpa' };
@@ -49,6 +61,23 @@ const ZONE_ORDER: UnitType[] = ['UMBRELLA', 'TENT'];
 const OTHER_ROW = 'Otras';
 
 let nextId = 0;
+
+/** Si la unidad tiene casilla en el plano libre (GH-68). */
+const hasCell = (unit: RentalUnit): boolean => unit.posX != null && unit.posY != null;
+
+/** De arriba abajo y de izquierda a derecha: el orden en que se recorre la grilla. */
+const byCell = (a: RentalUnit, b: RentalUnit): number => a.posY! - b.posY! || a.posX! - b.posX!;
+
+const byIdentifier = (a: RentalUnit, b: RentalUnit): number =>
+  a.identifier.localeCompare(b.identifier, 'es', { numeric: true });
+
+/** «$ 8.500 por día», o «desde $ 7.000 por día» si no todas cuestan lo mismo. */
+function priceOf(units: RentalUnit[]): { label: string; foot: string; same: boolean } {
+  const prices = units.map((unit) => unit.dailyPrice);
+  const min = Math.min(...prices);
+  const same = prices.every((price) => price === min);
+  return { label: `${same ? '' : 'desde '}${money(min)} por día`, foot: `${money(min)}/día`, same };
+}
 
 /** [A, B, C] → [[A, B], [C]]. */
 function inPairs<T>(items: T[]): T[][] {
@@ -65,12 +94,17 @@ function inPairs<T>(items: T[]): T[][] {
  *
  * Las sombrillas van en filas frente al mar, la A más cerca. Las carpas van en columnas, una por
  * prefijo, de a dos por renglón, con un pasillo entre columna y columna y una bajada al mar arriba
- * de cada pasillo. Todo sale del tipo y del prefijo del identificador: el backend no guarda
- * posiciones. Si las columnas no entran, el plano se desplaza de costado dentro de su recuadro.
+ * de cada pasillo. Todo sale del tipo y del prefijo del identificador.
+ *
+ * Si alguna unidad tiene casilla (`posX` y `posY`, GH-68), el plano es libre: cada una va en su
+ * casilla de la grilla que armó el balneario en «Diseñar plano», y las que no tienen van abajo,
+ * en filas como las de siempre. Si ninguna tiene, el plano queda como siempre. En los dos casos,
+ * si no entra, se desplaza de costado dentro de su recuadro: ninguna fila se corta en dos (ZV-04).
  *
  * El plano no sabe de fechas: marca las bloqueadas (`isBlocked`) y, si se las pasan en
- * `occupiedIds`, las ocupadas en las fechas elegidas. Las dos se dibujan igual (la sombrilla
- * cerrada) y ninguna se puede elegir; lo que cambia es lo que dicen.
+ * `occupiedIds`, las ocupadas en las fechas elegidas. Ninguna se puede elegir, y se dibujan
+ * distinto, también en escala de grises (ZV-06): la ocupada, lisa en neutro; la no disponible,
+ * punteada y rayada. La leyenda usa las mismas marcas.
  */
 @Component({
   selector: 'z-resort-plan',
@@ -125,16 +159,58 @@ export class ResortPlan {
   }
 
   /** Las zonas con unidades, cada una con sus filas. Una zona vacía no se dibuja. */
-  protected readonly zones = computed<PlanZone[]>(() => {
-    const sorted = [...this.units()].sort((a, b) =>
-      a.identifier.localeCompare(b.identifier, 'es', { numeric: true }),
-    );
+  protected readonly zones = computed<PlanZone[]>(() => this.zonesOf(this.units()));
 
-    return ZONE_ORDER.map((type) => ({
-      type,
-      title: ZONE_TITLE[type],
-      rows: this.rowsOf(sorted.filter((unit) => unit.type === type)),
-    })).filter((zone) => zone.rows.length > 0);
+  /** Las unidades con casilla, de arriba abajo: el orden del Tab. */
+  protected readonly placed = computed(() => this.units().filter(hasCell).sort(byCell));
+
+  /** Con alguna unidad ubicada, el plano se dibuja como grilla. */
+  protected readonly freeLayout = computed(() => this.placed().length > 0);
+
+  /** Las columnas y las filas de la grilla: hasta la última casilla ocupada. */
+  protected readonly gridColumns = computed(
+    () => Math.max(0, ...this.placed().map((unit) => unit.posX!)) + 1,
+  );
+  protected readonly gridRows = computed(
+    () => Math.max(0, ...this.placed().map((unit) => unit.posY!)) + 1,
+  );
+
+  /** En el plano libre, las que no tienen casilla: van abajo, en filas como las de siempre. */
+  protected readonly unplacedZones = computed<PlanZone[]>(() =>
+    this.freeLayout() ? this.zonesOf(this.units().filter((unit) => !hasCell(unit))) : [],
+  );
+
+  /**
+   * Los grupos de la pestaña «Lista». Como siempre, uno por fila; en el plano libre, uno por tipo,
+   * en el orden de la grilla y con las que no tienen casilla al final.
+   */
+  protected readonly listGroups = computed<ListGroup[]>(() => {
+    if (!this.freeLayout()) {
+      return this.zones().flatMap((zone) =>
+        zone.rows.map((row) => ({
+          key: `${zone.type}-${row.prefix}`,
+          legend: `${zone.title} · ${row.name}`,
+          priceLabel: row.priceLabel,
+          samePrice: row.samePrice,
+          units: row.units,
+        })),
+      );
+    }
+    return ZONE_ORDER.map((type) => {
+      const ofType = this.units().filter((unit) => unit.type === type);
+      const units = [
+        ...ofType.filter(hasCell).sort(byCell),
+        ...ofType.filter((unit) => !hasCell(unit)).sort(byIdentifier),
+      ];
+      const price = units.length > 0 ? priceOf(units) : null;
+      return {
+        key: type,
+        legend: ZONE_TITLE[type],
+        priceLabel: price?.label ?? '',
+        samePrice: price?.same ?? true,
+        units,
+      };
+    }).filter((group) => group.units.length > 0);
   });
 
   /** Las carpas, una columna por prefijo. Vacío si el balneario no tiene carpas. */
@@ -167,11 +243,16 @@ export class ResortPlan {
 
   /** Hay alguna ocupada en las fechas: recién ahí la leyenda suma ese estado. */
   protected readonly hasOccupied = computed(() =>
-    this.units().some((unit) => !unit.isBlocked && this.occupied().has(unit.idRentalUnit)),
+    this.units().some((unit) => this.isOccupied(unit)),
   );
 
   protected readonly skeletonRows = [1, 2];
   protected readonly skeletonCells = [1, 2, 3, 4, 5, 6];
+
+  /** Ocupada en las fechas y no bloqueada: una bloqueada dice «No disponible» aunque esté ocupada. */
+  protected isOccupied(unit: RentalUnit): boolean {
+    return !unit.isBlocked && this.occupied().has(unit.idRentalUnit);
+  }
 
   /** Bloqueada u ocupada en las fechas: en los dos casos no se puede elegir. */
   protected isUnavailable(unit: RentalUnit): boolean {
@@ -246,6 +327,16 @@ export class ResortPlan {
     this.unitSelected.emit(unit);
   }
 
+  /** Las unidades por zona, cada una con sus filas, ordenadas por identificador. */
+  private zonesOf(units: RentalUnit[]): PlanZone[] {
+    const sorted = [...units].sort(byIdentifier);
+    return ZONE_ORDER.map((type) => ({
+      type,
+      title: ZONE_TITLE[type],
+      rows: this.rowsOf(sorted.filter((unit) => unit.type === type)),
+    })).filter((zone) => zone.rows.length > 0);
+  }
+
   /** Agrupa por el prefijo del identificador; «Otras» va al final. */
   private rowsOf(units: RentalUnit[]): PlanRow[] {
     const byPrefix = new Map<string, RentalUnit[]>();
@@ -258,14 +349,13 @@ export class ResortPlan {
     return [...byPrefix.entries()]
       .sort(([a], [b]) => (a === OTHER_ROW ? 1 : b === OTHER_ROW ? -1 : 0))
       .map(([prefix, rowUnits]) => {
-        const prices = rowUnits.map((unit) => unit.dailyPrice);
-        const min = Math.min(...prices);
-        const same = prices.every((price) => price === min);
+        const price = priceOf(rowUnits);
         return {
           prefix,
           name: prefix === OTHER_ROW ? OTHER_ROW : `Fila ${prefix}`,
-          priceLabel: `${same ? '' : 'desde '}${money(min)} por día`,
-          samePrice: same,
+          priceLabel: price.label,
+          footPrice: price.foot,
+          samePrice: price.same,
           units: rowUnits,
           pairs: inPairs(rowUnits),
         };

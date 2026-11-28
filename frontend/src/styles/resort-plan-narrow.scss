@@ -15,10 +15,11 @@
     /* Pasillos más angostos: con las unidades chicas de abajo, tres columnas de carpas entran en
        un celular de 360 px sin deslizarse (44 + 4 + 44 por columna y 12 de pasillo). */
     --plan-aisle: 12px;
+    --plan-cell: 48px;
   }
 
   .z-plan .z-plan__row {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(max-content, 1fr);
     gap: var(--space-2);
   }
 

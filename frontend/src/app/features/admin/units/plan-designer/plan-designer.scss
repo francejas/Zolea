@@ -1,0 +1,440 @@
+/* «Diseñar plano»: la playa vista desde arriba, marcada como se marca una playa antes de armar las
+   carpas, con estacas e hilo. Cada cruce de la grilla es una estaca; cada casilla, el lugar de una
+   unidad. Las unidades son las mismas del plano público (z-unit, en styles/units.scss). Se diseña
+   desde la computadora: la grilla al centro y las unidades sin ubicar al costado. */
+
+:host {
+  display: block;
+}
+
+.designer {
+  --cell: 64px;
+  --row: 72px;
+  --rail: 28px;
+
+  display: grid;
+  gap: var(--space-5);
+  max-width: 1200px;
+}
+
+.designer__back {
+  justify-self: start;
+}
+
+.designer__head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.designer__h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.designer__lead {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.designer__skeleton,
+.designer__notices {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.designer__notices:focus {
+  outline: none;
+}
+
+.designer__notices:empty {
+  display: none;
+}
+
+.designer__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.designer__board {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* --- Tamaño del plano --- */
+.designer__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.designer__size {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.designer__size-label {
+  margin-right: var(--space-2);
+  font: 500 var(--text-label) / 1 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.designer__size-btn {
+  border: var(--border);
+}
+
+.designer__size-btn:disabled {
+  color: var(--color-line-strong);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.designer__size-value {
+  min-width: 3ch;
+  font: 600 var(--text-body) / 1 var(--font-mono);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.designer__status {
+  min-height: 1.5em;
+  margin: 0;
+  font-weight: 600;
+}
+
+.designer__keys {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+/* --- La playa --- */
+.designer__frame {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--color-sand);
+}
+
+.designer__beach {
+  display: grid;
+  min-width: min-content;
+}
+
+.designer__sea {
+  display: grid;
+  place-items: center;
+  height: 52px;
+  padding-bottom: 10px;
+  /* La espuma, como en el plano público. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12' viewBox='0 0 40 12'%3E%3Cpath d='M0 7 Q10 0 20 7 T40 7 V12 H0Z' fill='%23E6CDA5'/%3E%3C/svg%3E")
+      bottom left / 40px 12px repeat-x,
+    var(--color-sea);
+}
+
+.designer__sea span,
+.designer__entry span {
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: var(--tracking-label-wide);
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.designer__entry {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  border-top: 1px solid var(--color-line);
+  background: var(--color-cream);
+}
+
+.designer__entry span {
+  color: var(--color-ink-soft);
+}
+
+/* Las reglas: el número de cada columna arriba y el de cada fila al costado. */
+.designer__ruler {
+  display: grid;
+  font: 500 11px/1 var(--font-mono);
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.designer__ruler--top {
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  padding: var(--space-3) var(--space-4) var(--space-1) calc(var(--space-4) + var(--rail));
+  justify-items: center;
+}
+
+.designer__ruler--side {
+  grid-auto-rows: var(--row);
+  width: var(--rail);
+  align-items: center;
+  justify-items: start;
+}
+
+.designer__body {
+  display: flex;
+  padding: 0 var(--space-4) var(--space-5);
+}
+
+/* La grilla: el hilo entre casilla y casilla y una estaca en cada cruce. */
+.designer__grid {
+  display: grid;
+  grid-auto-rows: var(--row);
+  background:
+    radial-gradient(circle at 0 0, rgb(72 42 29 / 0.45) 2px, transparent 2.5px) 0 0 / var(--cell)
+      var(--row),
+    linear-gradient(90deg, rgb(72 42 29 / 0.14) 1px, transparent 1px) 0 0 / var(--cell) var(--row),
+    linear-gradient(rgb(72 42 29 / 0.14) 1px, transparent 1px) 0 0 / var(--cell) var(--row);
+  box-shadow:
+    inset -1px 0 rgb(72 42 29 / 0.14),
+    inset 0 -1px rgb(72 42 29 / 0.14);
+}
+
+.designer__row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+}
+
+.designer__gridcell {
+  display: grid;
+}
+
+.designer__cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.designer__cell:hover {
+  background: rgb(250 243 227 / 0.55);
+}
+
+.designer__cell:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}
+
+/* Con una unidad elegida, cada casilla libre muestra dónde puede ir. */
+.designer__grid--placing .designer__cell:not(.designer__cell--taken)::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1.5px dashed rgb(72 42 29 / 0.4);
+  border-radius: var(--radius-s);
+}
+
+.designer__grid--placing .designer__cell:not(.designer__cell--taken):hover::after,
+.designer__grid--placing .designer__cell:not(.designer__cell--taken):focus-visible::after {
+  border-color: var(--color-ink);
+  background: rgb(250 243 227 / 0.6);
+}
+
+.designer__cell .z-unit {
+  min-width: 0;
+  max-width: 100%;
+  pointer-events: none;
+}
+
+/* --- Sin ubicar --- */
+.designer__aside {
+  position: sticky;
+  top: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.designer__h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.designer__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sand-soft);
+  font: 600 13px/1 var(--font-mono);
+}
+
+.designer__hint,
+.designer__all {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.designer__chips {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 360px;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.designer__chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.designer__chip:hover {
+  border-color: var(--color-line-strong);
+}
+
+.designer__chip[aria-pressed='true'] {
+  border-color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+  background: var(--color-sand-soft);
+}
+
+.designer__chip-id {
+  min-width: 0;
+  overflow: hidden;
+  font: 500 0.92em / 1.2 var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.designer__chip-type {
+  margin-left: auto;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.designer__selection {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-line-strong);
+}
+
+.designer__selection-title {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.designer__selection-where {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.designer__selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* --- Guardar: siempre a mano, pegado abajo --- */
+.designer__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-inline: calc(-1 * var(--space-2));
+  padding: var(--space-3) var(--space-2);
+  border-top: var(--border);
+  background: var(--color-bg);
+}
+
+.designer__summary {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.designer__dirty {
+  font-weight: 600;
+  color: var(--color-warning-text);
+}
+
+.designer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+/* --- Angosta: las unidades sin ubicar arriba del plano, y casillas más chicas --- */
+@media (max-width: 960px) {
+  .designer__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .designer__aside {
+    position: static;
+    order: -1;
+  }
+
+  .designer__chips {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 600px) {
+  .designer {
+    --cell: 56px;
+    --row: 66px;
+    --rail: 22px;
+  }
+
+  .designer__body {
+    padding-inline: var(--space-3);
+  }
+
+  .designer__ruler--top {
+    padding-inline: calc(var(--space-3) + var(--rail)) var(--space-3);
+  }
+
+  .designer__cell .z-unit--tent .z-unit__shape {
+    width: 44px;
+  }
+}

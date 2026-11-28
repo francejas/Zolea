@@ -506,7 +506,7 @@ public class ResortService {
 
         List<RentalUnitResponse> units = (r.getRentalUnits() != null) ? r.getRentalUnits().stream()
                                                                         .filter(u -> !u.isRetired())
-                                                                        .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort(), false, null, null))
+                                                                        .map(u -> new RentalUnitResponse(u.getIdRentalUnit(), u.getType(), u.getIdentifier(), u.getDailyPrice(), u.getIsBlocked(), r.getIdResort(), false, null, null, u.getPosX(), u.getPosY()))
                                                                         .toList() : List.of();
 
         return new ResortResponse(

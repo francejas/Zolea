@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { Me } from '../../../core/api/auth.models';
 import { RentalUnit, RentalUnitRequest } from '../../../core/api/resort.models';
@@ -56,6 +57,7 @@ describe('Units', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: SessionService, useValue: { user: signal<Me | null>(admin) } },
       ],
     }).compileComponents();
@@ -238,6 +240,15 @@ describe('Units', () => {
         'Escribí el identificador de la unidad.',
         'Escribí el precio por día.',
       ]);
+    });
+
+    it('un identificador de más de 20 caracteres no envía y lo dice en su campo', async () => {
+      await fillCreate('Carpa del fondo número 12', '9000');
+      await submitCreate();
+      await fixture.whenStable();
+
+      http.expectNone(API);
+      expect(errorOf('unit-identifier')).toBe('El identificador puede tener hasta 20 caracteres.');
     });
 
     it('un identificador repetido en el balneario se marca en su campo', async () => {

@@ -4,6 +4,7 @@ import com.zolea.backend.models.UnitType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,8 +14,9 @@ public record RentalUnitRequest(
         @NotNull(message = "Hay que indicar si es carpa o sombrilla")
         UnitType type,
 
-        @Schema(description = "Cómo se la llama en el balneario. No puede repetirse dentro del mismo balneario", example = "C-01")
+        @Schema(description = "Cómo se la llama en el balneario, en texto libre y de hasta 20 caracteres. No puede repetirse dentro del mismo balneario", example = "Carpa 12")
         @NotBlank(message = "La unidad necesita un identificador")
+        @Size(max = 20, message = "El identificador puede tener hasta 20 caracteres")
         String identifier,
 
         @Schema(description = "Precio por día, con dos decimales", example = "12000.00")

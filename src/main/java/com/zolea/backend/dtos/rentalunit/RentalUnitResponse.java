@@ -22,6 +22,12 @@ public record RentalUnitResponse(
         @Schema(description = "El primer día, desde hoy, en que la unidad está reservada: el inicio de la "
                 + "próxima, u hoy si una ya empezó. Null si no tiene reservas por delante, y para un cliente",
                 example = "2026-12-14")
-        LocalDate nextBookingDate
+        LocalDate nextBookingDate,
+        @Schema(description = "Columna de la unidad en el plano, desde 0. Null si no está ubicada (GH-68)",
+                example = "3", nullable = true)
+        Integer posX,
+        @Schema(description = "Fila de la unidad en el plano, desde 0, con el mar arriba. Null si no está ubicada",
+                example = "1", nullable = true)
+        Integer posY
 ) {
 }

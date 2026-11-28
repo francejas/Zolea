@@ -28,6 +28,20 @@ export interface RentalUnit {
   upcomingBookings?: number | null;
   /** `YYYY-MM-DD`: el primer día desde hoy en que está reservada. `null` si no tiene reservas por delante. */
   nextBookingDate?: string | null;
+  /**
+   * La casilla en el plano del balneario: columna y fila, desde 0, con el mar arriba. Las dos en
+   * `null` si la unidad no está ubicada. Si ninguna unidad del balneario tiene casilla, el plano se
+   * arma solo, por tipo y por la letra del identificador.
+   */
+  posX?: number | null;
+  posY?: number | null;
+}
+
+/** Una unidad y su casilla, para `PUT /api/resorts/my/plan`. Sin casilla, sale del plano. */
+export interface UnitPosition {
+  idRentalUnit: number;
+  posX: number | null;
+  posY: number | null;
 }
 
 /** El pedido de `POST /api/rental-units`. `resortId` es el `idManagedResort` de la sesión. */

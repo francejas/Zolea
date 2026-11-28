@@ -1,5 +1,7 @@
 package com.zolea.backend.controllers;
 
+import com.zolea.backend.dtos.rentalunit.PlanRequest;
+import com.zolea.backend.dtos.rentalunit.RentalUnitResponse;
 import com.zolea.backend.dtos.resort.ResortActionResponse;
 import com.zolea.backend.dtos.resort.ResortRegistrationRequest;
 import com.zolea.backend.dtos.resort.ResortRequest;
@@ -11,6 +13,7 @@ import com.zolea.backend.exceptions.resort.ResortRegistrationInvalidException;
 import com.zolea.backend.models.UnitType;
 import com.zolea.backend.security.UserPrincipal;
 import com.zolea.backend.services.GuestService;
+import com.zolea.backend.services.RentalUnitService;
 import com.zolea.backend.services.ResortService;
 import com.zolea.backend.dtos.guest.GuestEntryResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +24,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -45,6 +49,7 @@ public class ResortController {
 
     private final ResortService resortService;
     private final GuestService guestService;
+    private final RentalUnitService rentalUnitService;
     private final Validator validator;
 
     @GetMapping
@@ -134,6 +139,25 @@ public class ResortController {
     public ResponseEntity<ResortActionResponse> updateMyResort(Authentication auth, @RequestBody ResortRequest request) {
         ResortResponse saved = resortService.updateMyResort(auth.getName(), request);
         return ResponseEntity.ok(new ResortActionResponse("Balneario actualizado correctamente.", saved));
+    }
+
+    // El plano libre (GH-68): el balneario sale de la sesión, como en Mi balneario.
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/my/plan")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Guardar el plano de mi balneario (Admin)",
+            description = "La casilla de cada unidad en la grilla del plano, de una vez: columna (posX) y fila (posY), "
+                    + "de 0 a 39, con el mar arriba. Sin las dos, la unidad sale del plano. Las unidades que no vienen "
+                    + "quedan donde estaban. Se revisa todo antes de mover nada: si algo no vale, no se guarda nada.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Las unidades del balneario como quedaron, como en el listado del administrador"),
+            @ApiResponse(responseCode = "400", description = "Dos unidades en la misma casilla, una unidad que no es del balneario o que viene dos veces, una posición fuera de la grilla de 40 × 40, la columna sin la fila, o una unidad dada de baja", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el administrador no tiene un balneario asignado", content = @Content)
+    })
+    public ResponseEntity<List<RentalUnitResponse>> saveMyPlan(@AuthenticationPrincipal UserPrincipal principal,
+                                                               @Valid @RequestBody PlanRequest request) {
+        return ResponseEntity.ok(rentalUnitService.savePlan(principal.requireManagedResort(), request));
     }
 
     /** La lista de la cuenta de Zolea (#71): todos los balnearios, también los inactivos. */

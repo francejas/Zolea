@@ -1,5 +1,6 @@
 package com.zolea.backend.models;
 
+import com.zolea.backend.exceptions.rentalunit.InvalidPlanException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitRetiredException;
 import jakarta.persistence.*;
 
@@ -28,6 +29,9 @@ import lombok.ToString;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class RentalUnit {
 
+    /** El plano es una grilla de hasta 40 columnas por 40 filas (GH-68). */
+    public static final int PLAN_SIZE = 40;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
@@ -54,6 +58,24 @@ public class RentalUnit {
     @Column(nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
     private boolean retired;
 
+    /**
+     * La casilla de la unidad en el plano del balneario: columna ({@code posX}) y fila
+     * ({@code posY}), desde 0, con el mar arriba (GH-68). Las dos vacías: la unidad no está ubicada,
+     * y el plano la dibuja abajo, aparte. Aceptan vacío para que las filas que ya existían, y las de
+     * la demostración que no las nombran, queden sin ubicar.
+     *
+     * <p>Que dos unidades del mismo balneario no compartan casilla lo revisa el servicio al guardar
+     * el plano entero, no una restricción de la base: al intercambiar dos unidades, una restricción
+     * única saltaría entre la primera actualización y la segunda.
+     */
+    // Con el nombre escrito: sin él, la columna salía "posx", porque una sola mayúscula al final no
+    // lleva guion bajo.
+    @Column(name = "pos_x")
+    private Integer posX;
+
+    @Column(name = "pos_y")
+    private Integer posY;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_resort")
     @ToString.Exclude
@@ -68,5 +90,46 @@ public class RentalUnit {
             throw new RentalUnitRetiredException(
                     "La unidad " + identifier + " está dada de baja.");
         }
+    }
+
+    /**
+     * Revisa que la unidad pueda ir en esa casilla, sin moverla: las dos coordenadas o ninguna,
+     * dentro de la grilla de 40 × 40, y no si está dada de baja. Sacarla del plano (las dos vacías)
+     * siempre se puede.
+     *
+     * @throws InvalidPlanException si la casilla no vale o la unidad está dada de baja.
+     */
+    public void checkPlacement(Integer x, Integer y) {
+        if (x == null && y == null) {
+            return;
+        }
+        if (x == null || y == null) {
+            throw new InvalidPlanException(
+                    "La unidad " + identifier + " tiene que llevar la columna y la fila, o ninguna de las dos.");
+        }
+        if (x < 0 || y < 0 || x >= PLAN_SIZE || y >= PLAN_SIZE) {
+            throw new InvalidPlanException("La unidad " + identifier + " queda fuera del plano: la grilla va hasta "
+                    + PLAN_SIZE + " columnas por " + PLAN_SIZE + " filas.");
+        }
+        if (retired) {
+            throw new InvalidPlanException("La unidad " + identifier + " está dada de baja: no se ubica en el plano.");
+        }
+    }
+
+    /** La ubica en la casilla, o la saca del plano con las dos vacías. */
+    public void placeAt(Integer x, Integer y) {
+        checkPlacement(x, y);
+        this.posX = x;
+        this.posY = y;
+    }
+
+    /**
+     * La da de baja (RF32): deja de ofrecerse y sale del plano, así su casilla queda libre para otra
+     * unidad.
+     */
+    public void retire() {
+        this.retired = true;
+        this.posX = null;
+        this.posY = null;
     }
 }

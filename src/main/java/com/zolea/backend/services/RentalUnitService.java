@@ -1,8 +1,10 @@
 package com.zolea.backend.services;
 
+import com.zolea.backend.dtos.rentalunit.PlanRequest;
 import com.zolea.backend.dtos.rentalunit.RentalUnitRequest;
 import com.zolea.backend.dtos.rentalunit.RentalUnitResponse;
 import com.zolea.backend.exceptions.rentalunit.DuplicateIdentifierException;
+import com.zolea.backend.exceptions.rentalunit.InvalidPlanException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitRetiredException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
@@ -21,8 +23,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -140,8 +146,64 @@ public class RentalUnitService {
             throw new RentalUnitRetiredException(
                     "Tiene reservas por delante: cancelalas o esperá a que terminen.");
         }
-        unit.setRetired(true);
+        unit.retire();
         return mapToResponse(rentalUnitRepository.save(unit));
+    }
+
+    /**
+     * Guarda el plano del balneario de una vez (GH-68): la casilla de cada unidad que viene en el
+     * pedido. Las que no vienen quedan donde estaban, y también cuentan para que dos no compartan
+     * casilla.
+     *
+     * <p>Primero se revisa todo y recién después se mueve algo: si una sola unidad no vale, el plano
+     * queda como estaba. Por eso dos unidades se pueden cambiar de lugar en el mismo pedido.
+     *
+     * @return las unidades del balneario como quedaron, como las ve su administrador.
+     * @throws InvalidPlanException si una unidad no es del balneario o viene dos veces, si una casilla
+     *                              no vale o si dos unidades quedan en la misma.
+     */
+    @Transactional
+    public List<RentalUnitResponse> savePlan(Long resortId, PlanRequest request) {
+        Map<Long, RentalUnit> units = rentalUnitRepository.findByResort_IdResort(resortId).stream()
+                .collect(Collectors.toMap(RentalUnit::getIdRentalUnit, Function.identity()));
+
+        // Dónde queda cada unidad después de guardar: la que no viene, donde está.
+        Map<Long, PlanRequest.UnitPosition> target = new LinkedHashMap<>();
+        units.values().forEach(u -> target.put(u.getIdRentalUnit(),
+                new PlanRequest.UnitPosition(u.getIdRentalUnit(), u.getPosX(), u.getPosY())));
+
+        Set<Long> seen = new HashSet<>();
+        for (PlanRequest.UnitPosition position : request.units()) {
+            RentalUnit unit = units.get(position.idRentalUnit());
+            if (unit == null) {
+                throw new InvalidPlanException(
+                        "La unidad " + position.idRentalUnit() + " no es de tu balneario.");
+            }
+            if (!seen.add(position.idRentalUnit())) {
+                throw new InvalidPlanException("La unidad " + unit.getIdentifier() + " aparece dos veces en el plano.");
+            }
+            unit.checkPlacement(position.posX(), position.posY());
+            target.put(unit.getIdRentalUnit(), position);
+        }
+
+        Map<String, RentalUnit> cells = new HashMap<>();
+        for (PlanRequest.UnitPosition position : target.values()) {
+            if (position.posX() == null) {
+                continue;
+            }
+            RentalUnit unit = units.get(position.idRentalUnit());
+            RentalUnit other = cells.put(position.posX() + "," + position.posY(), unit);
+            if (other != null) {
+                throw new InvalidPlanException("Las unidades " + other.getIdentifier() + " y " + unit.getIdentifier()
+                        + " quedaron en la misma casilla.");
+            }
+        }
+
+        for (PlanRequest.UnitPosition position : request.units()) {
+            units.get(position.idRentalUnit()).placeAt(position.posX(), position.posY());
+        }
+        rentalUnitRepository.saveAll(units.values());
+        return getAllRentalUnits(resortId);
     }
 
     /** Las reservas por delante de cada unidad, por su id. Las que no tienen ninguna no están. */
@@ -182,7 +244,9 @@ public class RentalUnitService {
                 unit.getResort() != null ? unit.getResort().getIdResort() : null,
                 unit.isRetired(),
                 upcomingBookings,
-                nextBookingDate
+                nextBookingDate,
+                unit.getPosX(),
+                unit.getPosY()
         );
     }
 }
