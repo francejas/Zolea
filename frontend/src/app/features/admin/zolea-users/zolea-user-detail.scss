@@ -1,0 +1,135 @@
+/* Una cuenta, desde Usuarios. Copia el detalle de una reserva del panel: la cabecera, dos tarjetas
+   lado a lado en la computadora y una debajo de la otra en el celular. El diálogo es global
+   (styles/modal.scss). */
+
+:host {
+  display: block;
+}
+
+.user {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  max-width: 1120px;
+}
+
+.user__back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+
+.user__head {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.user__head .z-eyebrow {
+  margin: 0;
+}
+
+.user__h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.user__notice:focus {
+  outline: none;
+}
+
+.user__overview {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.user__card {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+}
+
+.user__h2 {
+  margin: 0;
+  font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+}
+
+.user__muted {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+dl > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+dt {
+  color: var(--color-text-muted);
+}
+
+dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.user__actions {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.user__action {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
+.user__hint {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.user__dialog-form {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.user__stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (max-width: 899px) {
+  .user__overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .user__card {
+    padding: var(--space-4);
+  }
+
+  .user__action z-btn {
+    width: 100%;
+  }
+}

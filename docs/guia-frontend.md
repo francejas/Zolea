@@ -48,6 +48,11 @@ Authorization: Bearer eyJ...
 
 **Dura una hora.** Cuando vence, la API responde `401` y hay que volver a iniciar sesión.
 
+**Una cuenta desactivada** por la cuenta de Zolea (#72) no ingresa: con la contraseña correcta, el
+login responde `401` con `"Tu cuenta está desactivada. Escribinos para reactivarla."`; con una
+equivocada, el mensaje de siempre, para no revelar qué emails existen. Si tenía la sesión abierta,
+su token deja de valer en el pedido siguiente (`401`), aunque no haya vencido.
+
 ### Al recargar la página
 
 El token sobrevive en `localStorage`, pero el resto del estado no. En lugar de guardar el usuario
@@ -166,11 +171,29 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
     email, teléfono o DNI que ya es de otra cuenta responde `409` con el campo.
   - `PUT /api/resorts/{id}/inactive` y `/active`: la cuenta de Zolea desactiva y reactiva
     cualquiera; el administrador de un balneario, solo el suyo.
-  Esa cuenta maneja el catálogo y los balnearios, y nada más: el panel le sigue respondiendo `403`.
+- **Los usuarios** también son de la cuenta de Zolea (#72), en la pantalla Usuarios
+  (`/admin/users`, y `/admin/users/{id}` para el detalle). Un cliente y el administrador de un
+  balneario reciben `403` en todo `/api/accounts`.
+  - `GET /api/accounts?q=&type=&page=&size=`: una página de cuentas (`content`, `page` desde 0,
+    `size` hasta 100, `totalElements`, `totalPages`), por apellido y nombre. `q` busca en el nombre,
+    el email y el DNI; `type` es `CLIENT`, `RESORT_ADMIN` o `ZOLEA`. Cada fila trae `type`,
+    `active` y `managedResort` (`idResort`, `name`, `active`, o `null`).
+  - `GET /api/accounts/{id}`: lo mismo más `phone` y `bookingCount`. Las acciones responden la
+    cuenta como quedó, con esta forma.
+  - `PATCH /api/accounts/{id}/inactive` y `/active`: desactiva y reactiva. Las cuentas no se borran.
+  - `PUT /api/accounts/{id}/password` con `{ "password": "..." }`: le pone una contraseña
+    provisoria. Responde `204`; vacía, `400` con `campos.password`.
+  - `PUT /api/accounts/{id}/managed-resort` con `{ "idResort": 3 }`: la hace ADMIN de ese
+    balneario, que ve en Mi balneario. `DELETE` en la misma ruta se lo quita y la vuelve cliente.
+  - La cuenta de Zolea no se desactiva ni se cambia el rol a sí misma: `400` con el motivo.
+  - **Mi balneario** (`/api/resorts/my`) busca el balneario por el que la cuenta tiene asignado, no
+    por el `adminEmail` del balneario: así un balneario puede tener más de un administrador.
+  Esa cuenta maneja el catálogo, los balnearios y los usuarios, y nada más: el panel le sigue
+  respondiendo `403`.
 - En el frontend, la cuenta de Zolea se reconoce por `/me` con `role: ADMIN` e `idManagedResort`
-  vacío. Al ingresar va directo a `/admin/amenities`, su barra lateral tiene el catálogo y
-  Balnearios, y cualquier otra pantalla de `/admin` le muestra la página 403. El administrador de un
-  balneario, en esas dos, ve la página 403 (`adminAreaGuard`).
+  vacío. Al ingresar va directo a `/admin/amenities`, su barra lateral tiene el catálogo,
+  Balnearios y Usuarios, y cualquier otra pantalla de `/admin` le muestra la página 403. El
+  administrador de un balneario, en esas tres, ve la página 403 (`adminAreaGuard`).
 - Un administrador **no reserva por `POST /api/bookings`**, ni a su nombre: usa la de mostrador. Y
   por `GET /api/clients/{id}`, `PUT /api/clients/{id}` y `GET /api/bookings/client/{id}` solo llega
   a **su propio** perfil: a sus clientes los ve en `GET /api/clients`.

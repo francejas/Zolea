@@ -136,6 +136,12 @@ describe('guards', () => {
       expect(run(adminAreaGuard, '/admin/resorts')).toBe(true);
     });
 
+    it('deja a la cuenta de Zolea en Usuarios y en el detalle de una cuenta', () => {
+      user.set(zolea);
+      expect(run(adminAreaGuard, '/admin/users')).toBe(true);
+      expect(run(adminAreaGuard, '/admin/users/16')).toBe(true);
+    });
+
     it('a la cuenta de Zolea, en otra pantalla del panel, le muestra el 403', () => {
       user.set(zolea);
       for (const url of [
@@ -164,6 +170,13 @@ describe('guards', () => {
     it('al administrador de un balneario que pide Balnearios le muestra el 403', () => {
       user.set(admin);
       expect(isForbidden(run(adminAreaGuard, '/admin/resorts'), '/admin/resorts')).toBe(true);
+    });
+
+    it('al administrador de un balneario que pide Usuarios le muestra el 403', () => {
+      user.set(admin);
+      for (const url of ['/admin/users', '/admin/users/16']) {
+        expect(isForbidden(run(adminAreaGuard, url), url)).toBe(true);
+      }
     });
   });
 });

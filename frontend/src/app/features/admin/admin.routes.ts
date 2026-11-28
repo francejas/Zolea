@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 /**
  * Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. Ahí también se decide quién
- * ve qué: `amenities` y `resorts` son de la cuenta de Zolea y el resto, del administrador de un
+ * ve qué: `amenities`, `resorts` y `users` son de la cuenta de Zolea y el resto, del administrador de un
  * balneario (`adminAreaGuard`).
  */
 export const adminRoutes: Routes = [
@@ -16,6 +16,14 @@ export const adminRoutes: Routes = [
   {
     path: 'resorts',
     loadComponent: () => import('./zolea-resorts/zolea-resorts').then((m) => m.ZoleaResorts),
+  },
+  {
+    path: 'users',
+    loadComponent: () => import('./zolea-users/zolea-users').then((m) => m.ZoleaUsers),
+  },
+  {
+    path: 'users/:id',
+    loadComponent: () => import('./zolea-users/zolea-user-detail').then((m) => m.ZoleaUserDetail),
   },
   {
     path: 'bookings',

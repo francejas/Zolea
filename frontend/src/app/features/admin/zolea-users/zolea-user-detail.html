@@ -1,0 +1,295 @@
+<section class="user">
+  <a class="z-btn z-btn--ghost z-btn--compact user__back" routerLink="/admin/users">
+    <svg lucideArrowLeft class="z-icon z-icon--s" aria-hidden="true"></svg>
+    Usuarios
+  </a>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="user__stack" aria-busy="true" aria-label="Cargando la cuenta">
+        <z-skeleton width="45%" height="40px" />
+        <z-skeleton width="100%" height="200px" />
+        <z-skeleton width="100%" height="140px" />
+      </div>
+    }
+
+    @case ('not-found') {
+      <app-error-page [code]="404" />
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer la cuenta" [text]="loadError()" (retry)="retry()" />
+    }
+
+    @case ('ready') {
+      @if (account(); as a) {
+        <header class="user__head">
+          <p class="z-eyebrow">{{ typeLabel(a.type) }}</p>
+          <h1 class="user__h1">{{ name() }}</h1>
+          @if (a.active) {
+            <span class="z-status z-status--confirmed">Activa</span>
+          } @else {
+            <span class="z-status z-status--neutral">Desactivada</span>
+          }
+        </header>
+
+        <!-- El aviso recibe el foco después de una acción: el botón que se tocó puede no estar más. -->
+        @if (notice(); as message) {
+          <div #noticeBox tabindex="-1" class="user__notice">
+            <z-alert variant="success" [text]="message" />
+          </div>
+        }
+
+        @if (actionError(); as message) {
+          <div class="user__error">
+            <z-alert variant="danger" title="No se pudo hacer" [text]="message" />
+          </div>
+        }
+
+        <div class="user__overview">
+          <section class="user__card" aria-labelledby="user-data-title">
+            <h2 id="user-data-title" class="user__h2">Datos</h2>
+            <dl>
+              <div>
+                <dt>Email</dt>
+                <dd>{{ a.email }}</dd>
+              </div>
+              <div>
+                <dt>Teléfono</dt>
+                <dd>{{ a.phone || '—' }}</dd>
+              </div>
+              <div>
+                <dt>DNI</dt>
+                <dd>{{ dni(a.dni) }}</dd>
+              </div>
+              <div>
+                <dt>Tipo</dt>
+                <dd>{{ typeLabel(a.type) }}</dd>
+              </div>
+              @if (a.managedResort; as resort) {
+                <div>
+                  <dt>Balneario</dt>
+                  <dd class="user__resort">
+                    {{ resort.name }}
+                    @if (!resort.active) {
+                      <span class="user__muted">(inactivo)</span>
+                    }
+                  </dd>
+                </div>
+              }
+              <div>
+                <dt>Reservas</dt>
+                <dd class="user__bookings">{{ a.bookingCount }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="user__card" aria-labelledby="user-actions-title">
+            <h2 id="user-actions-title" class="user__h2">Acciones</h2>
+
+            @if (isSelf()) {
+              <p class="user__muted">
+                Es tu cuenta: no podés desactivarla, cambiarle el rol ni ponerle una contraseña
+                provisoria desde acá.
+              </p>
+            } @else {
+              <div class="user__actions">
+                <div class="user__action">
+                  <z-btn variant="secondary" (click)="ask('password')">
+                    Poner una contraseña provisoria
+                  </z-btn>
+                  <p class="user__hint">Para quien no puede entrar: reemplaza la que tiene.</p>
+                </div>
+
+                <div class="user__action">
+                  <z-btn variant="secondary" (click)="ask('assign')">
+                    {{
+                      a.managedResort
+                        ? 'Cambiar el balneario'
+                        : 'Hacerla administradora de un balneario'
+                    }}
+                  </z-btn>
+                  <p class="user__hint">
+                    @if (a.managedResort) {
+                      Pasa a administrar otro balneario.
+                    } @else {
+                      La cuenta pasa a administrar el balneario que elijas.
+                    }
+                  </p>
+                </div>
+
+                @if (a.managedResort) {
+                  <div class="user__action">
+                    <z-btn variant="danger-text" (click)="ask('remove')"
+                      >Quitarle el balneario</z-btn
+                    >
+                    <p class="user__hint">Vuelve a ser una cuenta de cliente.</p>
+                  </div>
+                }
+
+                <div class="user__action">
+                  @if (a.active) {
+                    <z-btn variant="danger-outline" (click)="ask('deactivate')">
+                      Desactivar la cuenta
+                    </z-btn>
+                    <p class="user__hint">No va a poder ingresar. Sus reservas siguen.</p>
+                  } @else {
+                    <z-btn variant="secondary" (click)="ask('activate')">Reactivar la cuenta</z-btn>
+                    <p class="user__hint">Vuelve a poder ingresar.</p>
+                  }
+                </div>
+              </div>
+            }
+          </section>
+        </div>
+      }
+    }
+  }
+
+  <!-- Un solo diálogo: el título, el texto y los botones dependen de la acción. -->
+  <dialog
+    #actionDialog
+    class="z-modal"
+    aria-labelledby="action-title"
+    aria-describedby="action-body"
+    (cancel)="onDialogCancel($event)"
+    (close)="closeDialog()"
+  >
+    <h2 id="action-title" class="z-modal__title">{{ dialogTitle() }}</h2>
+    <p id="action-body" class="z-modal__body">{{ dialogBody() }}</p>
+
+    @switch (pending()) {
+      @case ('password') {
+        <form class="user__dialog-form" novalidate (submit)="onPasswordSubmit($event)">
+          <z-field
+            [field]="passwordForm.password"
+            inputId="user-password"
+            label="Contraseña provisoria"
+          >
+            <div class="z-input-wrap">
+              <input
+                #passwordInput
+                id="user-password"
+                class="z-input"
+                autocomplete="new-password"
+                [type]="showPassword() ? 'text' : 'password'"
+                [formField]="passwordForm.password"
+                [attr.aria-invalid]="hasError(passwordForm.password) ? 'true' : null"
+              />
+              <button
+                class="z-icon-btn"
+                type="button"
+                aria-controls="user-password"
+                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                [attr.aria-pressed]="showPassword()"
+                (click)="showPassword.set(!showPassword())"
+              >
+                @if (showPassword()) {
+                  <svg lucideEyeOff class="z-icon" aria-hidden="true"></svg>
+                } @else {
+                  <svg lucideEye class="z-icon" aria-hidden="true"></svg>
+                }
+              </button>
+            </div>
+          </z-field>
+
+          <div class="z-modal__actions">
+            <z-btn
+              variant="secondary"
+              block
+              [disabled]="passwordForm().submitting()"
+              (click)="closeDialog()"
+            >
+              Volver
+            </z-btn>
+            <z-btn type="submit" block [loading]="passwordForm().submitting()">
+              Poner la contraseña
+            </z-btn>
+          </div>
+        </form>
+      }
+
+      @case ('assign') {
+        <form class="user__dialog-form" novalidate (submit)="onResortSubmit($event)">
+          @switch (resortsState()) {
+            @case ('loading') {
+              <p class="user__muted" aria-busy="true">Buscando los balnearios…</p>
+            }
+            @case ('error') {
+              <z-alert
+                variant="danger"
+                text="No pudimos traer los balnearios. Cerrá y probá de nuevo."
+              />
+            }
+            @case ('ready') {
+              <z-field [field]="resortForm.idResort" inputId="user-resort" label="Balneario">
+                <select
+                  #resortSelect
+                  id="user-resort"
+                  class="z-input"
+                  [attr.aria-invalid]="hasError(resortForm.idResort) ? 'true' : null"
+                  (change)="setResort($event)"
+                  (blur)="resortForm.idResort().markAsTouched()"
+                >
+                  <option value="" [selected]="resortForm.idResort().value() === ''">
+                    Elegí un balneario
+                  </option>
+                  @for (resort of resortOptions(); track resort.idResort) {
+                    <option
+                      [value]="resort.idResort"
+                      [selected]="resortForm.idResort().value() === '' + resort.idResort"
+                    >
+                      {{ resort.name }}{{ resort.active ? '' : ' (inactivo)' }}
+                    </option>
+                  }
+                </select>
+              </z-field>
+            }
+          }
+
+          <div class="z-modal__actions">
+            <z-btn
+              variant="secondary"
+              block
+              [disabled]="resortForm().submitting()"
+              (click)="closeDialog()"
+            >
+              Volver
+            </z-btn>
+            <z-btn
+              type="submit"
+              block
+              [disabled]="resortsState() !== 'ready'"
+              [loading]="resortForm().submitting()"
+            >
+              Asignar el balneario
+            </z-btn>
+          </div>
+        </form>
+      }
+
+      @default {
+        <div class="z-modal__actions">
+          <z-btn variant="secondary" block [disabled]="busy()" (click)="closeDialog()"
+            >Volver</z-btn
+          >
+          @switch (pending()) {
+            @case ('deactivate') {
+              <z-btn variant="danger" block [loading]="busy()" (click)="confirm()">
+                Desactivar la cuenta
+              </z-btn>
+            }
+            @case ('remove') {
+              <z-btn variant="danger" block [loading]="busy()" (click)="confirm()">
+                Quitarle el balneario
+              </z-btn>
+            }
+            @default {
+              <z-btn block [loading]="busy()" (click)="confirm()">Reactivar la cuenta</z-btn>
+            }
+          }
+        </div>
+      }
+    }
+  </dialog>
+</section>
