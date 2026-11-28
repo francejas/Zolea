@@ -41,6 +41,33 @@ main:focus {
   gap: var(--space-3);
 }
 
+/* Las secciones del cliente, pegadas al logo; el avatar queda a la derecha. */
+.z-topbar__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-right: auto;
+}
+
+.z-topbar__link {
+  color: var(--color-ink);
+  font: 500 14px/1 var(--font-body);
+  text-decoration: none;
+  transition: color var(--duration) var(--ease);
+}
+
+.z-topbar__link:hover {
+  color: var(--color-coral-text);
+}
+
+/* La sección actual: subrayado de 2 px en tinta (GH-78). */
+.z-topbar__link[aria-current] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--color-ink);
+  text-underline-offset: 6px;
+}
+
 .z-logo {
   display: inline-flex;
   align-items: center;
@@ -187,6 +214,11 @@ main:focus {
   font-size: 16px;
 }
 
+/* En el menú del celular, la sección actual lleva fondo arena suave. */
+.z-sheet .z-menu__item[aria-current] {
+  background: var(--color-sand-soft);
+}
+
 .z-sheet .z-menu__head {
   padding: var(--space-3) 4px;
 }
@@ -196,6 +228,7 @@ main:focus {
 }
 
 @media (max-width: 767px) {
+  .z-topbar__nav,
   .z-topbar__actions {
     display: none;
   }

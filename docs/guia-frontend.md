@@ -377,6 +377,19 @@ No se puede dar de baja mientras tenga reservas pendientes o confirmadas que ter
 administrador de su balneario; el de otro recibe `404`, como si no existiera. Darla de baja otra
 vez no hace nada.
 
+**Reservas por delante.** Para el administrador, cada unidad de `GET /api/rental-units` (y la que
+devuelven crear, cambiar el precio, bloquear y dar de baja) trae cuántas reservas tiene por delante
+y el primer día desde hoy en que está reservada:
+
+```
+{ "idRentalUnit": 23, ..., "upcomingBookings": 2, "nextBookingDate": "2026-12-14" }
+```
+
+Cuentan las pendientes y las confirmadas que terminan hoy o después; las canceladas y las que ya
+terminaron, no. Si una ya empezó, `nextBookingDate` es hoy. Sin reservas por delante,
+`upcomingBookings` es `0` y `nextBookingDate`, `null`. Bloquear no las toca: siguen valiendo. Para
+un cliente y en la ficha pública, los dos campos vienen en `null`.
+
 ### Fotos del balneario (administrador)
 
 El administrador sube, ordena y borra las fotos de **su** balneario, que sale de la sesión:

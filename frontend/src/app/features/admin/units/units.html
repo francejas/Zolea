@@ -303,6 +303,9 @@
                       } @else {
                         <span class="z-status z-status--confirmed">Disponible</span>
                       }
+                      @if (upcomingLabel(unit); as upcoming) {
+                        <span class="units__upcoming">{{ upcoming }}</span>
+                      }
                     </td>
 
                     <td class="is-actions">
@@ -360,9 +363,12 @@
       @if (pending.block) {
         <h2 id="block-title" class="z-modal__title">¿Bloqueás la {{ label(pending.unit) }}?</h2>
         <p class="z-modal__body">
-          Deja de poder reservarse y se ve no disponible en el plano. Las reservas que ya tiene
-          siguen en pie. Podés desbloquearla cuando quieras.
+          Deja de poder reservarse y se ve no disponible en el plano. Podés desbloquearla cuando
+          quieras.
         </p>
+        @if (blockWarning(pending.unit); as warning) {
+          <z-alert variant="warning" [text]="warning" />
+        }
       } @else {
         <h2 id="block-title" class="z-modal__title">¿Desbloqueás la {{ label(pending.unit) }}?</h2>
         <p class="z-modal__body">Vuelve a poder reservarse y a verse disponible en el plano.</p>

@@ -10,6 +10,7 @@ import com.zolea.backend.models.Booking;
 import com.zolea.backend.models.RentalUnit;
 import com.zolea.backend.models.Resort;
 import com.zolea.backend.repositories.BookingRepository;
+import com.zolea.backend.repositories.BookingRepository.UpcomingBookings;
 import com.zolea.backend.repositories.RentalUnitRepository;
 import com.zolea.backend.repositories.ResortRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,9 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p><b>Transacciones:</b> la clase entera es de solo lectura y cada método que escribe lo declara.
@@ -74,11 +78,17 @@ public class RentalUnitService {
      * true; un cliente no, porque ya no se ofrecen (RF32).
      */
     public List<RentalUnitResponse> getAllRentalUnits(Long idResort) {
-        List<RentalUnit> units = idResort != null
-                ? rentalUnitRepository.findByResort_IdResort(idResort)
-                : rentalUnitRepository.findAll().stream().filter(u -> !u.isRetired()).toList();
+        if (idResort == null) {
+            return rentalUnitRepository.findAll().stream()
+                    .filter(u -> !u.isRetired())
+                    .map(u -> mapToResponse(u, null, null))
+                    .toList();
+        }
+        List<RentalUnit> units = rentalUnitRepository.findByResort_IdResort(idResort);
+        Map<Long, UpcomingBookings> upcoming = upcomingByUnit(
+                units.stream().map(RentalUnit::getIdRentalUnit).toList());
         return units.stream()
-                .map(this::mapToResponse)
+                .map(u -> forAdmin(u, upcoming.get(u.getIdRentalUnit())))
                 .toList();
     }
 
@@ -134,8 +144,35 @@ public class RentalUnitService {
         return mapToResponse(rentalUnitRepository.save(unit));
     }
 
-    // MAPPER interno: Convierte la entidad de BD al DTO limpio
+    /** Las reservas por delante de cada unidad, por su id. Las que no tienen ninguna no están. */
+    private Map<Long, UpcomingBookings> upcomingByUnit(List<Long> unitIds) {
+        if (unitIds.isEmpty()) {
+            return Map.of();
+        }
+        return bookingRepository.findUpcomingByUnits(unitIds, LocalDate.now(clock)).stream()
+                .collect(Collectors.toMap(UpcomingBookings::getUnitId, Function.identity()));
+    }
+
+    /** La unidad como la ve su administrador: con sus reservas por delante (GH-77). */
     private RentalUnitResponse mapToResponse(RentalUnit unit) {
+        return forAdmin(unit, upcomingByUnit(List.of(unit.getIdRentalUnit())).get(unit.getIdRentalUnit()));
+    }
+
+    /**
+     * La próxima fecha es el primer día desde hoy en que está reservada: si una reserva ya empezó,
+     * es hoy, y no el día en que empezó.
+     */
+    private RentalUnitResponse forAdmin(RentalUnit unit, UpcomingBookings upcoming) {
+        if (upcoming == null) {
+            return mapToResponse(unit, 0, null);
+        }
+        LocalDate today = LocalDate.now(clock);
+        LocalDate next = upcoming.getFirstStart().isBefore(today) ? today : upcoming.getFirstStart();
+        return mapToResponse(unit, upcoming.getTotal().intValue(), next);
+    }
+
+    // MAPPER interno: Convierte la entidad de BD al DTO limpio
+    private RentalUnitResponse mapToResponse(RentalUnit unit, Integer upcomingBookings, LocalDate nextBookingDate) {
         return new RentalUnitResponse(
                 unit.getIdRentalUnit(),
                 unit.getType(),
@@ -143,7 +180,9 @@ public class RentalUnitService {
                 unit.getDailyPrice(),
                 unit.getIsBlocked(),
                 unit.getResort() != null ? unit.getResort().getIdResort() : null,
-                unit.isRetired()
+                unit.isRetired(),
+                upcomingBookings,
+                nextBookingDate
         );
     }
 }
