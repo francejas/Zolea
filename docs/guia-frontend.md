@@ -376,6 +376,7 @@ PATCH /api/rental-units/{id}/retire
 Una unidad dada de baja:
 
 - no aparece en la ficha pública ni en el plano, y no se puede reservar;
+- sale del plano: `posX` y `posY` quedan en `null`, y su casilla queda libre para otra;
 - no se puede bloquear, desbloquear ni cambiarle el precio: `400`;
 - sigue en `GET /api/rental-units` del administrador con `retired: true` (conviene mostrarla aparte
   o atenuada, sin los botones de bloquear y de precio), y sus reservas pasadas quedan como estaban;
@@ -398,6 +399,35 @@ Cuentan las pendientes y las confirmadas que terminan hoy o después; las cancel
 terminaron, no. Si una ya empezó, `nextBookingDate` es hoy. Sin reservas por delante,
 `upcomingBookings` es `0` y `nextBookingDate`, `null`. Bloquear no las toca: siguen valiendo. Para
 un cliente y en la ficha pública, los dos campos vienen en `null`.
+
+### El plano del balneario (administrador)
+
+Cada unidad trae su casilla en el plano, en la ficha pública y en `GET /api/rental-units`: `posX`
+(la columna) y `posY` (la fila), desde 0, con el mar arriba (fila 0) y la entrada abajo. Las dos en
+`null`: la unidad no está ubicada. Si ninguna unidad del balneario tiene casilla, el plano se arma
+como antes, por tipo y por la letra del identificador; si alguna tiene, se dibuja la grilla y las
+que no tienen van abajo, aparte.
+
+El identificador es texto libre («Carpa 12», «Palmera 3»), de hasta 20 caracteres (`400` con
+`campos.identifier` si pasa) y sin repetirse dentro del balneario. En otro balneario se puede
+repetir.
+
+El plano se guarda entero, de una vez:
+
+```
+PUT /api/resorts/my/plan
+{ "units": [ { "idRentalUnit": 17, "posX": 3, "posY": 1 },
+             { "idRentalUnit": 18, "posX": null, "posY": null } ] }
+→ 200 [ las unidades del balneario como quedaron, como en GET /api/rental-units ]
+```
+
+- La grilla va hasta 40 columnas por 40 filas (`posX` y `posY` de 0 a 39).
+- Sin `posX` ni `posY`, la unidad sale del plano. Las unidades que no vienen quedan donde estaban.
+- Dos unidades pueden intercambiar casillas en el mismo pedido: se revisa el plano como queda.
+- Responde `400`, sin guardar nada, si dos unidades quedan en la misma casilla, si una unidad no es
+  del balneario o viene dos veces, si una posición se sale de la grilla, si trae la columna sin la
+  fila, o si la unidad está dada de baja.
+- El balneario sale de la sesión: un cliente recibe `403`, y la cuenta de Zolea también.
 
 ### Detalles que ahorran errores
 

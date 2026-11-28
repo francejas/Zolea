@@ -218,6 +218,7 @@ http://localhost:8080/swagger-ui/index.html
 | `GET` | `/api/resorts/{id}/occupied-units` | — | Unidades ocupadas entre `from` y `to` |
 | `GET` | `/api/resorts/my` | ADMIN | Mi balneario |
 | `PUT` | `/api/resorts/my` | ADMIN | Actualizar datos del balneario |
+| `PUT` | `/api/resorts/my/plan` | ADMIN | Guardar el plano: la casilla de cada unidad en la grilla |
 | `POST` | `/api/resorts` | Cuenta de Zolea | Dar de alta un balneario. El administrador de un balneario recibe `403` |
 | `PUT` | `/api/resorts/{id}` | ADMIN del balneario | Actualizar balneario por ID |
 | `PUT` | `/api/resorts/{id}/inactive` | ADMIN del balneario | Desactivar balneario |

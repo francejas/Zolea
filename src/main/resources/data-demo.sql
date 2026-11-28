@@ -895,3 +895,31 @@ SELECT CONCAT('demo-mp-', LPAD(b.id, 5, '0')), 'approved', b.total_price,
 FROM booking b
 WHERE b.walk_in_name IS NULL AND b.id_client IS NOT NULL AND b.id_client <> 1
   AND (b.status = 'CONFIRMED' OR (b.status = 'CANCELED' AND b.refund_amount > 0));
+
+-- =============================================================================
+-- GH-68: plano libre
+-- Zolea Club de Playa (Mar del Plata) tiene su plano ubicado, en una grilla de
+-- 10 columnas por 7 filas con el mar arriba: las sombrillas A en la fila 0 y
+-- las B en la 1, la fila 2 libre como paseo, y las carpas de a dos, la C en
+-- las columnas 0 y 1, la D en la 4 y la 5 y la E en la 8 y la 9. La D-01 está
+-- dada de baja y no va. Los demás balnearios quedan sin posiciones: su plano se
+-- arma como siempre, por tipo y por la letra del identificador.
+-- =============================================================================
+UPDATE rental_unit SET pos_x = id_rental_unit, pos_y = 0 WHERE id_rental_unit BETWEEN 1 AND 8;
+UPDATE rental_unit SET pos_x = id_rental_unit - 8, pos_y = 1 WHERE id_rental_unit BETWEEN 9 AND 16;
+
+UPDATE rental_unit u
+JOIN (
+    SELECT 17 AS id, 0 AS x, 3 AS y UNION ALL SELECT 18,  1, 3
+    UNION ALL SELECT 19,  0, 4 UNION ALL SELECT 20,  1, 4
+    UNION ALL SELECT 21,  0, 5 UNION ALL SELECT 22,  1, 5
+    UNION ALL SELECT 101, 0, 6 UNION ALL SELECT 102, 1, 6
+    UNION ALL SELECT 24,  4, 3 UNION ALL SELECT 103, 5, 3
+    UNION ALL SELECT 104, 4, 4 UNION ALL SELECT 105, 5, 4
+    UNION ALL SELECT 106, 4, 5
+    UNION ALL SELECT 107, 8, 3 UNION ALL SELECT 108, 9, 3
+    UNION ALL SELECT 109, 8, 4 UNION ALL SELECT 110, 9, 4
+    UNION ALL SELECT 111, 8, 5 UNION ALL SELECT 112, 9, 5
+    UNION ALL SELECT 113, 8, 6 UNION ALL SELECT 114, 9, 6
+) p ON p.id = u.id_rental_unit
+SET u.pos_x = p.x, u.pos_y = p.y;
