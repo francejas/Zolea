@@ -10,7 +10,8 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { LucideCheck } from '@lucide/angular';
+import { LucideCheck, LucideChevronRight } from '@lucide/angular';
+import { ZFilters } from '../../../../shared/z-filters/z-filters';
 import { RangeLabels, ZDateRange } from '../../../../shared/z-date-range/z-date-range';
 import { todayIso } from '../../../../shared/utils/days';
 import { ZAlert } from '../../../../shared/z-alert/z-alert';
@@ -32,7 +33,18 @@ import { toUserMessage } from '../../../../core/errors/error-message';
 
 @Component({
   selector: 'app-admin-bookings',
-  imports: [RouterLink, LucideCheck, ZAlert, ZBtn, ZDateRange, ZEmpty, ZProblem, ZSkeleton],
+  imports: [
+    RouterLink,
+    LucideCheck,
+    LucideChevronRight,
+    ZAlert,
+    ZBtn,
+    ZDateRange,
+    ZEmpty,
+    ZFilters,
+    ZProblem,
+    ZSkeleton,
+  ],
   templateUrl: './bookings.html',
   styleUrl: './bookings.scss',
 })
@@ -83,6 +95,11 @@ export class Bookings {
   );
 
   protected readonly hasFilters = computed(() => !!(this.status() || this.from() || this.to()));
+
+  /** Cuántos filtros hay puestos, para el botón del celular: el estado y el período. */
+  protected readonly filterCount = computed(
+    () => (this.status() ? 1 : 0) + (this.from() || this.to() ? 1 : 0),
+  );
 
   protected readonly pending = signal<Booking | null>(null);
   protected readonly terms = signal<CancellationResponse | null>(null);
