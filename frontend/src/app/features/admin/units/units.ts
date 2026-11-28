@@ -12,6 +12,7 @@ import {
 import {
   form,
   FormField,
+  maxLength,
   min,
   ReadonlyFieldTree,
   required,
@@ -19,6 +20,7 @@ import {
   ValidationError,
 } from '@angular/forms/signals';
 import { LucideCheck, LucideLock, LucidePlus, LucideTent, LucideUmbrella } from '@lucide/angular';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { RentalUnit, RentalUnitRequest, UnitType } from '../../../core/api/resort.models';
 import { UnitsApi } from '../../../core/api/units.api';
@@ -58,6 +60,9 @@ const EMPTY_DRAFT: UnitDraft = { type: 'UMBRELLA', identifier: '', dailyPrice: n
 const MIN_PRICE = 0.01;
 const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
 
+/** El identificador es texto libre, como lo llamen en el balneario (GH-68). */
+const MAX_IDENTIFIER = 20;
+
 /**
  * Las unidades del balneario (12.1): las carpas y las sombrillas del administrador. Se listan, se
  * crean, se les cambia el precio desde la fila y se bloquean o desbloquean (se deshace). Dar de baja
@@ -77,6 +82,7 @@ const PRICE_MESSAGE = 'El precio tiene que ser mayor que cero.';
     LucidePlus,
     LucideTent,
     LucideUmbrella,
+    RouterLink,
     ZAlert,
     ZBtn,
     ZEmpty,
@@ -157,6 +163,9 @@ export class Units {
 
   protected readonly createForm = form(this.draft, (path) => {
     required(path.identifier, { message: 'Escribí el identificador de la unidad.' });
+    maxLength(path.identifier, MAX_IDENTIFIER, {
+      message: `El identificador puede tener hasta ${MAX_IDENTIFIER} caracteres.`,
+    });
     required(path.dailyPrice, { message: 'Escribí el precio por día.' });
     min(path.dailyPrice, MIN_PRICE, { message: PRICE_MESSAGE });
   });

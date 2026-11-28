@@ -20,6 +20,12 @@
   gap: var(--space-4);
 }
 
+.units__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 .units__title {
   display: grid;
   gap: var(--space-2);

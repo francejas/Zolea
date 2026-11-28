@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { unsavedPlanGuard } from './units/plan-designer/unsaved-plan.guard';
 
 /**
  * Los guards de rol están en la ruta padre `admin` de `app.routes.ts`. Ahí también se decide quién
@@ -9,6 +10,11 @@ export const adminRoutes: Routes = [
   { path: '', loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard) },
   { path: 'resort', loadComponent: () => import('./resort/my-resort').then((m) => m.MyResort) },
   { path: 'units', loadComponent: () => import('./units/units').then((m) => m.Units) },
+  {
+    path: 'units/plan',
+    loadComponent: () => import('./units/plan-designer/plan-designer').then((m) => m.PlanDesigner),
+    canDeactivate: [unsavedPlanGuard],
+  },
   {
     path: 'amenities',
     loadComponent: () => import('./amenities/amenities').then((m) => m.Amenities),

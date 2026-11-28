@@ -7,11 +7,17 @@
       </p>
     </div>
 
-    @if (state() === 'ready' && !creating()) {
-      <z-btn (click)="openCreate()">
-        <svg lucidePlus class="z-icon" aria-hidden="true"></svg>
-        Nueva unidad
-      </z-btn>
+    @if (state() === 'ready') {
+      <div class="units__actions">
+        <!-- Dónde va cada unidad en el plano que ven los clientes (GH-68). -->
+        <a class="z-btn z-btn--secondary" routerLink="plan">Diseñar plano</a>
+        @if (!creating()) {
+          <z-btn (click)="openCreate()">
+            <svg lucidePlus class="z-icon" aria-hidden="true"></svg>
+            Nueva unidad
+          </z-btn>
+        }
+      </div>
     }
   </header>
 
@@ -68,7 +74,7 @@
           [field]="createForm.identifier"
           inputId="unit-identifier"
           label="Identificador"
-          help="Cómo la llaman en el balneario, por ejemplo A-03. No se puede repetir."
+          help="Cómo la llaman en el balneario, por ejemplo «Carpa 12» o A-03. Hasta 20 caracteres, sin repetirse."
         >
           <input
             #control
@@ -76,7 +82,7 @@
             class="z-input"
             type="text"
             autocomplete="off"
-            autocapitalize="characters"
+            autocapitalize="sentences"
             spellcheck="false"
             [formField]="createForm.identifier"
             [attr.aria-invalid]="hasError(createForm.identifier) ? 'true' : null"

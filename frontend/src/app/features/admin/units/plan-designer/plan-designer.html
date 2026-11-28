@@ -1,0 +1,256 @@
+<section class="designer">
+  <a class="z-btn z-btn--ghost z-btn--compact designer__back" routerLink="/admin/units">
+    <svg lucideArrowLeft class="z-icon z-icon--s" aria-hidden="true"></svg>
+    Unidades
+  </a>
+
+  <header class="designer__head">
+    <h1 class="designer__h1">Diseñar plano</h1>
+    <p class="designer__lead">
+      Ubicá cada carpa y sombrilla donde está en tu playa: elegí una y tocá su casilla. Así la ven
+      tus clientes al reservar.
+    </p>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="designer__skeleton" aria-busy="true" aria-label="Cargando el plano">
+        <z-skeleton width="100%" height="48px" />
+        <z-skeleton width="100%" height="320px" />
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer las unidades" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (units().length === 0) {
+        <z-empty
+          title="Todavía no cargaste unidades"
+          text="Creá tus carpas y sombrillas en Unidades para ubicarlas en el plano."
+          actionLabel="Ir a Unidades"
+          (action)="goToUnits()"
+        />
+      } @else {
+        <div #noticeEl class="designer__notices" tabindex="-1">
+          @if (notice(); as message) {
+            <z-alert variant="success" [text]="message" />
+          }
+          @if (saveError(); as message) {
+            <z-alert variant="danger" title="No se guardó el plano" [text]="message" />
+          }
+        </div>
+
+        <div class="designer__layout">
+          <div class="designer__board">
+            <div class="designer__toolbar" role="group" aria-label="Tamaño del plano">
+              <div class="designer__size">
+                <span class="designer__size-label">Columnas</span>
+                <button
+                  type="button"
+                  class="z-icon-btn designer__size-btn"
+                  aria-label="Quitar columna"
+                  [disabled]="columns() <= 1"
+                  (click)="removeColumn()"
+                >
+                  <svg lucideMinus class="z-icon z-icon--s" aria-hidden="true"></svg>
+                </button>
+                <span class="designer__size-value">{{ columns() }}</span>
+                <button
+                  type="button"
+                  class="z-icon-btn designer__size-btn"
+                  aria-label="Agregar columna"
+                  [disabled]="columns() >= maxSize"
+                  (click)="addColumn()"
+                >
+                  <svg lucidePlus class="z-icon z-icon--s" aria-hidden="true"></svg>
+                </button>
+              </div>
+              <div class="designer__size">
+                <span class="designer__size-label">Filas</span>
+                <button
+                  type="button"
+                  class="z-icon-btn designer__size-btn"
+                  aria-label="Quitar fila"
+                  [disabled]="rows() <= 1"
+                  (click)="removeRow()"
+                >
+                  <svg lucideMinus class="z-icon z-icon--s" aria-hidden="true"></svg>
+                </button>
+                <span class="designer__size-value">{{ rows() }}</span>
+                <button
+                  type="button"
+                  class="z-icon-btn designer__size-btn"
+                  aria-label="Agregar fila"
+                  [disabled]="rows() >= maxSize"
+                  (click)="addRow()"
+                >
+                  <svg lucidePlus class="z-icon z-icon--s" aria-hidden="true"></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Lo último que pasó: se ve arriba del plano y lo lee el lector de pantalla. -->
+            <p class="designer__status" role="status">{{ status() }}</p>
+
+            <div class="designer__frame">
+              <div class="designer__beach" [style.--cols]="columns()">
+                <div class="designer__sea"><span>Mar</span></div>
+
+                <div class="designer__ruler designer__ruler--top" aria-hidden="true">
+                  @for (n of columnNumbers(); track n) {
+                    <span>{{ n }}</span>
+                  }
+                </div>
+
+                <div class="designer__body">
+                  <div class="designer__ruler designer__ruler--side" aria-hidden="true">
+                    @for (n of rowNumbers(); track n) {
+                      <span>{{ n }}</span>
+                    }
+                  </div>
+
+                  <div
+                    class="designer__grid"
+                    role="grid"
+                    [class.designer__grid--placing]="selectedId() !== null"
+                    [attr.aria-label]="
+                      'Plano: ' + columns() + ' columnas por ' + rows() + ' filas, el mar arriba'
+                    "
+                    (keydown)="onGridKeydown($event)"
+                  >
+                    @for (row of grid(); track $index) {
+                      <div class="designer__row" role="row">
+                        @for (cell of row; track cell.key) {
+                          <div class="designer__gridcell" role="gridcell">
+                            <button
+                              type="button"
+                              class="designer__cell"
+                              [class.designer__cell--taken]="cell.unit"
+                              [attr.data-cell]="cell.key"
+                              [attr.aria-label]="cellLabel(cell)"
+                              [tabindex]="isActive(cell) ? 0 : -1"
+                              (focus)="onCellFocus(cell)"
+                              (click)="activate(cell)"
+                            >
+                              @if (cell.unit; as unit) {
+                                <span
+                                  class="z-unit"
+                                  [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
+                                  [class.z-unit--tent]="unit.type === 'TENT'"
+                                  [attr.aria-pressed]="
+                                    unit.idRentalUnit === selectedId() ? 'true' : null
+                                  "
+                                  aria-hidden="true"
+                                >
+                                  <span class="z-unit__shape"></span>
+                                  <span class="z-unit__id">{{ unit.identifier }}</span>
+                                </span>
+                              }
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="designer__entry"><span>Entrada del balneario</span></div>
+              </div>
+            </div>
+
+            <p class="designer__keys">
+              Con el teclado: las flechas recorren el plano, Enter elige o ubica, Escape deja de
+              elegir y Suprimir saca del plano.
+            </p>
+          </div>
+
+          <aside class="designer__aside" aria-labelledby="unplaced-title">
+            <h2 id="unplaced-title" class="designer__h2">
+              Sin ubicar <span class="designer__count">{{ unplaced().length }}</span>
+            </h2>
+
+            @if (unplaced().length === 0) {
+              <p class="designer__all">Todas tus unidades están en el plano.</p>
+            } @else {
+              <p class="designer__hint">Elegí una y tocá una casilla libre del plano.</p>
+              <ul class="designer__chips">
+                @for (unit of unplaced(); track unit.idRentalUnit) {
+                  <li>
+                    <button
+                      type="button"
+                      class="designer__chip"
+                      [attr.data-chip]="unit.idRentalUnit"
+                      [attr.aria-pressed]="unit.idRentalUnit === selectedId()"
+                      (click)="pick(unit)"
+                    >
+                      <span
+                        class="z-unit z-unit--mini"
+                        [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
+                        [class.z-unit--tent]="unit.type === 'TENT'"
+                        aria-hidden="true"
+                        ><span class="z-unit__shape"></span
+                      ></span>
+                      <span class="designer__chip-id">{{ unit.identifier }}</span>
+                      <span class="designer__chip-type">{{ typeName(unit) }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+
+            @if (selected(); as unit) {
+              <div class="designer__selection">
+                <p class="designer__selection-title">
+                  <span class="z-eyebrow">Elegida</span>
+                  {{ typeName(unit) }} {{ unit.identifier }}
+                </p>
+                <p class="designer__selection-where">
+                  @if (selectedCell(); as cell) {
+                    En la {{ whereIs(cell) }}.
+                  } @else {
+                    Fuera del plano.
+                  }
+                </p>
+                <div class="designer__selection-actions">
+                  @if (selectedCell()) {
+                    <z-btn variant="secondary" size="small" (click)="removeSelected()">
+                      Sacar del plano
+                    </z-btn>
+                  }
+                  <z-btn variant="ghost" size="small" (click)="deselect()"> Dejar de elegir </z-btn>
+                </div>
+              </div>
+            }
+          </aside>
+        </div>
+
+        <!-- Las acciones quedan siempre a mano, pegadas abajo. -->
+        <div class="designer__footer">
+          <p class="designer__summary">
+            {{ placedCount() }} de {{ units().length }} en el plano
+            @if (dirty()) {
+              <span class="designer__dirty">· Cambios sin guardar</span>
+            }
+          </p>
+          <div class="designer__actions">
+            @if (dirty()) {
+              <z-btn variant="ghost" [disabled]="saving()" (click)="discard()">
+                Descartar cambios
+              </z-btn>
+            }
+            <z-btn
+              class="designer__save"
+              [disabled]="!dirty()"
+              [loading]="saving()"
+              (click)="save()"
+            >
+              {{ saving() ? 'Guardando el plano…' : 'Guardar plano' }}
+            </z-btn>
+          </div>
+        </div>
+      }
+    }
+  }
+</section>
