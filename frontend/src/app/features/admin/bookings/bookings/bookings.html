@@ -28,51 +28,58 @@
           text="Las reservas de tu balneario van a aparecer acá."
         />
       } @else {
-        <div class="bookings__filters" role="group" aria-label="Filtrar reservas">
-          <!-- Las cuatro opciones a la vista: se elige una con un toque, sin abrir nada. -->
-          <fieldset class="bookings__status">
-            <legend class="bookings__label">Estado</legend>
-            <div class="bookings__choices">
-              @for (option of statusOptions; track option.value) {
-                <label class="z-choice">
-                  <input
-                    type="radio"
-                    name="booking-status"
-                    [value]="option.value"
-                    [checked]="status() === option.value"
-                    (change)="setStatus(option.value)"
-                  />
-                  <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg
-                  >{{ option.label }}
-                </label>
-              }
-            </div>
-          </fieldset>
+        <!-- En el celular, los filtros se pliegan detrás de «Filtros» (GH-79). -->
+        <z-filters label="Filtrar reservas" [count]="filterCount()">
+          <div class="bookings__filters">
+            <!-- Las cuatro opciones a la vista: se elige una con un toque, sin abrir nada. -->
+            <fieldset class="bookings__status">
+              <legend class="bookings__label">Estado</legend>
+              <div class="bookings__choices">
+                @for (option of statusOptions; track option.value) {
+                  <label class="z-choice">
+                    <input
+                      type="radio"
+                      name="booking-status"
+                      [value]="option.value"
+                      [checked]="status() === option.value"
+                      (change)="setStatus(option.value)"
+                    />
+                    <svg
+                      lucideCheck
+                      class="z-icon z-icon--s z-choice__check"
+                      aria-hidden="true"
+                    ></svg
+                    >{{ option.label }}
+                  </label>
+                }
+              </div>
+            </fieldset>
 
-          <fieldset class="bookings__dates" aria-describedby="booking-date-help">
-            <legend class="bookings__label">Período</legend>
-            <z-date-range
-              [(from)]="from"
-              [(to)]="to"
-              [min]="minDate"
-              [summary]="false"
-              [labels]="rangeLabels"
-              floating
-            />
-          </fieldset>
+            <fieldset class="bookings__dates" aria-describedby="booking-date-help">
+              <legend class="bookings__label">Período</legend>
+              <z-date-range
+                [(from)]="from"
+                [(to)]="to"
+                [min]="minDate"
+                [summary]="false"
+                [labels]="rangeLabels"
+                floating
+              />
+            </fieldset>
 
-          <z-btn variant="ghost" [disabled]="!hasFilters()" (click)="resetFilters()">
-            Limpiar filtros
-          </z-btn>
-        </div>
+            <z-btn variant="ghost" [disabled]="!hasFilters()" (click)="resetFilters()">
+              Limpiar filtros
+            </z-btn>
+          </div>
 
-        <p id="booking-date-help" class="bookings__help">
-          @if (invalidRange()) {
-            La fecha desde debe ser anterior o igual a la fecha hasta.
-          } @else {
-            Se muestran las estadías que coinciden con el período, incluidos ambos días.
-          }
-        </p>
+          <p id="booking-date-help" class="bookings__help">
+            @if (invalidRange()) {
+              La fecha desde debe ser anterior o igual a la fecha hasta.
+            } @else {
+              Se muestran las estadías que coinciden con el período, incluidos ambos días.
+            }
+          </p>
+        </z-filters>
 
         @if (!invalidRange()) {
           <p class="bookings__summary" role="status">
@@ -88,7 +95,9 @@
             />
           } @else {
             <div class="z-table-wrap">
-              <table class="z-table" aria-label="Reservas del balneario">
+              <!-- En el celular, cada fila es compacta: titular y total; unidad y fechas; estado y
+                   flecha. Toda la fila lleva al detalle (GH-79). -->
+              <table class="z-table z-table--compact" aria-label="Reservas del balneario">
                 <thead>
                   <tr>
                     <th scope="col">Titular</th>
@@ -103,7 +112,7 @@
                 <tbody>
                   @for (booking of filtered(); track booking.id) {
                     <tr>
-                      <td data-label="Titular">
+                      <td data-label="Titular" class="bookings__cell--holder">
                         <a class="bookings__holder" [routerLink]="['/admin/bookings', booking.id]">
                           {{ holder(booking) }}
                           <span class="bookings__code">
@@ -112,29 +121,36 @@
                         </a>
                       </td>
 
-                      <td data-label="Unidad">
+                      <td data-label="Unidad" class="bookings__cell--unit">
                         <span class="bookings__code">
                           {{ unitLabel(booking.rentalUnitType, booking.rentalUnitIdentifier) }}
                         </span>
                       </td>
 
-                      <td data-label="Fechas">
+                      <td data-label="Fechas" class="bookings__cell--dates">
                         <time [attr.datetime]="booking.startDate">
                           {{ dayRange(booking.startDate, booking.endDate) }}
                         </time>
                       </td>
 
-                      <td data-label="Estado">
+                      <td data-label="Estado" class="bookings__cell--status">
                         <span [class]="'z-status z-status--' + statuses[booking.status].modifier">
                           {{ statuses[booking.status].label }}
                         </span>
                       </td>
 
-                      <td data-label="Total" class="is-num">
+                      <td data-label="Total" class="is-num bookings__cell--total">
                         {{ money(booking.totalPrice) }}
                       </td>
 
-                      <td class="is-actions">
+                      <td class="is-actions bookings__cell--actions">
+                        <!-- En el celular la fila entera es el enlace: queda la flecha, y cancelar
+                             se hace desde el detalle. -->
+                        <svg
+                          lucideChevronRight
+                          class="z-icon bookings__arrow"
+                          aria-hidden="true"
+                        ></svg>
                         <div class="z-table__actions">
                           <a
                             class="z-btn z-btn--ghost z-btn--small"

@@ -1,4 +1,8 @@
-<article class="z-booking-card" [class.z-booking-card--today]="today()">
+<article
+  class="z-booking-card"
+  [class.z-booking-card--today]="today()"
+  [class.z-booking-card--past]="finished()"
+>
   <div class="z-booking-card__head">
     <div class="z-booking-card__name">
       @if (today()) {

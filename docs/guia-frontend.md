@@ -487,6 +487,32 @@ Cada ingreso guarda la fecha y la hora. En la reserva, cada persona de `guests` 
 valide de nuevo, y `lastEntryAt` sigue con el último ingreso. En el Panel, `today.checkedIn` cuenta a
 las personas que entraron hoy.
 
+**El registro de ingresos (GH-76).** Cada validación exitosa deja una fila: escanear dos veces la
+misma entrada son dos ingresos. `isEntryValidated` y `lastEntryAt` salen de ese registro. Para que
+quede anotado cómo se validó, el código escrito a mano se manda con `?typed=true`
+(`POST /api/guests/validate/{qrToken}?typed=true`); sin el parámetro queda como QR.
+
+```
+GET /api/bookings/{id}/entries              los ingresos de una reserva (admin de su balneario o cliente dueño)
+GET /api/resorts/my/entries?date=AAAA-MM-DD los del día en el balneario del admin; sin date, hoy
+```
+
+Los dos devuelven una lista, del más nuevo al más viejo:
+
+```
+{
+  "id": 2063,
+  "idGuest": 63,
+  "fullName": "Lucía Gutiérrez",
+  "bookingId": 62,
+  "rentalUnitIdentifier": "B-02",
+  "enteredAt": "2026-01-10T10:12:00",   ← en hora de Buenos Aires
+  "method": "QR"                        ← QR, CODE (escrito a mano) o DNI
+}
+```
+
+Una reserva sin ingresos devuelve `[]`. Una ajena, `404`, igual que una que no existe.
+
 ---
 
 ## 7. Estadísticas del panel

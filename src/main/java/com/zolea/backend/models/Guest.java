@@ -43,6 +43,8 @@ public class Guest {
      * <p>Hasta la 15.6 era un {@code isEntryValidated}: el código servía una sola vez. Ahora sirve
      * para entrar todas las veces que haga falta durante la estadía, así que lo que importa es
      * cuándo fue el último ingreso.
+     *
+     * <p>Desde GH-76 es el resumen del registro de ingresos: lo escribe solo {@link #recordEntry}.
      */
     private LocalDateTime lastEntryAt;
 
@@ -50,6 +52,19 @@ public class Guest {
     @JoinColumn(name = "id_booking")
     @ToString.Exclude
     private Booking booking;
+
+    /**
+     * Anota un ingreso: el registro nuevo y, en el huésped, cuándo fue el último.
+     *
+     * <p>Desde GH-76 cada ingreso queda en {@link GuestEntry}; {@code lastEntryAt} es el resumen del
+     * último, que se actualiza solo acá para que no se separe del registro.
+     *
+     * @return el registro, para guardarlo
+     */
+    public GuestEntry recordEntry(LocalDateTime at, EntryMethod method, Client validatedBy) {
+        this.lastEntryAt = at;
+        return new GuestEntry(this, at, method, validatedBy);
+    }
 
     /** Si entró ese día: es lo que la reserva informa como {@code isEntryValidated}. */
     public boolean enteredOn(LocalDate day) {

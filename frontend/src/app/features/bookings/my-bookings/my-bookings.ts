@@ -47,6 +47,9 @@ const TAB_LABEL: Record<BookingTab, string> = {
   canceled: 'Canceladas',
 };
 
+/** La etiqueta de una estadía que ya terminó: neutra, como pide la bandera del bañero (GH-80). */
+const FINISHED = { label: 'Terminada', modifier: 'neutral' };
+
 const TAB_EMPTY: Record<BookingTab, string> = {
   upcoming: 'No tenés reservas por delante.',
   past: 'Todavía no terminó ninguna de tus reservas.',
@@ -71,6 +74,8 @@ interface BookingCardData {
   total: string;
   /** Confirmada y con hoy adentro: se destaca. */
   today: boolean;
+  /** Confirmada y ya terminó: se ve en espuma y «Terminada». */
+  finished: boolean;
   notice: BookingCardNotice | null;
   /** Ya no se puede pagar: en lugar de «Pagar», «Volver a reservar». */
   rebook: boolean;
@@ -335,9 +340,12 @@ export class MyBookings {
     const count = dayCount(booking.startDate, booking.endDate);
     const range = dayRange(booking.startDate, booking.endDate);
     const notice = this.noticeFor(booking);
+    // Una confirmada cuya estadía terminó se ve «Terminada»: la reserva sigue confirmada (GH-80).
+    const finished = booking.status === 'CONFIRMED' && tabOf(booking, this.today) === 'past';
     return {
       booking,
-      status: BOOKING_STATUS[booking.status],
+      status: finished ? FINISHED : BOOKING_STATUS[booking.status],
+      finished,
       unit: unitLabel(booking.rentalUnitType, booking.rentalUnitIdentifier),
       days: `${range} · ${count} ${count === 1 ? 'día' : 'días'}`,
       total: money(booking.totalPrice),

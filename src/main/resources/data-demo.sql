@@ -897,6 +897,34 @@ WHERE b.walk_in_name IS NULL AND b.id_client IS NOT NULL AND b.id_client <> 1
   AND (b.status = 'CONFIRMED' OR (b.status = 'CANCELED' AND b.refund_amount > 0));
 
 -- =============================================================================
+-- GH-76: registro de ingresos
+--
+-- Desde GH-76 cada validación deja una fila en guest_entry, y «entró hoy» sale
+-- de ahí. Cada persona que en la demo ya figura con last_entry_at recibe ese
+-- ingreso en el registro, validado por QR por el administrador de su balneario:
+-- las de hoy (62, 63 y 65), la de ayer (Joaquín, en la 63) y las de las
+-- estadías que terminaron. El titular de la 63, que empezó antes de hoy, entró
+-- también ayer a la tarde por DNI. Ids del rango 2000.
+-- =============================================================================
+DELETE FROM guest_entry;
+
+INSERT INTO guest_entry (id, id_guest, id_booking, entered_at, method, id_validated_by)
+SELECT 2000 + g.id_guest, g.id_guest, g.id_booking, g.last_entry_at, 'QR',
+       (SELECT c.id_client FROM client c WHERE c.id_managed_resort = u.id_resort LIMIT 1)
+FROM guest g
+JOIN booking b ON b.id = g.id_booking
+JOIN rental_unit u ON u.id_rental_unit = b.id_rental_unit
+WHERE g.last_entry_at IS NOT NULL;
+
+INSERT INTO guest_entry (id, id_guest, id_booking, entered_at, method, id_validated_by)
+SELECT 2999, g.id_guest, g.id_booking, TIMESTAMP(@today - INTERVAL 1 DAY) + INTERVAL 20 HOUR, 'DNI',
+       (SELECT c.id_client FROM client c WHERE c.id_managed_resort = u.id_resort LIMIT 1)
+FROM guest g
+JOIN booking b ON b.id = g.id_booking
+JOIN rental_unit u ON u.id_rental_unit = b.id_rental_unit
+WHERE g.qr_token = 'tok-00063-A1-PNL';
+
+-- =============================================================================
 -- GH-68: plano libre
 -- Zolea Club de Playa (Mar del Plata) tiene su plano ubicado, en una grilla de
 -- 10 columnas por 7 filas con el mar arriba: las sombrillas A en la fila 0 y

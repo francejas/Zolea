@@ -11,6 +11,26 @@
 
 .review__title {
   margin: 0;
+  /* El título no pasa por debajo del botón de cerrar. */
+  padding-right: var(--touch-min);
+}
+
+/* Cerrar, arriba a la derecha y de 44 px (GH-80). El diálogo abierto es fijo, así que el botón se
+   ubica contra su esquina. */
+.review__close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+/* Mientras se envía la reseña, deshabilitado como los botones de la app. */
+.review__close:disabled {
+  color: var(--color-ink-soft);
+  cursor: not-allowed;
+}
+
+.review__close:disabled:hover {
+  background: transparent;
 }
 
 /* Qué se califica: dos tarjetas chicas, una al lado de la otra (una debajo de la otra en un

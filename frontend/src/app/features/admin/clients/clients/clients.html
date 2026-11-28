@@ -50,7 +50,9 @@
           />
         } @else {
           <div class="z-table-wrap">
-            <table class="z-table">
+            <!-- En el celular, cada fila es compacta: nombre y total; DNI y reservas; contacto. Toda
+                 la fila abre el historial (GH-79). -->
+            <table class="z-table z-table--compact clients__table">
               <caption class="z-visually-hidden">
                 Clientes de tu balneario
               </caption>
@@ -68,7 +70,7 @@
               <tbody>
                 @for (client of visibleClients(); track client) {
                   <tr class="clients__row">
-                    <td data-label="Nombre">
+                    <td data-label="Nombre" class="clients__cell--name">
                       <div class="clients__name">
                         <button
                           type="button"
@@ -86,11 +88,12 @@
                       </div>
                     </td>
 
-                    <td data-label="DNI">
+                    <!-- En el celular, sin la columna, el número se presenta como «DNI …». -->
+                    <td data-label="DNI" class="clients__cell--dni" [class.has-dni]="!!client.dni">
                       <span class="z-code">{{ client.dni || 'Sin DNI' }}</span>
                     </td>
 
-                    <td data-label="Contacto">
+                    <td data-label="Contacto" class="clients__cell--contact">
                       @if (client.walkIn) {
                         <span class="is-muted">Sin datos de contacto</span>
                       } @else {
@@ -101,11 +104,16 @@
                       }
                     </td>
 
-                    <td data-label="Reservas" class="is-num">
+                    <!-- En el celular, sin la columna, la cantidad suma «reservas». -->
+                    <td
+                      data-label="Reservas"
+                      class="is-num clients__cell--count"
+                      [attr.data-word]="client.bookingCount === 1 ? 'reserva' : 'reservas'"
+                    >
                       {{ client.bookingCount }}
                     </td>
 
-                    <td data-label="Total gastado" class="is-num">
+                    <td data-label="Total gastado" class="is-num clients__cell--total">
                       <span class="z-money">{{ money(client.totalSpent) }}</span>
                     </td>
                   </tr>

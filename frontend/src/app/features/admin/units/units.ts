@@ -30,7 +30,9 @@ import { ZAlert } from '../../../shared/z-alert/z-alert';
 import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
+import { ZFilters } from '../../../shared/z-filters/z-filters';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { RowAction, ZRowMenu } from '../../../shared/z-row-menu/z-row-menu';
 import { money, shortDate, UNIT_TYPE_LABEL, unitLabel } from '../../../shared/utils/format';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 
@@ -87,7 +89,9 @@ const MAX_IDENTIFIER = 20;
     ZBtn,
     ZEmpty,
     ZField,
+    ZFilters,
     ZProblem,
+    ZRowMenu,
     ZSkeleton,
   ],
   templateUrl: './units.html',
@@ -122,6 +126,31 @@ export class Units {
   /** Si el filtro se movió del de por defecto: si no, «Quitar los filtros» no tiene nada que hacer. */
   protected readonly hasFilters = computed(
     () => this.typeFilter().length > 0 || this.statusFilter() !== DEFAULT_STATUS_FILTER,
+  );
+
+  /** Cuántos filtros hay puestos, para el botón del celular: el tipo y el estado. */
+  protected readonly filterCount = computed(
+    () =>
+      (this.typeFilter().length > 0 ? 1 : 0) +
+      (this.statusFilter() !== DEFAULT_STATUS_FILTER ? 1 : 0),
+  );
+
+  /**
+   * Las acciones del menú de cada fila en el celular (GH-79): las mismas que los botones de la
+   * computadora. Se arman una vez por lista, no en cada vuelta de la plantilla.
+   */
+  protected readonly rowActions = computed(
+    () =>
+      new Map<number, RowAction[]>(
+        this.units().map((unit) => [
+          unit.idRentalUnit,
+          [
+            { label: 'Cambiar el precio', run: () => this.editPrice(unit) },
+            { label: unit.isBlocked ? 'Desbloquear' : 'Bloquear', run: () => this.askBlock(unit) },
+            { label: 'Dar de baja', danger: true, run: () => this.askRetire(unit) },
+          ],
+        ]),
+      ),
   );
 
   /** Las unidades que pasan los dos filtros. */

@@ -12,8 +12,10 @@ import com.zolea.backend.dtos.resort.ResortSummaryResponse;
 import com.zolea.backend.exceptions.resort.ResortRegistrationInvalidException;
 import com.zolea.backend.models.UnitType;
 import com.zolea.backend.security.UserPrincipal;
+import com.zolea.backend.services.GuestService;
 import com.zolea.backend.services.RentalUnitService;
 import com.zolea.backend.services.ResortService;
+import com.zolea.backend.dtos.guest.GuestEntryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -46,6 +48,7 @@ import java.util.Map;
 public class ResortController {
 
     private final ResortService resortService;
+    private final GuestService guestService;
     private final RentalUnitService rentalUnitService;
     private final Validator validator;
 
@@ -262,6 +265,26 @@ public class ResortController {
         return ResponseEntity.ok(new ResortActionResponse("Balneario activado correctamente.", saved));
     }
 
+
+    // El balneario sale de la sesión, como en /my/stats.
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/my/entries")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Ingresos de un día en mi balneario (Admin)",
+            description = "Cada validación exitosa del día, de la más nueva a la más vieja, con el nombre del huésped, la "
+                    + "unidad, la hora y cómo se validó (QR, CODE o DNI). Sin fecha, hoy en Buenos Aires.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Los ingresos del día; vacío si no entró nadie"),
+            @ApiResponse(responseCode = "400", description = "Una fecha mal escrita", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador, o el administrador no tiene un balneario asignado", content = @Content)
+    })
+    public ResponseEntity<List<GuestEntryResponse>> getMyEntries(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "El día, AAAA-MM-DD; sin él, hoy", example = "2026-01-10")
+            @RequestParam(required = false) LocalDate date) {
+        return ResponseEntity.ok(guestService.getResortEntries(principal.requireManagedResort(), date));
+    }
 
     // El balneario sale de la sesión, nunca de un parámetro: cada admin ve solo los números del suyo.
     @PreAuthorize("hasRole('ADMIN')")

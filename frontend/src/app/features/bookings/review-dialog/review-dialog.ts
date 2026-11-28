@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { form, FormField, maxLength, required, submit } from '@angular/forms/signals';
-import { LucideMapPin, LucideStar, LucideTent, LucideUmbrella } from '@lucide/angular';
+import { LucideMapPin, LucideStar, LucideTent, LucideUmbrella, LucideX } from '@lucide/angular';
 import { firstValueFrom } from 'rxjs';
 import { Booking } from '../../../core/api/booking.models';
 import { Review } from '../../../core/api/review.models';
@@ -36,7 +36,17 @@ const STAR_COUNT = [1, 2, 3, 4, 5];
  */
 @Component({
   selector: 'app-review-dialog',
-  imports: [FormField, LucideMapPin, LucideStar, LucideTent, LucideUmbrella, ZAlert, ZBtn, ZField],
+  imports: [
+    FormField,
+    LucideMapPin,
+    LucideStar,
+    LucideTent,
+    LucideUmbrella,
+    LucideX,
+    ZAlert,
+    ZBtn,
+    ZField,
+  ],
   templateUrl: './review-dialog.html',
   styleUrl: './review-dialog.scss',
 })

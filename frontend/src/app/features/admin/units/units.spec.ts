@@ -775,4 +775,82 @@ describe('Units', () => {
       expect(rows().map((row) => cells(row)[0])).toEqual(['A-08']);
     });
   });
+
+  describe('en el celular (GH-79)', () => {
+    beforeEach(async () => {
+      await respondWith([sombrilla, bloqueada, dadaDeBaja]);
+    });
+
+    const menuOf = (identifier: string) =>
+      rowOf(identifier).querySelector<HTMLButtonElement>('.z-row-menu__trigger');
+    const menuItems = (identifier: string) =>
+      Array.from(rowOf(identifier).querySelectorAll('.z-row-menu__item')).map((b) =>
+        b.textContent!.trim(),
+      );
+
+    async function openMenu(identifier: string): Promise<void> {
+      menuOf(identifier)!.click();
+      await fixture.whenStable();
+    }
+
+    function choose(identifier: string, label: string): void {
+      Array.from(rowOf(identifier).querySelectorAll<HTMLButtonElement>('.z-row-menu__item'))
+        .find((b) => b.textContent!.trim() === label)!
+        .click();
+    }
+
+    it('la tabla es compacta y los filtros van en el plegable «Filtros», que cuenta los puestos', async () => {
+      expect(page.querySelector('table')!.classList).toContain('z-table--compact');
+      const filters = page.querySelector('z-filters')!;
+      expect(filters.querySelector('.units__type-filter')).not.toBeNull();
+      expect(filters.querySelector('#filter-status')).not.toBeNull();
+      expect(page.querySelector('.z-filters__count')).toBeNull();
+
+      const select = page.querySelector<HTMLSelectElement>('#filter-status')!;
+      select.value = 'BLOCKED';
+      select.dispatchEvent(new Event('change'));
+      page.querySelector<HTMLInputElement>('.units__type-filter input[value="TENT"]')!.click();
+      await fixture.whenStable();
+
+      expect(page.querySelector('.z-filters__count')!.textContent!.trim()).toBe('2 puestos');
+    });
+
+    it('cada fila en servicio tiene su menú de acciones, con el nombre de la unidad', async () => {
+      expect(menuOf('A-01')!.getAttribute('aria-label')).toBe('Acciones de Sombrilla A-01');
+
+      await openMenu('A-01');
+      expect(menuItems('A-01')).toEqual(['Cambiar el precio', 'Bloquear', 'Dar de baja']);
+
+      await openMenu('A-08');
+      expect(menuItems('A-08')).toEqual(['Cambiar el precio', 'Desbloquear', 'Dar de baja']);
+    });
+
+    it('una dada de baja no tiene menú', async () => {
+      const select = page.querySelector<HTMLSelectElement>('#filter-status')!;
+      select.value = 'ALL';
+      select.dispatchEvent(new Event('change'));
+      await fixture.whenStable();
+
+      expect(menuOf('A-09')).toBeNull();
+    });
+
+    it('Bloquear desde el menú abre la misma confirmación', async () => {
+      await openMenu('A-01');
+      choose('A-01', 'Bloquear');
+      await fixture.whenStable();
+
+      const dialog = page.querySelector<HTMLDialogElement>('dialog')!;
+      expect(dialog.hasAttribute('open')).toBe(true);
+      expect(dialog.textContent).toContain('¿Bloqueás la Sombrilla A-01?');
+    });
+
+    it('Cambiar el precio desde el menú abre el campo en la fila', async () => {
+      await openMenu('A-01');
+      choose('A-01', 'Cambiar el precio');
+      await fixture.whenStable();
+
+      expect(rowOf('A-01').querySelector('#unit-new-price')).not.toBeNull();
+      expect(rowOf('A-01').classList).toContain('is-editing');
+    });
+  });
 });
