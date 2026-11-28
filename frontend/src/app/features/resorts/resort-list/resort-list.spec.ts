@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { Amenity, Resort } from '../../../core/api/resort.models';
+import { dayRange, money } from '../../../shared/utils/format';
 import { ResortList } from './resort-list';
 
 const API = `${environment.apiUrl}/api/resorts`;
@@ -424,6 +425,191 @@ describe('ResortList', () => {
 
       expect(typeInput('TENT').checked).toBe(true);
       expect(typeInput('UMBRELLA').checked).toBe(true);
+    });
+
+    describe('puntaje, orden, servicios y chips (#73)', () => {
+      const select = (id: string) => page.querySelector<HTMLSelectElement>(`#${id}`)!;
+
+      async function choose(id: string, value: string): Promise<void> {
+        const element = select(id);
+        element.value = value;
+        element.dispatchEvent(new Event('change'));
+        await fixture.whenStable();
+      }
+
+      const chips = () =>
+        Array.from(page.querySelectorAll<HTMLButtonElement>('.filters__chip')).map((chip) =>
+          chip.textContent!.replace(/\s+/g, ' ').trim(),
+        );
+      const servicesToggle = () =>
+        page.querySelector<HTMLButtonElement>('.filters__services-toggle')!;
+      const servicesPanel = () => page.querySelector<HTMLElement>('#filters-services')!;
+
+      it('el puntaje y el orden de la dirección viajan al backend', async () => {
+        await arriveWith({ minRating: '4.5', sort: 'rating' });
+        http.expectOne(`${API}?minRating=4.5&sort=rating`).flush([]);
+        await fixture.whenStable();
+
+        expect(select('f-rating').value).toBe('min:4.5');
+        expect(select('f-sort').value).toBe('rating');
+      });
+
+      it('las estrellas exactas de la dirección viajan al backend', async () => {
+        await arriveWith({ stars: '4' });
+        http.expectOne(`${API}?stars=4`).flush([]);
+        await fixture.whenStable();
+
+        expect(select('f-rating').value).toBe('stars:4');
+      });
+
+      it('descarta un puntaje, unas estrellas o un orden que no existen', async () => {
+        await arriveWith({ minRating: '7', stars: '0', sort: 'precio' });
+
+        expect(http.match((req) => req.url === API)).toEqual([]);
+      });
+
+      it('Aplicar lleva el puntaje y el orden a la dirección', async () => {
+        await respondWith([]);
+
+        await choose('f-rating', 'stars:5');
+        await choose('f-sort', 'rating');
+        await submitFilters();
+
+        expect(router.navigate).toHaveBeenCalledWith(['/'], {
+          queryParams: { stars: 5, sort: 'rating' },
+        });
+      });
+
+      it('con Carpa y Sombrilla marcadas, que es cualquiera, no hay chip de tipo', async () => {
+        await arriveWith({ type: 'TENT,UMBRELLA', maxPrice: '9000' });
+        http.expectOne(`${API}?maxPrice=9000`).flush([]);
+        await fixture.whenStable();
+
+        expect(chips()).toEqual([`Hasta ${money(9000)}`.replace(/\s+/g, ' ')]);
+      });
+
+      it('la × del único tipo marcado amplía la búsqueda a los dos', async () => {
+        await arriveWith({ type: 'UMBRELLA', maxPrice: '9000' });
+        http.expectOne(`${API}?type=UMBRELLA&maxPrice=9000`).flush([]);
+        await fixture.whenStable();
+
+        const typeChip = Array.from(
+          page.querySelectorAll<HTMLButtonElement>('.filters__chip'),
+        ).find((chip) => chip.textContent!.includes('Sombrilla'))!;
+        typeChip.click();
+        await fixture.whenStable();
+
+        expect(router.navigate).toHaveBeenCalledWith(['/'], { queryParams: { maxPrice: 9000 } });
+      });
+
+      it('cada filtro puesto es un chip; el orden no', async () => {
+        await arriveWith({
+          from: '2027-01-15',
+          to: '2027-01-17',
+          type: 'TENT',
+          maxPrice: '20000',
+          amenityIds: '1,2',
+          minRating: '4',
+          sort: 'rating',
+        });
+        http
+          .expectOne(
+            `${API}?from=2027-01-15&to=2027-01-17&type=TENT&maxPrice=20000&amenityIds=1,2&minRating=4&sort=rating`,
+          )
+          .flush([]);
+        await withAmenities();
+
+        expect(chips()).toEqual([
+          dayRange('2027-01-15', '2027-01-17'),
+          'Carpa',
+          'Hasta $ 20.000',
+          'WiFi',
+          'Spa',
+          '4 o más',
+        ]);
+        expect(page.querySelector('.filters__chip')!.getAttribute('aria-label')).toBe(
+          `Quitar ${dayRange('2027-01-15', '2027-01-17')}`,
+        );
+      });
+
+      it('la × de un chip saca solo ese filtro de la dirección', async () => {
+        await arriveWith({ type: 'TENT', amenityIds: '1,2', stars: '4', sort: 'rating' });
+        http.expectOne(`${API}?type=TENT&amenityIds=1,2&stars=4&sort=rating`).flush([]);
+        await withAmenities();
+
+        const wifiChip = Array.from(
+          page.querySelectorAll<HTMLButtonElement>('.filters__chip'),
+        ).find((chip) => chip.textContent!.includes('WiFi'))!;
+        wifiChip.click();
+        await fixture.whenStable();
+
+        expect(router.navigate).toHaveBeenCalledWith(['/'], {
+          queryParams: { type: 'TENT', amenityIds: '2', stars: 4, sort: 'rating' },
+        });
+      });
+
+      it('el botón Servicios cuenta los marcados, como los chips de servicios', async () => {
+        await arriveWith({ amenityIds: '1,2' });
+        http.expectOne(`${API}?amenityIds=1,2`).flush([]);
+        await withAmenities();
+
+        expect(servicesToggle().textContent).toContain('2');
+        expect(chips().filter((chip) => chip === 'WiFi' || chip === 'Spa')).toHaveLength(2);
+      });
+
+      it('el panel de servicios se abre con el botón, se cierra con Esc y el foco vuelve', async () => {
+        await respondWith([]);
+        await withAmenities();
+
+        expect(servicesToggle().getAttribute('aria-expanded')).toBe('false');
+        expect(servicesToggle().getAttribute('aria-controls')).toBe('filters-services');
+
+        servicesToggle().click();
+        await fixture.whenStable();
+        expect(servicesToggle().getAttribute('aria-expanded')).toBe('true');
+        expect(servicesPanel().classList).toContain('is-open');
+
+        amenityInputs()[0].focus();
+        amenityInputs()[0].dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        );
+        await fixture.whenStable();
+
+        expect(servicesToggle().getAttribute('aria-expanded')).toBe('false');
+        expect(document.activeElement).toBe(servicesToggle());
+      });
+
+      it('el panel de servicios se cierra con un clic afuera', async () => {
+        await respondWith([]);
+        await withAmenities();
+
+        servicesToggle().click();
+        await fixture.whenStable();
+        amenityInputs()[0].click();
+        await fixture.whenStable();
+        expect(servicesToggle().getAttribute('aria-expanded')).toBe('true');
+
+        page.querySelector<HTMLElement>('.hero')!.click();
+        await fixture.whenStable();
+        expect(servicesToggle().getAttribute('aria-expanded')).toBe('false');
+      });
+
+      it('arriba de la grilla dice cuántos balnearios hay', async () => {
+        await respondWith([arenaDorada, solYMar]);
+
+        expect(page.querySelector('.results__count')!.textContent!.trim()).toBe('2 balnearios');
+      });
+
+      it('con solo el puntaje puesto, se ofrece limpiar los filtros', async () => {
+        await arriveWith({ minRating: '3' });
+        http.expectOne(`${API}?minRating=3`).flush([arenaDorada]);
+        await fixture.whenStable();
+
+        const clear = Array.from(page.querySelectorAll('button')).find((button) =>
+          button.textContent!.includes('Limpiar filtros'),
+        );
+        expect(clear).toBeDefined();
+      });
     });
 
     it('un servicio marcado muestra el ícono de check', async () => {

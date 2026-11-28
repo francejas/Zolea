@@ -113,43 +113,115 @@
             inputmode="numeric"
             step="500"
             autocomplete="off"
-            placeholder="Sin tope, por ej. 20000"
+            placeholder="Sin tope"
             [formField]="filterForm.maxPrice"
           />
         </z-field>
 
         @if (amenities().length > 0) {
-          <fieldset class="filters__group filters__amenities">
-            <legend class="z-field__label">Servicios</legend>
-            <!-- En el celular, dos renglones que se deslizan de costado: no estiran la pantalla. -->
-            <div class="filters__choices filters__choices--scroll">
-              @for (amenity of amenities(); track amenity.idAmenity) {
-                <label class="z-choice">
-                  <input
-                    type="checkbox"
-                    [checked]="isAmenityChecked(amenity.idAmenity)"
-                    (change)="toggleAmenity(amenity.idAmenity)"
-                  />
-                  <svg
-                    [lucideIcon]="amenityIcon(amenity.name)"
-                    class="z-icon z-icon--s z-choice__icon"
-                    aria-hidden="true"
-                  ></svg>
-                  <svg lucideCheck class="z-icon z-icon--s z-choice__check" aria-hidden="true"></svg
-                  >{{ amenity.name }}
-                </label>
+          <!-- En la computadora, los servicios abren un panel desde su botón; en el celular se ven
+               siempre, y el botón no está. -->
+          <div #servicesBox class="filters__services" (keydown.escape)="closeServices()">
+            <button
+              #servicesToggle
+              class="z-choice filters__services-toggle"
+              type="button"
+              aria-controls="filters-services"
+              [attr.aria-expanded]="servicesOpen()"
+              (click)="toggleServices()"
+            >
+              Servicios
+              @if (servicesCount() > 0) {
+                <span class="filters__count"
+                  >{{ servicesCount()
+                  }}<span class="z-visually-hidden">{{
+                    servicesCount() === 1 ? ' marcado' : ' marcados'
+                  }}</span></span
+                >
               }
+              <svg lucideChevronDown class="z-icon z-icon--s" aria-hidden="true"></svg>
+            </button>
+
+            <div
+              id="filters-services"
+              class="filters__services-panel"
+              [class.is-open]="servicesOpen()"
+            >
+              <fieldset class="filters__group filters__amenities">
+                <legend class="z-field__label">Servicios</legend>
+                <!-- En el celular, dos renglones que se deslizan de costado: no estiran la pantalla. -->
+                <div class="filters__choices filters__choices--scroll">
+                  @for (amenity of amenities(); track amenity.idAmenity) {
+                    <label class="z-choice">
+                      <input
+                        type="checkbox"
+                        [checked]="isAmenityChecked(amenity.idAmenity)"
+                        (change)="toggleAmenity(amenity.idAmenity)"
+                      />
+                      <svg
+                        [lucideIcon]="amenityIcon(amenity.name)"
+                        class="z-icon z-icon--s z-choice__icon"
+                        aria-hidden="true"
+                      ></svg>
+                      <svg
+                        lucideCheck
+                        class="z-icon z-icon--s z-choice__check"
+                        aria-hidden="true"
+                      ></svg
+                      >{{ amenity.name }}
+                    </label>
+                  }
+                </div>
+              </fieldset>
             </div>
-          </fieldset>
+          </div>
         }
+
+        <div class="filters__select">
+          <label class="z-field__label" for="f-rating">Puntaje</label>
+          <select id="f-rating" class="z-input" (change)="setRating($event)">
+            <option value="" [selected]="filterForm.rating().value() === ''">Cualquiera</option>
+            <optgroup label="Promedio mínimo">
+              @for (option of minRatings; track option.value) {
+                <option
+                  [value]="option.value"
+                  [selected]="filterForm.rating().value() === option.value"
+                >
+                  {{ option.label }}
+                </option>
+              }
+            </optgroup>
+            <optgroup label="Estrellas exactas">
+              @for (option of starOptions; track option.value) {
+                <option
+                  [value]="option.value"
+                  [selected]="filterForm.rating().value() === option.value"
+                >
+                  {{ option.label }}
+                </option>
+              }
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="filters__select">
+          <label class="z-field__label" for="f-sort">Ordenar por</label>
+          <select id="f-sort" class="z-input" (change)="setSort($event)">
+            <option value="" [selected]="filterForm.sort().value() === ''">Relevancia</option>
+            <option value="rating" [selected]="filterForm.sort().value() === 'rating'">
+              Mejor puntaje
+            </option>
+          </select>
+        </div>
 
         <div class="filters__actions">
           <button class="z-btn z-btn--primary z-btn--compact filters__apply" type="submit">
             Aplicar filtros
           </button>
           @if (activeFilters() > 0) {
+            <!-- Desde la computadora, «Limpiar filtros» va al final de los chips. -->
             <button
-              class="z-btn z-btn--ghost z-btn--compact"
+              class="z-btn z-btn--ghost z-btn--compact filters__clear-panel"
               type="button"
               (click)="clearFilters()"
             >
@@ -159,6 +231,30 @@
         </div>
       </div>
     </div>
+
+    <!-- Los filtros puestos, desde la computadora: cada uno se saca con su ×. -->
+    @if (chips().length > 0) {
+      <ul #chipList class="filters__chips" aria-label="Filtros puestos">
+        @for (chip of chips(); track chip.key + chip.label; let i = $index) {
+          <li>
+            <button
+              class="filters__chip"
+              type="button"
+              [attr.aria-label]="'Quitar ' + chip.label"
+              (click)="removeChip(chip, i)"
+            >
+              {{ chip.label }}
+              <svg lucideX class="z-icon z-icon--s" aria-hidden="true"></svg>
+            </button>
+          </li>
+        }
+        <li>
+          <button class="z-btn z-btn--ghost z-btn--compact" type="button" (click)="clearFilters()">
+            Limpiar filtros
+          </button>
+        </li>
+      </ul>
+    }
   </form>
 
   <section #results class="resorts-section" aria-labelledby="resorts-title">
@@ -214,6 +310,8 @@
         (action)="clearSearch()"
       />
     } @else {
+      <!-- La cantidad, a la vista desde la computadora. El foco cae acá si se saca el último chip. -->
+      <p #resultsCount class="results__count" tabindex="-1">{{ resultsSummary() }}</p>
       <div class="resorts-grid">
         @for (resort of filteredResorts(); track resort.idResort) {
           <z-resort-card

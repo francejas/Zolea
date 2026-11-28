@@ -134,4 +134,13 @@ export interface ResortFilters {
   type?: UnitType | null;
   maxPrice?: number | null;
   amenityIds?: number[];
+  /** El promedio mínimo de las reseñas, de 1 a 5 (#73). */
+  minRating?: number | null;
+  /** Las estrellas exactas, de 1 a 5: un promedio de 4,0 a 4,9 cuenta como 4 (#73). */
+  stars?: number | null;
+  /** `rating`: por promedio, de mayor a menor. Sin mandar, el orden de siempre (#73). */
+  sort?: ResortSort | null;
 }
+
+/** El orden de la Portada: el único que se pide es por puntaje. */
+export type ResortSort = 'rating';

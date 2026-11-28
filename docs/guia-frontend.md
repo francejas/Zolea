@@ -232,11 +232,19 @@ GET /api/resorts?q=mar&from=2027-01-15&to=2027-01-17&type=TENT&maxPrice=20000&am
 | `type` | Una unidad `TENT` o `UMBRELLA` |
 | `maxPrice` | Una unidad con precio diario hasta ese valor, incluido |
 | `amenityIds` | Los que tienen **todos** esos servicios: `amenityIds=1,2` o `amenityIds=1&amenityIds=2` |
+| `minRating` | Los que tienen ese promedio o más, de 1 a 5 (`minRating=4.5`) |
+| `stars` | Los de esas estrellas exactas, de 1 a 5: un promedio de 4,0 a 4,9 cuenta como 4 |
+| `sort=rating` | No saca a nadie: ordena por promedio, de mayor a menor; a igual promedio, el de más reseñas. Los que no tienen reseñas van al final |
 
 Con cualquier filtro aparecen solo los balnearios que tienen **al menos una unidad** no bloqueada
 que cumpla el tipo y el precio y, si vinieron fechas, esté libre en esas fechas. Cuando se buscó
 con fechas, `availableUnits` dice cuántas unidades cumplen; sin fechas es `null`, igual que en
 `GET /api/resorts/{id}`.
+
+El puntaje y el orden (#73) se aplican sobre ese resultado, con el promedio que trae cada balneario
+en `averageRating`, con un decimal: es el mismo número que muestra la tarjeta. Un balneario sin
+reseñas no pasa `minRating` ni `stars`. Un `minRating` o unas `stars` fuera de 1 a 5, o un `sort` que
+no es `rating`, responden `400` con el motivo.
 
 En la ficha, el plano marca además las unidades **ocupadas** en las fechas elegidas:
 

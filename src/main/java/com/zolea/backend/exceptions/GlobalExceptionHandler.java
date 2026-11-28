@@ -24,6 +24,7 @@ import com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitRetiredException;
 import com.zolea.backend.exceptions.resort.InvalidResortPhotoException;
 import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
+import com.zolea.backend.exceptions.resort.InvalidResortSearchException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
 import com.zolea.backend.exceptions.resort.ResortPhotoNotFoundException;
 import com.zolea.backend.exceptions.resort.ResortRegistrationInvalidException;
@@ -99,6 +100,7 @@ public class GlobalExceptionHandler {
             ClientInvalidRegisterException.class,
             AccountActionException.class,
             ResortInvalidRegisterException.class,
+            InvalidResortSearchException.class,
             BookingAlreadyCanceledException.class,
             DuplicateIdentifierException.class,
             InvalidBookingRangeException.class,

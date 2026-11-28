@@ -225,6 +225,34 @@
   gap: var(--space-2);
 }
 
+/* Los servicios: en el celular se ven siempre, sin el botón que los abre en la barra. */
+.filters__services-toggle {
+  display: none;
+}
+
+.filters__services-toggle .filters__count {
+  margin-left: 2px;
+}
+
+/* «Puntaje» y «Ordenar por»: con la forma de pastilla del precio. */
+.filters__select {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.filters__select .z-input {
+  height: var(--control-compact);
+  padding-inline: 16px 36px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+}
+
+/* Los chips de los filtros puestos y la cantidad, solo desde la computadora (abajo). */
+.filters__chips,
+.results__count {
+  display: none;
+}
+
 .resorts-section {
   /* Al bajar con «Buscar», un respiro arriba de las tarjetas. */
   scroll-margin-top: var(--space-4);
@@ -277,27 +305,86 @@
     gap: var(--space-5);
     font-size: var(--text-body);
   }
+}
+
+/* --- La barra de filtros, desde 1024 px (#73) ---
+   Una sola fila debajo del buscador: tipo, precio, servicios (en un panel), puntaje, orden y las
+   acciones. Abajo, los filtros puestos como chips; arriba de la grilla, cuántos balnearios hay. */
+@media (min-width: 1024px) {
+  /* Un poco menos de aire arriba y abajo del buscador: la primera fila de tarjetas entra en la
+     primera pantalla de una computadora (1440 × 900). */
+  .search {
+    margin-bottom: var(--space-5);
+  }
+
+  .hero {
+    padding-top: var(--space-6);
+  }
 
   .filters__toggle {
     display: none;
   }
 
-  /* En la computadora, una franja liviana con todo a la vista. */
   .filters__panel {
-    display: grid;
-    /* La tercera pista se queda con lo que sobra: si no, los servicios, que ocupan toda la fila,
-       estirarían la de los tipos y el precio quedaría lejos. */
-    grid-template-columns: max-content minmax(200px, 260px) 1fr;
-    align-items: start;
-    column-gap: var(--space-6);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
     margin-top: 0;
-    padding: var(--space-4) var(--space-5);
-    background: transparent;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
   }
 
-  .filters__amenities,
-  .filters__actions {
-    grid-column: 1 / -1;
+  .filters__group legend {
+    margin-bottom: var(--space-2);
+  }
+
+  .filters__price {
+    width: 170px;
+  }
+
+  .filters__select {
+    min-width: 0;
+  }
+
+  .filters__services {
+    position: relative;
+  }
+
+  .filters__services-toggle {
+    display: inline-flex;
+  }
+
+  .filters__services-toggle[aria-expanded='true'] {
+    border-color: var(--color-ink);
+  }
+
+  .filters__services-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    left: 0;
+    z-index: var(--z-dropdown);
+    width: min(520px, calc(100vw - 2 * var(--gutter)));
+    padding: var(--space-4);
+    border: var(--border);
+    border-radius: var(--radius-m);
+    background: var(--color-surface);
+    box-shadow: 0 12px 32px rgb(72 42 29 / 0.18);
+  }
+
+  .filters__services-panel.is-open {
+    display: block;
+  }
+
+  /* El botón ya dice «Servicios». */
+  .filters__amenities legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .filters__choices--scroll {
@@ -307,5 +394,53 @@
     margin-inline: 0;
     padding: 0;
     mask-image: none;
+  }
+
+  .filters__actions {
+    margin-left: auto;
+  }
+
+  /* «Limpiar filtros» va al final de los chips: así la barra entra en un renglón. */
+  .filters__clear-panel {
+    display: none;
+  }
+
+  .filters__chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .filters__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 10px 0 14px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-sand-soft);
+    color: var(--color-ink);
+    font: 500 var(--text-small) / 1 var(--font-body);
+    cursor: pointer;
+  }
+
+  .filters__chip:hover {
+    background: var(--color-sand);
+  }
+
+  .results__count {
+    display: block;
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+  }
+
+  .results__count:focus {
+    outline: none;
   }
 }
