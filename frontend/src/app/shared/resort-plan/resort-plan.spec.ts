@@ -103,11 +103,12 @@ describe('ResortPlan', () => {
       const prices = Array.from(page.querySelectorAll('.z-plan__row-label span')).map((s) =>
         text(s),
       );
+      // Al pie de las columnas de carpas, el precio corto, que no se parte (ZV-04).
       expect(prices).toEqual([
         '$ 8.500 por día',
         '$ 7.000 por día',
-        '$ 14.500 por día',
-        'desde $ 12.000 por día',
+        '$ 14.500/día',
+        'desde $ 12.000/día',
       ]);
     });
 
@@ -212,6 +213,20 @@ describe('ResortPlan', () => {
       const items = Array.from(page.querySelectorAll('.z-plan-legend li')).map((li) => text(li));
       expect(items).toEqual(['Libre', 'Elegida', 'No disponible']);
     });
+
+    it('la bloqueada lleva la marca de no disponible, y la leyenda usa la misma (ZV-06)', async () => {
+      await render(zoleaClub());
+
+      expect(unitButton('A-08').classList).toContain('z-unit--blocked');
+      expect(unitButton('A-08').classList).not.toContain('z-unit--occupied');
+      expect(unitButton('A-01').classList).not.toContain('z-unit--blocked');
+      const legend = Array.from(page.querySelectorAll('.z-plan-legend li')).find(
+        (li) => text(li) === 'No disponible',
+      )!;
+      const marks = legend.querySelectorAll('.z-unit--mini');
+      expect(marks.length).toBe(2);
+      marks.forEach((mark) => expect(mark.classList).toContain('z-unit--blocked'));
+    });
   });
 
   describe('las carpas en columnas', () => {
@@ -315,6 +330,19 @@ describe('ResortPlan', () => {
 
       const items = Array.from(page.querySelectorAll('.z-plan-legend li')).map((li) => text(li));
       expect(items).toEqual(['Libre', 'Elegida', 'No disponible', 'Ocupada en tus fechas']);
+    });
+
+    it('la ocupada se dibuja distinto de la no disponible, y la leyenda usa la misma marca (ZV-06)', async () => {
+      await render(zoleaClub(), { occupiedIds: [3] });
+
+      expect(unitButton('A-03').classList).toContain('z-unit--occupied');
+      expect(unitButton('A-03').classList).not.toContain('z-unit--blocked');
+      const legend = Array.from(page.querySelectorAll('.z-plan-legend li')).find(
+        (li) => text(li) === 'Ocupada en tus fechas',
+      )!;
+      const marks = legend.querySelectorAll('.z-unit--mini');
+      expect(marks.length).toBe(2);
+      marks.forEach((mark) => expect(mark.classList).toContain('z-unit--occupied'));
     });
 
     it('una bloqueada que además está ocupada sigue diciendo «no disponible»', async () => {
@@ -471,6 +499,96 @@ describe('ResortPlan', () => {
 
       expect(page.querySelector('.z-plan__walk')).toBeNull();
       expect(page.querySelectorAll('.z-plan__zone').length).toBe(1);
+    });
+  });
+
+  describe('el plano libre (GH-68)', () => {
+    /** Tres unidades ubicadas y una sin casilla. */
+    function placed(): RentalUnit[] {
+      const all = zoleaClub();
+      const [a1, a2, c1, c2] = [all[0], all[1], all[16], all[17]];
+      return [
+        { ...c1, identifier: 'Carpa 12', posX: 4, posY: 2 },
+        { ...a1, identifier: 'Palmera 3', posX: 1, posY: 0 },
+        { ...a2, posX: 0, posY: 0 },
+        { ...c2, identifier: 'Carpa 13', posX: null, posY: null },
+      ];
+    }
+
+    const spots = () =>
+      Array.from(page.querySelectorAll<HTMLElement>('.z-plan__grid .z-plan__spot'));
+
+    it('sin ninguna unidad ubicada, el plano queda como siempre', async () => {
+      await render(zoleaClub().map((unit) => ({ ...unit, posX: null, posY: null })));
+
+      expect(page.querySelector('.z-plan__grid')).toBeNull();
+      expect(page.querySelectorAll('.z-plan__column').length).toBe(2);
+      expect(page.querySelector('.z-plan__walk')).not.toBeNull();
+    });
+
+    it('con unidades ubicadas, dibuja la grilla hasta la última casilla y cada una en la suya', async () => {
+      await render(placed());
+
+      const grid = page.querySelector<HTMLElement>('.z-plan__grid')!;
+      expect(grid.style.gridTemplateColumns).toBe('repeat(5, var(--plan-cell))');
+      expect(grid.style.gridTemplateRows).toBe('repeat(3, auto)');
+      const carpa = spots().find((spot) => text(spot).includes('Carpa 12'))!;
+      expect(carpa.style.gridColumn).toContain('5');
+      expect(carpa.style.gridRow).toContain('3');
+      expect(page.querySelector('.z-plan__column')).toBeNull();
+      expect(page.querySelector('.z-plan__walk')).toBeNull();
+    });
+
+    it('recorre la grilla de arriba abajo y de izquierda a derecha', async () => {
+      await render(placed());
+
+      expect(spots().map((spot) => text(spot.querySelector('.z-unit__id')))).toEqual([
+        'A-02',
+        'Palmera 3',
+        'Carpa 12',
+      ]);
+    });
+
+    it('las que no tienen casilla van abajo, en su fila, antes de la entrada', async () => {
+      await render(placed());
+
+      const unplaced = page.querySelector('.z-plan__zone--unplaced')!;
+      expect(text(unplaced.querySelector('.z-plan__zone-label'))).toBe('Carpas fuera del plano');
+      expect(text(unplaced.querySelector('.z-unit__id'))).toBe('Carpa 13');
+      expect(unplaced.nextElementSibling!.classList).toContain('z-plan__entry');
+      expect(spots().some((spot) => text(spot).includes('Carpa 13'))).toBe(false);
+    });
+
+    it('cada unidad ubicada se elige igual que en el plano de siempre', async () => {
+      await render(placed());
+      const selected = vi.fn();
+      fixture.componentInstance.unitSelected.subscribe(selected);
+
+      unitButton('Palmera 3').click();
+      await fixture.whenStable();
+
+      expect(selected).toHaveBeenCalledWith(expect.objectContaining({ identifier: 'Palmera 3' }));
+      expect(unitButton('Palmera 3').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('la lista agrupa por tipo, en el orden de la grilla y con las que no tienen casilla al final', async () => {
+      await render(placed());
+      page.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      await fixture.whenStable();
+
+      const groups = Array.from(page.querySelectorAll('.z-unit-list__group'));
+      expect(groups.map((group) => text(group.querySelector('legend')))).toEqual([
+        'Sombrillas · $ 8.500 por día',
+        'Carpas · $ 14.500 por día',
+      ]);
+      expect(Array.from(groups[0].querySelectorAll('.z-code')).map((code) => text(code))).toEqual([
+        'A-02',
+        'Palmera 3',
+      ]);
+      expect(Array.from(groups[1].querySelectorAll('.z-code')).map((code) => text(code))).toEqual([
+        'Carpa 12',
+        'Carpa 13',
+      ]);
     });
   });
 });

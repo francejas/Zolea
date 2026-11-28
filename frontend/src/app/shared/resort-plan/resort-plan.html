@@ -64,106 +64,146 @@
   >
     <div class="z-plan" [class.z-plan--more]="moreToTheRight()">
       <div #scroller class="z-plan__scroll" (scroll)="updateScrollHint()">
-        <div class="z-plan__map" [style.grid-template-columns]="planTracks()">
-          <div class="z-plan__sea">
-            <span>Mar</span>
-            @for (aisle of aisles(); track aisle) {
-              <i
-                class="z-plan__access"
-                aria-hidden="true"
-                [style.grid-column]="aisleTrack(aisle)"
-              ></i>
-            }
-          </div>
+        @if (freeLayout()) {
+          <!-- El plano libre (GH-68): cada unidad en la casilla que eligió el balneario. -->
+          <div class="z-plan__map z-plan__map--free">
+            <div class="z-plan__sea"><span>Mar</span></div>
 
-          @for (zone of zones(); track zone.type; let first = $first) {
-            @if (!first) {
-              <div class="z-plan__walk"><span>Paseo</span></div>
-            }
-            @if (zone.type === 'UMBRELLA') {
-              <div class="z-plan__zone">
-                <p class="z-plan__zone-label">
-                  <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
-                  {{ zone.title }}
-                </p>
+            <div
+              class="z-plan__grid"
+              [style.grid-template-columns]="'repeat(' + gridColumns() + ', var(--plan-cell))'"
+              [style.grid-template-rows]="'repeat(' + gridRows() + ', auto)'"
+            >
+              @for (unit of placed(); track unit.idRentalUnit) {
+                <div
+                  class="z-plan__spot"
+                  [style.grid-column]="unit.posX! + 1"
+                  [style.grid-row]="unit.posY! + 1"
+                >
+                  <ng-container *ngTemplateOutlet="unitButton; context: { $implicit: unit }" />
+                </div>
+              }
+            </div>
 
+            @for (zone of unplacedZones(); track zone.type) {
+              <div class="z-plan__zone z-plan__zone--unplaced">
+                <p class="z-plan__zone-label">{{ zone.title }} fuera del plano</p>
                 @for (row of zone.rows; track row.prefix) {
-                  <div
-                    class="z-plan__row"
-                    role="group"
-                    [attr.aria-label]="row.name + ', ' + row.priceLabel"
-                  >
-                    <div class="z-plan__row-label">
-                      <strong>{{ row.name }}</strong>
-                      <span>{{ row.priceLabel }}</span>
-                    </div>
-                    <div class="z-plan__cells">
-                      @for (unit of row.units; track unit.idRentalUnit) {
-                        <ng-container
-                          *ngTemplateOutlet="unitButton; context: { $implicit: unit }"
-                        />
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="z-plan__zone z-plan__zone--columns">
-                <p class="z-plan__zone-label">
-                  <svg lucideTent class="z-icon" aria-hidden="true"></svg>
-                  {{ zone.title }}
-                </p>
-
-                @for (aisle of aisles(); track aisle) {
-                  <i
-                    class="z-plan__aisle"
-                    aria-hidden="true"
-                    [style.grid-column]="aisleTrack(aisle)"
-                  ></i>
-                }
-
-                @for (row of zone.rows; track row.prefix; let i = $index) {
-                  <div
-                    class="z-plan__row z-plan__column"
-                    role="group"
-                    [attr.aria-label]="row.name + ', ' + row.priceLabel"
-                    [style.grid-column]="columnTrack(i)"
-                  >
-                    <div class="z-plan__pairs">
-                      @for (pair of row.pairs; track pair[0].idRentalUnit) {
-                        <div class="z-plan__pair">
-                          @for (unit of pair; track unit.idRentalUnit) {
-                            <ng-container
-                              *ngTemplateOutlet="unitButton; context: { $implicit: unit }"
-                            />
-                          }
-                        </div>
-                      }
-                    </div>
-                    <div class="z-plan__row-label z-plan__foot">
-                      <!-- Se ve la letra en el círculo, como el cartel del pasillo; «Fila» queda
-                           para el lector, que sigue leyendo lo mismo que antes. -->
-                      <strong class="z-plan__badge">
-                        @if (row.prefix !== row.name) {
-                          <small class="z-visually-hidden">Fila&#32;</small>
-                        }
-                        {{ row.prefix }}
-                      </strong>
-                      <span>{{ row.priceLabel }}</span>
-                    </div>
-                  </div>
+                  <ng-container *ngTemplateOutlet="unitRow; context: { $implicit: row }" />
                 }
               </div>
             }
-          }
 
-          <div class="z-plan__entry"><span>Entrada del balneario</span></div>
-        </div>
+            <div class="z-plan__entry"><span>Entrada del balneario</span></div>
+          </div>
+        } @else {
+          <div class="z-plan__map" [style.grid-template-columns]="planTracks()">
+            <div class="z-plan__sea">
+              <span>Mar</span>
+              @for (aisle of aisles(); track aisle) {
+                <i
+                  class="z-plan__access"
+                  aria-hidden="true"
+                  [style.grid-column]="aisleTrack(aisle)"
+                ></i>
+              }
+            </div>
+
+            @for (zone of zones(); track zone.type; let first = $first) {
+              @if (!first) {
+                <div class="z-plan__walk"><span>Paseo</span></div>
+              }
+              @if (zone.type === 'UMBRELLA') {
+                <div class="z-plan__zone">
+                  <p class="z-plan__zone-label">
+                    <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+                    {{ zone.title }}
+                  </p>
+
+                  @for (row of zone.rows; track row.prefix) {
+                    <ng-container *ngTemplateOutlet="unitRow; context: { $implicit: row }" />
+                  }
+                </div>
+              } @else {
+                <div class="z-plan__zone z-plan__zone--columns">
+                  <p class="z-plan__zone-label">
+                    <svg lucideTent class="z-icon" aria-hidden="true"></svg>
+                    {{ zone.title }}
+                  </p>
+
+                  @for (aisle of aisles(); track aisle) {
+                    <i
+                      class="z-plan__aisle"
+                      aria-hidden="true"
+                      [style.grid-column]="aisleTrack(aisle)"
+                    ></i>
+                  }
+
+                  @for (row of zone.rows; track row.prefix; let i = $index) {
+                    <div
+                      class="z-plan__row z-plan__column"
+                      role="group"
+                      [attr.aria-label]="row.name + ', ' + row.priceLabel"
+                      [style.grid-column]="columnTrack(i)"
+                    >
+                      <div class="z-plan__pairs">
+                        @for (pair of row.pairs; track pair[0].idRentalUnit) {
+                          <div class="z-plan__pair">
+                            @for (unit of pair; track unit.idRentalUnit) {
+                              <ng-container
+                                *ngTemplateOutlet="unitButton; context: { $implicit: unit }"
+                              />
+                            }
+                          </div>
+                        }
+                      </div>
+                      <div class="z-plan__row-label z-plan__foot">
+                        <!-- Se ve la letra en el círculo, como el cartel del pasillo; «Fila» queda
+                             para el lector, que sigue leyendo lo mismo que antes. -->
+                        <strong class="z-plan__badge">
+                          @if (row.prefix !== row.name) {
+                            <small class="z-visually-hidden">Fila&#32;</small>
+                          }
+                          {{ row.prefix }}
+                        </strong>
+                        <!-- «$ 14.500/día» en un renglón; «desde», arriba (ZV-04). -->
+                        <span class="z-plan__foot-price">
+                          @if (!row.samePrice) {
+                            <small>desde</small>
+                          }
+                          {{ row.footPrice }}
+                        </span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            }
+
+            <div class="z-plan__entry"><span>Entrada del balneario</span></div>
+          </div>
+        }
       </div>
       <span class="z-plan__more" aria-hidden="true">
         <svg lucideChevronRight class="z-icon z-icon--s"></svg>
       </span>
     </div>
+
+    <!-- Una fila de unidades, con su nombre y su precio: las sombrillas, y en el plano libre las
+         que no tienen casilla. No se corta en dos renglones (ZV-04). -->
+    <ng-template #unitRow let-row>
+      <div class="z-plan__row" role="group" [attr.aria-label]="row.name + ', ' + row.priceLabel">
+        <div class="z-plan__row-label">
+          <strong>{{ row.name }}</strong>
+          <span>{{ row.priceLabel }}</span>
+        </div>
+        <div class="z-plan__cells">
+          @for (unit of row.units; track unit.idRentalUnit) {
+            <ng-container *ngTemplateOutlet="unitButton; context: { $implicit: unit }" />
+          }
+        </div>
+      </div>
+    </ng-template>
 
     <ng-template #unitButton let-unit>
       <button
@@ -171,6 +211,8 @@
         class="z-unit"
         [class.z-unit--umbrella]="unit.type === 'UMBRELLA'"
         [class.z-unit--tent]="unit.type === 'TENT'"
+        [class.z-unit--blocked]="unit.isBlocked"
+        [class.z-unit--occupied]="isOccupied(unit)"
         [attr.aria-pressed]="isUnavailable(unit) ? null : selectedId() === unit.idRentalUnit"
         [attr.aria-disabled]="isUnavailable(unit) ? 'true' : null"
         [attr.aria-label]="unitLabel(unit)"
@@ -198,17 +240,20 @@
         Elegida
       </li>
       <li>
-        <span class="z-unit z-unit--mini z-unit--umbrella" aria-disabled="true" aria-hidden="true"
+        <span class="z-unit z-unit--mini z-unit--umbrella z-unit--blocked" aria-hidden="true"
           ><span class="z-unit__shape"></span
         ></span>
-        <span class="z-unit z-unit--mini z-unit--tent" aria-disabled="true" aria-hidden="true"
+        <span class="z-unit z-unit--mini z-unit--tent z-unit--blocked" aria-hidden="true"
           ><span class="z-unit__shape"></span
         ></span>
         No disponible
       </li>
       @if (hasOccupied()) {
         <li>
-          <span class="z-unit z-unit--mini z-unit--umbrella" aria-disabled="true" aria-hidden="true"
+          <span class="z-unit z-unit--mini z-unit--umbrella z-unit--occupied" aria-hidden="true"
+            ><span class="z-unit__shape"></span
+          ></span>
+          <span class="z-unit z-unit--mini z-unit--tent z-unit--occupied" aria-hidden="true"
             ><span class="z-unit__shape"></span
           ></span>
           Ocupada en tus fechas
@@ -224,32 +269,30 @@
     [hidden]="view() !== 'list'"
   >
     <div class="z-unit-list">
-      @for (zone of zones(); track zone.type) {
-        @for (row of zone.rows; track row.prefix) {
-          <fieldset class="z-unit-list__group">
-            <legend>
-              {{ zone.title }} · {{ row.name }} <span>· {{ row.priceLabel }}</span>
-            </legend>
-            @for (unit of row.units; track unit.idRentalUnit) {
-              <label class="z-unit-option">
-                <input
-                  type="radio"
-                  [name]="id + '-unidad'"
-                  [value]="unit.idRentalUnit"
-                  [disabled]="isUnavailable(unit)"
-                  [checked]="selectedId() === unit.idRentalUnit"
-                  (change)="choose(unit)"
-                />
-                <span class="z-code">{{ unit.identifier }}</span>
-                {{ typeName[unit.type] }}
-                @if (!row.samePrice) {
-                  <span class="z-unit-option__price">{{ price(unit) }}</span>
-                }
-                <span class="z-unit-option__state">{{ stateOf(unit) }}</span>
-              </label>
-            }
-          </fieldset>
-        }
+      @for (group of listGroups(); track group.key) {
+        <fieldset class="z-unit-list__group">
+          <legend>
+            {{ group.legend }} <span>· {{ group.priceLabel }}</span>
+          </legend>
+          @for (unit of group.units; track unit.idRentalUnit) {
+            <label class="z-unit-option">
+              <input
+                type="radio"
+                [name]="id + '-unidad'"
+                [value]="unit.idRentalUnit"
+                [disabled]="isUnavailable(unit)"
+                [checked]="selectedId() === unit.idRentalUnit"
+                (change)="choose(unit)"
+              />
+              <span class="z-code">{{ unit.identifier }}</span>
+              {{ typeName[unit.type] }}
+              @if (!group.samePrice) {
+                <span class="z-unit-option__price">{{ price(unit) }}</span>
+              }
+              <span class="z-unit-option__state">{{ stateOf(unit) }}</span>
+            </label>
+          }
+        </fieldset>
       }
     </div>
   </div>

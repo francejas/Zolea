@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { RentalUnit, RentalUnitRequest } from './resort.models';
+import { RentalUnit, RentalUnitRequest, UnitPosition } from './resort.models';
 
 /**
  * Las carpas y sombrillas del balneario. Las usa el panel del administrador: al admin, el listado
@@ -42,5 +42,14 @@ export class UnitsApi {
    */
   retire(id: number): Observable<RentalUnit> {
     return this.http.patch<RentalUnit>(`${this.apiUrl}/${id}/retire`, null);
+  }
+
+  /**
+   * Guarda el plano del balneario de la sesión, de una vez: la casilla de cada unidad. Devuelve las
+   * unidades como quedaron, como `list()`. El backend contesta 400, sin guardar nada, si dos quedan
+   * en la misma casilla o una ya no se puede ubicar (por ejemplo, se dio de baja en otro lado).
+   */
+  savePlan(units: UnitPosition[]): Observable<RentalUnit[]> {
+    return this.http.put<RentalUnit[]>(`${environment.apiUrl}/api/resorts/my/plan`, { units });
   }
 }
