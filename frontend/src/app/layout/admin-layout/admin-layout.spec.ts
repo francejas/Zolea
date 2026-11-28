@@ -138,8 +138,14 @@ describe('AdminLayout', () => {
       expect(resort).not.toContain('Sin balneario asignado');
     });
 
-    it('su barra lleva el catálogo y Balnearios, volver al sitio y salir, también en el cajón', () => {
-      const expected = ['Catálogo de servicios', 'Balnearios', 'Ver el sitio público', 'Salir'];
+    it('su barra lleva el catálogo, Balnearios y Usuarios, volver al sitio y salir, también en el cajón', () => {
+      const expected = [
+        'Catálogo de servicios',
+        'Balnearios',
+        'Usuarios',
+        'Ver el sitio público',
+        'Salir',
+      ];
       expect(items()).toEqual(expected);
       expect(items(page.querySelector('dialog')!)).toEqual(expected);
       expect(sidebar().getAttribute('aria-label')).toBe('Panel de Zolea');

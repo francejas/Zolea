@@ -6,6 +6,8 @@ import com.zolea.backend.exceptions.auth.InvalidCredentialsException;
 import com.zolea.backend.exceptions.booking.BookingAlreadyCanceledException;
 import com.zolea.backend.exceptions.booking.BookingNotFoundException;
 import com.zolea.backend.exceptions.booking.UnitNotAvailableException;
+import com.zolea.backend.exceptions.client.AccountActionException;
+import com.zolea.backend.exceptions.client.AccountRequestInvalidException;
 import com.zolea.backend.exceptions.client.ClientDataTakenException;
 import com.zolea.backend.exceptions.client.ClientInvalidRegisterException;
 import com.zolea.backend.exceptions.client.ClientNotFoundException;
@@ -95,6 +97,7 @@ public class GlobalExceptionHandler {
             BookingNotPaidException.class,
             BookingNotInValidPeriodException.class,
             ClientInvalidRegisterException.class,
+            AccountActionException.class,
             ResortInvalidRegisterException.class,
             BookingAlreadyCanceledException.class,
             DuplicateIdentifierException.class,
@@ -262,6 +265,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, String>> handleDireccionInexistente(NoResourceFoundException ex) {
         return respuesta(HttpStatus.NOT_FOUND, "No existe la dirección pedida.");
+    }
+
+    /** Un pedido de la cuenta de Zolea sobre una cuenta, con datos inválidos (#72): 400 con {@code campos}. */
+    @ExceptionHandler(AccountRequestInvalidException.class)
+    public ResponseEntity<Map<String, Object>> handleCuentaInvalida(AccountRequestInvalidException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage(), "campos", ex.getFields()));
     }
 
     /** Un alta de balneario con datos inválidos (#71): igual que un error de validación. */

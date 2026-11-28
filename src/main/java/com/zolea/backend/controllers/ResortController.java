@@ -27,7 +27,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -110,15 +109,15 @@ public class ResortController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/my")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Obtener mi balneario (Admin)", description = "Devuelve el balneario asociado al email del JWT.")
+    @Operation(summary = "Obtener mi balneario (Admin)", description = "Devuelve el balneario que tiene asignado el administrador del token.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "El balneario del administrador que hace el pedido"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "El administrador no tiene balneario asignado", content = @Content)
     })
-    public ResponseEntity<ResortResponse> getMyResort(Authentication auth) {
-        return ResponseEntity.ok(resortService.getMyResort(auth.getName()));
+    public ResponseEntity<ResortResponse> getMyResort(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(resortService.getMyResort(principal.idManagedResort()));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -131,8 +130,9 @@ public class ResortController {
             @ApiResponse(responseCode = "403", description = "Hace falta rol de administrador", content = @Content),
             @ApiResponse(responseCode = "404", description = "El administrador no tiene balneario asignado", content = @Content)
     })
-    public ResponseEntity<ResortActionResponse> updateMyResort(Authentication auth, @RequestBody ResortRequest request) {
-        ResortResponse saved = resortService.updateMyResort(auth.getName(), request);
+    public ResponseEntity<ResortActionResponse> updateMyResort(@AuthenticationPrincipal UserPrincipal principal,
+                                                               @RequestBody ResortRequest request) {
+        ResortResponse saved = resortService.updateMyResort(principal.idManagedResort(), request);
         return ResponseEntity.ok(new ResortActionResponse("Balneario actualizado correctamente.", saved));
     }
 

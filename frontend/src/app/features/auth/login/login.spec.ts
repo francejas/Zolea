@@ -398,6 +398,17 @@ describe('Login', () => {
       expect(router.url).toBe('/login');
     });
 
+    it('una cuenta desactivada: el aviso del backend, sin marcar ningún campo (#72)', async () => {
+      await open();
+      await fillAndSubmit('nati.romero@gmail.com', 'admin123');
+      await failWith(401, { error: 'Tu cuenta está desactivada. Escribinos para reactivarla.' });
+
+      expect(alerts()).toHaveLength(1);
+      expect(alerts()[0].textContent).toContain('Tu cuenta está desactivada.');
+      expect(fieldErrors()).toEqual([]);
+      expect(session.isLoggedIn()).toBe(false);
+    });
+
     it('el mensaje es el mismo exista o no el email', async () => {
       await open();
       const messages: string[] = [];

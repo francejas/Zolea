@@ -3,8 +3,8 @@ import { Me, Role } from '../api/auth.models';
 /** El inicio de la cuenta de Zolea en el panel: el catálogo de servicios. */
 export const ZOLEA_HOME = '/admin/amenities';
 
-/** Las pantallas del panel de la cuenta de Zolea: el catálogo y los balnearios (#71). */
-export const ZOLEA_PATHS = [ZOLEA_HOME, '/admin/resorts'];
+/** Las pantallas del panel de la cuenta de Zolea: el catálogo, los balnearios (#71) y los usuarios (#72). */
+export const ZOLEA_PATHS = [ZOLEA_HOME, '/admin/resorts', '/admin/users'];
 
 /** Si la dirección es de una pantalla de la cuenta de Zolea (o de algo adentro de una). */
 export function isZoleaPath(url: string): boolean {
@@ -14,7 +14,7 @@ export function isZoleaPath(url: string): boolean {
 
 /**
  * La cuenta de Zolea (decisión 18): un administrador sin balneario asignado, `zolea@zolea.com` en
- * la demo. Del panel usa el catálogo de servicios y los balnearios.
+ * la demo. Del panel usa el catálogo de servicios, los balnearios y los usuarios.
  */
 export function isZoleaAccount(user: Me | null): boolean {
   return user?.role === 'ADMIN' && user.idManagedResort == null;

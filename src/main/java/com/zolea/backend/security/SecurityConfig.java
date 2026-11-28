@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -53,6 +54,15 @@ public class SecurityConfig {
                                                        PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
+        // Spring mira si la cuenta está desactivada antes de la contraseña. Acá va después (#72): así
+        // «tu cuenta está desactivada» se lo decimos solo a quien sabe la contraseña, y probando
+        // emails no se averigua cuáles existen.
+        provider.setPreAuthenticationChecks(user -> { });
+        provider.setPostAuthenticationChecks(user -> {
+            if (!user.isEnabled()) {
+                throw new DisabledException("La cuenta está desactivada.");
+            }
+        });
         return new ProviderManager(provider);
     }
 
@@ -99,7 +109,7 @@ public class SecurityConfig {
                         // Rutas de la API que exigen sesión. El permiso fino —quién es dueño de qué,
                         // y qué exige rol ADMIN— vive en los @PreAuthorize de cada endpoint, que es
                         // donde se puede expresar; acá solo se exige estar autenticado.
-                        .requestMatchers("/api/auth/**", "/api/clients/**", "/api/resorts/**",
+                        .requestMatchers("/api/auth/**", "/api/clients/**", "/api/accounts/**", "/api/resorts/**",
                                 "/api/rental-units/**", "/api/bookings/**", "/api/guests/**",
                                 "/api/amenities/**").authenticated()
                         // Antes acá había authenticated(), y eso convertía cada endpoint nuevo en

@@ -11,6 +11,7 @@ import com.zolea.backend.security.JwtUtil;
 import com.zolea.backend.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -50,6 +51,9 @@ public class AuthService {
         try {
             autenticado = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+        } catch (DisabledException ex) {
+            // Solo llega acá con la contraseña correcta: ver SecurityConfig (#72).
+            throw new InvalidCredentialsException("Tu cuenta está desactivada. Escribinos para reactivarla.");
         } catch (AuthenticationException ex) {
             // Un solo mensaje para todos los motivos: cualquier diferencia es información.
             throw new InvalidCredentialsException("Email o contraseña incorrectos.");

@@ -1,0 +1,142 @@
+<section class="users">
+  <header class="users__head">
+    <h1 class="users__h1">Usuarios</h1>
+    <p class="users__lead">
+      Todas las cuentas de Zolea: clientes, administradores de balneario y la cuenta de Zolea. Una
+      cuenta desactivada no puede ingresar.
+    </p>
+  </header>
+
+  <div class="users__tools">
+    <label class="z-visually-hidden" for="users-search">Buscar cuentas</label>
+    <div class="z-search users__search">
+      <svg lucideSearch class="z-icon" aria-hidden="true"></svg>
+      <input
+        id="users-search"
+        class="z-input"
+        type="search"
+        autocomplete="off"
+        placeholder="Nombre, email o DNI"
+        [value]="typed()"
+        (input)="onSearch($event)"
+      />
+    </div>
+
+    <div class="users__type">
+      <label class="users__type-label" for="users-type">Tipo</label>
+      <select id="users-type" class="z-input" (change)="onType($event)">
+        <option value="" [selected]="type() === null">Todas</option>
+        @for (option of types; track option.value) {
+          <option [value]="option.value" [selected]="type() === option.value">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+    </div>
+
+    @if (state() === 'ready') {
+      <p class="users__summary" aria-live="polite">{{ summary() }}</p>
+    }
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="users__skeleton" aria-busy="true" aria-label="Cargando las cuentas">
+        @for (row of [1, 2, 3, 4, 5, 6]; track row) {
+          <div class="users__skeleton-row">
+            <z-skeleton width="22%" height="18px" />
+            <z-skeleton width="30%" height="18px" />
+            <z-skeleton width="14%" height="18px" />
+            <z-skeleton width="12%" height="26px" />
+          </div>
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer las cuentas" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (accounts().length === 0) {
+        @if (filtered()) {
+          <z-empty
+            title="Ninguna cuenta coincide"
+            text="Probá con otra parte del nombre, el email o el DNI, o con otro tipo."
+            actionLabel="Borrar la búsqueda"
+            (action)="clearFilters()"
+          />
+        } @else {
+          <z-empty
+            title="Todavía no hay cuentas"
+            text="Las cuentas aparecen acá cuando se crean."
+          />
+        }
+      } @else {
+        <div class="z-table-wrap">
+          <table class="z-table">
+            <thead>
+              <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col">Email</th>
+                <th scope="col">DNI</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (account of accounts(); track account.idClient) {
+                <tr>
+                  <td class="users__name">
+                    <a [routerLink]="['/admin/users', account.idClient]">{{ name(account) }}</a>
+                  </td>
+                  <td data-label="Email" class="users__email">{{ account.email }}</td>
+                  <td data-label="DNI" class="users__dni">{{ dni(account.dni) }}</td>
+                  <td data-label="Tipo">
+                    <span class="users__type-cell">
+                      <span>{{ typeLabel(account.type) }}</span>
+                      @if (account.managedResort; as resort) {
+                        <span class="users__resort">{{ resort.name }}</span>
+                      }
+                    </span>
+                  </td>
+                  <td data-label="Estado">
+                    @if (account.active) {
+                      <span class="z-status z-status--confirmed">Activa</span>
+                    } @else {
+                      <span class="z-status z-status--neutral">Desactivada</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (totalPages() > 1) {
+          <nav class="users__pages" aria-label="Páginas de cuentas">
+            <z-btn
+              variant="secondary"
+              size="small"
+              [disabled]="page() === 0"
+              (click)="goTo(page() - 1)"
+            >
+              Anterior
+            </z-btn>
+            <span class="users__page" aria-live="polite">
+              Página {{ page() + 1 }} de {{ totalPages() }}
+            </span>
+            <z-btn
+              variant="secondary"
+              size="small"
+              [disabled]="page() >= totalPages() - 1"
+              (click)="goTo(page() + 1)"
+            >
+              Siguiente
+            </z-btn>
+          </nav>
+        }
+      }
+    }
+  }
+</section>

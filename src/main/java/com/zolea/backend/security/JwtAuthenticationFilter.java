@@ -65,8 +65,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            // 4. Validar si el token sigue siendo vigente y corresponde al usuario
-            if(jwtUtil.validateToken(jwt, userDetails)) {
+            // 4. Validar si el token sigue siendo vigente y corresponde al usuario. La cuenta se lee
+            // de la base en cada pedido: si la desactivaron, el token deja de valer acá (401), aunque
+            // no haya vencido (#72).
+            if(userDetails.isEnabled() && jwtUtil.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities()
                 );

@@ -55,6 +55,15 @@ public class Client {
     private String role = "USER";  // "USER" o "ADMIN"
 
     /**
+     * Si la cuenta puede ingresar (#72). Una cuenta no se borra, porque tiene reservas e historial:
+     * la cuenta de Zolea la desactiva. Desactivada, no ingresa y su token deja de valer en el pedido
+     * siguiente.
+     */
+    // Con valor por defecto en la base: las filas que ya existen quedan activas al agregar la columna.
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean active = true;
+
+    /**
      * El balneario que administra este cliente. Nulo para los clientes comunes.
      *
      * <p>Antes la pertenencia era el texto {@code Resort.adminEmail}, que no es una relación:

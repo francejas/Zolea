@@ -1,0 +1,140 @@
+/* Usuarios de la cuenta de Zolea. La tabla es global (styles/tables.scss); acá, la cabecera, el
+   buscador, el filtro y la paginación, como en Balnearios. Se diseña desde la computadora: debajo
+   de 768 px cada fila pasa a ser una tarjeta. */
+
+:host {
+  display: block;
+}
+
+.users {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 1120px;
+}
+
+.users__head {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 640px;
+}
+
+.users__h1 {
+  margin: 0;
+  font: 400 var(--text-display-m) / var(--leading-title) var(--font-display);
+}
+
+.users__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.users__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+}
+
+.users__search {
+  flex: 1 1 320px;
+  max-width: 440px;
+}
+
+.users__type {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.users__type-label {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.users__summary {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.users__name {
+  font-weight: 600;
+}
+
+.users__name a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* En la computadora el email va entero, en un renglón; en el celular se puede partir. */
+.users__email {
+  white-space: nowrap;
+}
+
+.users__dni {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.users__type-cell {
+  display: grid;
+  gap: 2px;
+}
+
+.users__resort {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.users__pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.users__page {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.users__skeleton {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.users__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+@media (max-width: 767px) {
+  .users__search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .users__type {
+    flex: 1 1 100%;
+  }
+
+  .users__type select {
+    flex: 1;
+  }
+
+  /* En la tarjeta, el nombre es el título. */
+  .users__name {
+    font: 400 var(--text-display-s) / var(--leading-title) var(--font-display);
+  }
+
+  .users__email {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .users__type-cell {
+    justify-items: end;
+  }
+}
