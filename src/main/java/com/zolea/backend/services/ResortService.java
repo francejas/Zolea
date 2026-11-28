@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -342,15 +343,26 @@ public class ResortService {
         }
     }
 
-    public ResortResponse getMyResort(String adminEmail) {
-        return mapToResponse(resortRepository.findByAdminEmail(adminEmail)
-                .orElseThrow(() -> new ResortNotFoundException("No resort found for this admin")));
+    /**
+     * El balneario que tiene asignado el administrador. Antes se buscaba por el {@code adminEmail}
+     * del balneario; desde #72 la cuenta de Zolea asigna balnearios a cuentas, y un balneario puede
+     * tener más de un administrador, así que manda la asignación.
+     *
+     * @param idManagedResort el balneario del principal; nulo para la cuenta de Zolea, que no tiene.
+     */
+    public ResortResponse getMyResort(Long idManagedResort) {
+        return mapToResponse(findManagedResort(idManagedResort));
+    }
+
+    private Resort findManagedResort(Long idManagedResort) {
+        return Optional.ofNullable(idManagedResort)
+                .flatMap(resortRepository::findById)
+                .orElseThrow(() -> new ResortNotFoundException("No resort found for this admin"));
     }
 
     @Transactional
-    public ResortResponse updateMyResort(String adminEmail, ResortRequest request) {
-        Resort resort = resortRepository.findByAdminEmail(adminEmail)
-                .orElseThrow(() -> new ResortNotFoundException("No resort found for this admin"));
+    public ResortResponse updateMyResort(Long idManagedResort, ResortRequest request) {
+        Resort resort = findManagedResort(idManagedResort);
 
         // El adminEmail NO se toca acá a propósito: este endpoint es "editar mi balneario", y
         // cambiarse el email de administrador por esta vía sería cambiar de dueño.

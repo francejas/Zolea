@@ -25,7 +25,8 @@ public record UserPrincipal(
         String email,
         String passwordHash,
         String role,
-        Long idManagedResort
+        Long idManagedResort,
+        boolean active
 ) implements UserDetails {
 
     public static UserPrincipal de(Client client) {
@@ -36,7 +37,8 @@ public record UserPrincipal(
                 client.getRole(),
                 client.getManagedResort() != null
                         ? client.getManagedResort().getIdResort()
-                        : null
+                        : null,
+                client.isActive()
         );
     }
 
@@ -71,6 +73,15 @@ public record UserPrincipal(
     @Override
     public String getUsername() {
         return email;
+    }
+
+    /**
+     * Una cuenta desactivada por la cuenta de Zolea (#72). El filtro de JWT no autentica su token, y
+     * el ingreso la rechaza después de comprobar la contraseña (ver {@code SecurityConfig}).
+     */
+    @Override
+    public boolean isEnabled() {
+        return active;
     }
     /**
      * El balneario que administra, exigido.
