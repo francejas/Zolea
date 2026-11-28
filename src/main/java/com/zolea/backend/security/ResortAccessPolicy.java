@@ -29,4 +29,16 @@ public class ResortAccessPolicy {
         }
         return true;
     }
+
+    /**
+     * Como {@link #isManagedBy}, pero la cuenta de Zolea (un administrador sin balneario) alcanza
+     * cualquiera: desactiva y reactiva balnearios desde su lista (#71). Si el balneario no existe,
+     * el 404 lo da el servicio.
+     */
+    public boolean isManagedByOrZolea(Long idResort, Long idManagedResort) {
+        if (idResort == null) {
+            return false;
+        }
+        return idManagedResort == null || isManagedBy(idResort, idManagedResort);
+    }
 }

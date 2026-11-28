@@ -1,0 +1,369 @@
+<section class="resorts">
+  <header class="resorts__head">
+    <div class="resorts__title">
+      <h1 class="resorts__h1">Balnearios</h1>
+      <p class="resorts__lead">
+        Todos los balnearios de Zolea, con quien los administra. Uno desactivado no aparece en la
+        Portada ni toma reservas nuevas.
+      </p>
+    </div>
+
+    @if (state() === 'ready' && !creating()) {
+      <z-btn (click)="openCreate()">
+        <svg lucidePlus class="z-icon" aria-hidden="true"></svg>
+        Nuevo balneario
+      </z-btn>
+    }
+  </header>
+
+  <!-- El aviso es un role="status": el lector de pantalla anuncia lo que pasó sin leer la tabla. -->
+  @if (notice(); as message) {
+    <div #noticeBox tabindex="-1" class="resorts__notice">
+      <z-alert variant="success" [text]="message" />
+    </div>
+  }
+
+  @if (actionError(); as message) {
+    <z-alert variant="danger" title="No se pudo hacer" [text]="message" />
+  }
+
+  @if (creating()) {
+    <form
+      #createSection
+      class="resorts__create"
+      novalidate
+      aria-labelledby="resort-create-title"
+      (submit)="onCreateSubmit($event)"
+    >
+      <h2 id="resort-create-title" class="resorts__create-title">Nuevo balneario</h2>
+
+      @if (formError(); as message) {
+        <z-alert variant="danger" title="No se pudo dar de alta" [text]="message" />
+      }
+
+      <fieldset class="resorts__part">
+        <legend class="resorts__legend">El balneario</legend>
+
+        <z-field [field]="createForm.name" inputId="resort-name" label="Nombre">
+          <input
+            #nameInput
+            id="resort-name"
+            class="z-input"
+            type="text"
+            autocomplete="off"
+            [formField]="createForm.name"
+            [attr.aria-invalid]="hasError(createForm.name) ? 'true' : null"
+          />
+        </z-field>
+
+        <z-field
+          [field]="createForm.location"
+          inputId="resort-location"
+          label="Dirección"
+          help="Calle y número, ciudad y provincia, como la buscarías en un mapa."
+        >
+          <input
+            id="resort-location"
+            class="z-input"
+            type="text"
+            autocomplete="off"
+            [formField]="createForm.location"
+            [attr.aria-invalid]="hasError(createForm.location) ? 'true' : null"
+          />
+        </z-field>
+      </fieldset>
+
+      <fieldset class="resorts__part">
+        <legend class="resorts__legend">Su administrador</legend>
+        <p class="resorts__part-hint">
+          Le creamos la cuenta con este balneario asignado. Ingresa con su email y la contraseña
+          provisoria, y la cambia en Mi cuenta.
+        </p>
+
+        <div class="resorts__pair">
+          <z-field [field]="createForm.admin.firstName" inputId="admin-first-name" label="Nombre">
+            <input
+              id="admin-first-name"
+              class="z-input"
+              type="text"
+              autocomplete="off"
+              [formField]="createForm.admin.firstName"
+              [attr.aria-invalid]="hasError(createForm.admin.firstName) ? 'true' : null"
+            />
+          </z-field>
+
+          <z-field [field]="createForm.admin.lastName" inputId="admin-last-name" label="Apellido">
+            <input
+              id="admin-last-name"
+              class="z-input"
+              type="text"
+              autocomplete="off"
+              [formField]="createForm.admin.lastName"
+              [attr.aria-invalid]="hasError(createForm.admin.lastName) ? 'true' : null"
+            />
+          </z-field>
+        </div>
+
+        <z-field
+          [field]="createForm.admin.email"
+          inputId="admin-email"
+          label="Email"
+          help="Con el que va a ingresar."
+        >
+          <input
+            id="admin-email"
+            class="z-input"
+            type="email"
+            autocomplete="off"
+            spellcheck="false"
+            [formField]="createForm.admin.email"
+            [attr.aria-invalid]="hasError(createForm.admin.email) ? 'true' : null"
+          />
+        </z-field>
+
+        <z-field
+          [field]="createForm.admin.phone"
+          inputId="admin-phone"
+          label="Teléfono"
+          help="El país y el número, sin el 0 ni el 15."
+        >
+          <div class="z-phone">
+            <select
+              id="admin-phone-country"
+              class="z-input z-phone__country"
+              aria-label="País del teléfono"
+              (change)="setCountry($event)"
+            >
+              @for (option of countries; track option.iso) {
+                <option [value]="option.iso" [selected]="option.iso === country().iso">
+                  {{ option.name }} ({{ option.dial }})
+                </option>
+              }
+            </select>
+            <input
+              id="admin-phone"
+              class="z-input"
+              type="tel"
+              inputmode="numeric"
+              autocomplete="off"
+              [placeholder]="country().placeholder"
+              (input)="onlyDigits($event, 'phone')"
+              [formField]="createForm.admin.phone"
+              [attr.aria-invalid]="hasError(createForm.admin.phone) ? 'true' : null"
+            />
+          </div>
+        </z-field>
+
+        <div class="resorts__pair">
+          <z-field
+            [field]="createForm.admin.dni"
+            inputId="admin-dni"
+            label="DNI"
+            help="Sin puntos."
+          >
+            <input
+              id="admin-dni"
+              class="z-input"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              spellcheck="false"
+              (input)="onlyDigits($event, 'dni')"
+              [formField]="createForm.admin.dni"
+              [attr.aria-invalid]="hasError(createForm.admin.dni) ? 'true' : null"
+            />
+          </z-field>
+
+          <z-field
+            [field]="createForm.admin.password"
+            inputId="admin-password"
+            label="Contraseña provisoria"
+            help="Pasásela por un medio seguro."
+          >
+            <div class="z-input-wrap">
+              <input
+                id="admin-password"
+                class="z-input"
+                autocomplete="new-password"
+                [type]="showPassword() ? 'text' : 'password'"
+                [formField]="createForm.admin.password"
+                [attr.aria-invalid]="hasError(createForm.admin.password) ? 'true' : null"
+              />
+              <button
+                class="z-icon-btn"
+                type="button"
+                aria-controls="admin-password"
+                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                [attr.aria-pressed]="showPassword()"
+                (click)="showPassword.set(!showPassword())"
+              >
+                @if (showPassword()) {
+                  <svg lucideEyeOff class="z-icon" aria-hidden="true"></svg>
+                } @else {
+                  <svg lucideEye class="z-icon" aria-hidden="true"></svg>
+                }
+              </button>
+            </div>
+          </z-field>
+        </div>
+      </fieldset>
+
+      <div class="resorts__create-actions">
+        <z-btn variant="secondary" [disabled]="createForm().submitting()" (click)="closeCreate()">
+          Cerrar
+        </z-btn>
+        <z-btn type="submit" [loading]="createForm().submitting()">
+          {{ createForm().submitting() ? 'Dando de alta…' : 'Dar de alta' }}
+        </z-btn>
+      </div>
+    </form>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="resorts__skeleton" aria-busy="true" aria-label="Cargando los balnearios">
+        <z-skeleton width="30%" height="14px" />
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="resorts__skeleton-row">
+            <z-skeleton width="24%" height="18px" />
+            <z-skeleton width="30%" height="18px" />
+            <z-skeleton width="20%" height="18px" />
+            <z-skeleton width="12%" height="26px" />
+          </div>
+        }
+      </div>
+    }
+
+    @case ('error') {
+      <z-problem title="No pudimos traer los balnearios" [text]="loadError()" (retry)="load()" />
+    }
+
+    @case ('ready') {
+      @if (resorts().length === 0) {
+        <z-empty
+          title="Todavía no hay balnearios"
+          text="Dá de alta el primero junto con su administrador."
+          actionLabel="Nuevo balneario"
+          (action)="openCreate()"
+        />
+      } @else {
+        <div class="resorts__tools">
+          <label class="z-visually-hidden" for="resorts-search">Buscar balnearios</label>
+          <div class="z-search resorts__search">
+            <svg lucideSearch class="z-icon" aria-hidden="true"></svg>
+            <input
+              id="resorts-search"
+              class="z-input"
+              type="search"
+              autocomplete="off"
+              placeholder="Nombre, dirección o administrador"
+              [value]="query()"
+              (input)="onSearch($event)"
+            />
+          </div>
+          <p class="resorts__summary" aria-live="polite">{{ summary() }}</p>
+        </div>
+
+        @if (visible().length === 0) {
+          <z-empty
+            title="Ningún balneario coincide con «{{ query().trim() }}»"
+            text="Probá con otra parte del nombre, la ciudad o el email del administrador."
+            actionLabel="Borrar la búsqueda"
+            (action)="clearSearch()"
+          />
+        } @else {
+          <div class="z-table-wrap">
+            <table class="z-table">
+              <thead>
+                <tr>
+                  <th scope="col">Balneario</th>
+                  <th scope="col">Dirección</th>
+                  <th scope="col">Administrador</th>
+                  <th scope="col" class="is-num">Unidades</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col" class="is-actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (resort of visible(); track resort.idResort) {
+                  <tr>
+                    <td class="resorts__name">{{ resort.name }}</td>
+                    <td data-label="Dirección" class="resorts__location">{{ resort.location }}</td>
+                    <td data-label="Administrador">
+                      @if (resort.admin; as admin) {
+                        <span class="resorts__admin">
+                          <span>{{ adminName(resort) }}</span>
+                          <span class="resorts__email">{{ admin.email }}</span>
+                        </span>
+                      } @else {
+                        <span class="is-muted">Sin administrador</span>
+                      }
+                    </td>
+                    <td data-label="Unidades" class="is-num">{{ resort.unitCount }}</td>
+                    <td data-label="Estado">
+                      @if (resort.active) {
+                        <span class="z-status z-status--confirmed">Activo</span>
+                      } @else {
+                        <span class="z-status z-status--neutral">Inactivo</span>
+                      }
+                    </td>
+                    <td class="is-actions">
+                      <div class="z-table__actions">
+                        @if (resort.active) {
+                          <z-btn
+                            variant="secondary"
+                            size="small"
+                            [disabled]="toggling() !== null"
+                            (click)="askDeactivate(resort)"
+                          >
+                            Desactivar<span class="z-visually-hidden"> {{ resort.name }}</span>
+                          </z-btn>
+                        } @else {
+                          <z-btn
+                            variant="secondary"
+                            size="small"
+                            [loading]="toggling() === resort.idResort"
+                            [disabled]="toggling() !== null"
+                            (click)="reactivate(resort)"
+                          >
+                            Reactivar<span class="z-visually-hidden"> {{ resort.name }}</span>
+                          </z-btn>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+  }
+
+  <!-- Desactivar se confirma; reactivar no, como en Mi balneario. -->
+  <dialog
+    #deactivateDialog
+    class="z-modal"
+    aria-labelledby="deactivate-title"
+    aria-describedby="deactivate-body"
+    (cancel)="onDialogCancel($event)"
+    (close)="closeDeactivate()"
+  >
+    <h2 id="deactivate-title" class="z-modal__title">
+      ¿Desactivar «{{ pendingDeactivate()?.name }}»?
+    </h2>
+    <p id="deactivate-body" class="z-modal__body">
+      Deja de aparecer en la Portada y no toma reservas nuevas. Las reservas que ya tiene siguen
+      valiendo, y lo podés reactivar cuando quieras.
+    </p>
+    <div class="z-modal__actions">
+      <z-btn variant="secondary" block [disabled]="toggling() !== null" (click)="closeDeactivate()">
+        Volver
+      </z-btn>
+      <z-btn variant="danger" block [loading]="toggling() !== null" (click)="confirmDeactivate()">
+        Desactivar el balneario
+      </z-btn>
+    </div>
+  </dialog>
+</section>

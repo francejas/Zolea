@@ -131,15 +131,15 @@ describe('AdminLayout', () => {
       await fixture.whenStable();
     });
 
-    it('no pide un balneario y arriba dice «Zolea · Catálogo de servicios»', () => {
+    it('no pide un balneario y arriba dice «Cuenta de Zolea»', () => {
       http.expectNone(MY_RESORT);
       const resort = sidebar().querySelector('.z-sidebar__resort')!.textContent;
-      expect(resort).toContain('Zolea · Catálogo de servicios');
+      expect(resort).toContain('Cuenta de Zolea');
       expect(resort).not.toContain('Sin balneario asignado');
     });
 
-    it('su barra lleva solo el catálogo, volver al sitio y salir, también en el cajón', () => {
-      const expected = ['Catálogo de servicios', 'Ver el sitio público', 'Salir'];
+    it('su barra lleva el catálogo y Balnearios, volver al sitio y salir, también en el cajón', () => {
+      const expected = ['Catálogo de servicios', 'Balnearios', 'Ver el sitio público', 'Salir'];
       expect(items()).toEqual(expected);
       expect(items(page.querySelector('dialog')!)).toEqual(expected);
       expect(sidebar().getAttribute('aria-label')).toBe('Panel de Zolea');
