@@ -268,11 +268,14 @@
         </form>
       }
 
+      <!-- Cerrado, el diálogo no tiene botones: nada que el lector de pantalla encuentre de más. -->
+      @case (null) {}
+
       @default {
         <div class="z-modal__actions">
-          <z-btn variant="secondary" block [disabled]="busy()" (click)="closeDialog()"
-            >Volver</z-btn
-          >
+          <z-btn variant="secondary" block [disabled]="busy()" (click)="closeDialog()">
+            Volver
+          </z-btn>
           @switch (pending()) {
             @case ('deactivate') {
               <z-btn variant="danger" block [loading]="busy()" (click)="confirm()">
@@ -284,7 +287,7 @@
                 Quitarle el balneario
               </z-btn>
             }
-            @default {
+            @case ('activate') {
               <z-btn block [loading]="busy()" (click)="confirm()">Reactivar la cuenta</z-btn>
             }
           }
