@@ -30,6 +30,7 @@
 /* --- La lista en orden --- */
 
 .photos__list {
+  container-type: inline-size;
   display: grid;
   margin: 0;
   padding: 0;
@@ -39,13 +40,25 @@
   overflow: hidden;
 }
 
+/* Angosta (la columna del formulario a 1024 px, o el celular), los botones van debajo del nombre;
+   con lugar, todo en una fila. */
 .photos__item {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) auto;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-areas:
+    'thumb name'
+    'thumb controls';
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-2);
+  gap: 0 var(--space-3);
+  padding: var(--space-2);
   background: var(--color-surface);
+}
+
+@container (min-width: 420px) {
+  .photos__item {
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    grid-template-areas: 'thumb name controls';
+  }
 }
 
 .photos__item + .photos__item {
@@ -53,6 +66,7 @@
 }
 
 .photos__thumb {
+  grid-area: thumb;
   display: block;
   width: 96px;
   height: 64px;
@@ -62,6 +76,7 @@
 }
 
 .photos__name {
+  grid-area: name;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -72,9 +87,11 @@
 
 .photos__place {
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .photos__controls {
+  grid-area: controls;
   display: flex;
 }
 
