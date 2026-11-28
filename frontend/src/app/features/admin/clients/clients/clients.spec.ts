@@ -326,4 +326,36 @@ describe('Clients', () => {
 
     expect(dialog.open).toBe(true);
   });
+
+  describe('en el celular (GH-79)', () => {
+    it('la tabla es compacta y cada dato tiene su lugar en la fila', async () => {
+      await respond();
+
+      expect(page.querySelector('.clients__table')!.classList).toContain('z-table--compact');
+      for (const area of ['name', 'dni', 'count', 'contact', 'total']) {
+        expect(rows()[0].querySelector(`.clients__cell--${area}`)).not.toBeNull();
+      }
+    });
+
+    it('sin etiquetas, la cantidad dice «reservas» y el DNI se presenta', async () => {
+      await respond();
+      const [angela, jose] = rows();
+
+      expect(angela.querySelector('.clients__cell--count')!.getAttribute('data-word')).toBe(
+        'reservas',
+      );
+      expect(jose.querySelector('.clients__cell--count')!.getAttribute('data-word')).toBe(
+        'reserva',
+      );
+      expect(angela.querySelector('.clients__cell--dni')!.classList).toContain('has-dni');
+    });
+
+    it('sin DNI, no lo presenta como si lo tuviera', async () => {
+      await respond([{ ...registered, dni: null }]);
+
+      const dni = rows()[0].querySelector('.clients__cell--dni')!;
+      expect(dni.classList).not.toContain('has-dni');
+      expect(dni.textContent!.trim()).toBe('Sin DNI');
+    });
+  });
 });

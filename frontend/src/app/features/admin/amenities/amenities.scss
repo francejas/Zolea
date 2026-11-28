@@ -105,11 +105,68 @@
 
 /* En la tarjeta del celular, el campo ocupa lo que deja la etiqueta «Servicio», sin ensanchar la
    página. */
+/* El menú de acciones es solo del celular. */
+.amenities__menu {
+  display: none;
+}
+
 @media (max-width: 767px) {
   .amenities__rename {
     flex: 1 1 0;
     width: auto;
     min-width: 0;
+  }
+
+  /* --- La fila compacta (GH-79) ------------------------------------------------------------
+     El servicio y, debajo, cuántos lo ofrecen; el menú al costado. */
+  .z-table--compact tbody tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name actions'
+      'usage actions';
+  }
+
+  /* Mientras se renombra, el campo y Cancelar y Guardar ocupan el ancho. */
+  .z-table--compact tbody tr.is-editing {
+    grid-template-areas:
+      'name name'
+      'usage usage'
+      'actions actions';
+  }
+
+  .amenities__cell--name {
+    grid-area: name;
+    font-weight: 600;
+  }
+
+  .amenities__cell--usage {
+    grid-area: usage;
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+  }
+
+  .amenities__cell--actions {
+    grid-area: actions;
+  }
+
+  .amenities__usage {
+    display: inline;
+  }
+
+  .amenities__usage::after {
+    content: ' ' attr(data-verb);
+  }
+
+  .amenities__menu {
+    display: inline-block;
+  }
+
+  .z-table--compact .z-table__actions {
+    display: none;
+  }
+
+  .z-table--compact tr.is-editing .z-table__actions {
+    display: flex;
   }
 }
 
