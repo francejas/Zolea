@@ -82,5 +82,8 @@ function toParams(filters: ResortFilters): HttpParams {
   if (filters.type) params = params.set('type', filters.type);
   if (filters.maxPrice != null) params = params.set('maxPrice', filters.maxPrice);
   if (filters.amenityIds?.length) params = params.set('amenityIds', filters.amenityIds.join(','));
+  if (filters.minRating != null) params = params.set('minRating', filters.minRating);
+  if (filters.stars != null) params = params.set('stars', filters.stars);
+  if (filters.sort) params = params.set('sort', filters.sort);
   return params;
 }

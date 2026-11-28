@@ -47,9 +47,26 @@ describe('ResortsApi', () => {
     req.flush([]);
   });
 
+  it('list manda el puntaje y el orden (#73)', () => {
+    api.list({ minRating: 4.5, sort: 'rating' }).subscribe();
+    http.expectOne(`${URL}?minRating=4.5&sort=rating`).flush([]);
+
+    api.list({ stars: 4 }).subscribe();
+    http.expectOne(`${URL}?stars=4`).flush([]);
+  });
+
   it('list no manda los filtros vacíos ni una sola de las dos fechas', () => {
     api
-      .list({ from: '2027-01-15', to: null, type: null, maxPrice: null, amenityIds: [] })
+      .list({
+        from: '2027-01-15',
+        to: null,
+        type: null,
+        maxPrice: null,
+        amenityIds: [],
+        minRating: null,
+        stars: null,
+        sort: null,
+      })
       .subscribe();
 
     const req = http.expectOne(URL);
