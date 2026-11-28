@@ -56,6 +56,7 @@ public class ResortService {
     private final ReviewRepository reviewRepository;
     private final RentalUnitRepository rentalUnitRepository;
     private final BookingRepository bookingRepository;
+    private final ResortPhotoService photoService;
     private final Clock clock;
 
     /**
@@ -67,9 +68,11 @@ public class ResortService {
      */
     public List<ResortResponse> getAll() {
         List<Resort> resorts = resortRepository.findByIsActiveTrue();
-        Map<Long, ResortRating> ratings = ratingsOf(resorts.stream().map(Resort::getIdResort).toList());
+        List<Long> ids = resorts.stream().map(Resort::getIdResort).toList();
+        Map<Long, ResortRating> ratings = ratingsOf(ids);
+        Map<Long, List<ResortPhotoResponse>> photos = photoService.photosByResort(ids);
         return resorts.stream()
-                .map(r -> mapToResponse(r, ratings.get(r.getIdResort())))
+                .map(r -> mapToResponse(r, ratings.get(r.getIdResort()), photos.get(r.getIdResort()), null))
                 .toList();
     }
 
@@ -111,8 +114,9 @@ public class ResortService {
         Map<Long, Resort> resorts = resortRepository.findAllById(ids).stream()
                 .collect(Collectors.toMap(Resort::getIdResort, Function.identity()));
         Map<Long, ResortRating> ratings = ratingsOf(ids);
+        Map<Long, List<ResortPhotoResponse>> photos = photoService.photosByResort(ids);
         return ids.stream()
-                .map(id -> mapToResponse(resorts.get(id), ratings.get(id),
+                .map(id -> mapToResponse(resorts.get(id), ratings.get(id), photos.get(id),
                         search.hasDates() ? unitsByResort.get(id) : null))
                 .toList();
     }
@@ -282,10 +286,14 @@ public class ResortService {
         applyChanges(resort, request);
         resort.setAdminEmail(emailOriginal);
 
-        // Mi balneario manda siempre el formulario entero: una descripción o una foto vacías son las
-        // que el administrador borró, no las que faltan. El PUT con el id sigue conservándolas.
+        // Mi balneario manda siempre el formulario entero: una descripción vacía es la que el
+        // administrador borró, no la que falta. El PUT con el id sigue conservándola.
         resort.setDescription(blankToNull(request.description()));
-        resort.setCoverPhotoUrl(blankToNull(request.coverPhotoUrl()));
+        // La dirección de la portada, en cambio, ya no está en el formulario: desde que las fotos se
+        // suben (GH-67), sin el campo queda la que había, y vacía se sigue borrando.
+        if (request.coverPhotoUrl() != null) {
+            resort.setCoverPhotoUrl(blankToNull(request.coverPhotoUrl()));
+        }
 
         return mapToResponse(resortRepository.save(resort));
     }
@@ -413,17 +421,19 @@ public class ResortService {
     }
 
     private ResortResponse mapToResponse(Resort r) {
-        return mapToResponse(r, ratingsOf(List.of(r.getIdResort())).get(r.getIdResort()));
-    }
-
-    private ResortResponse mapToResponse(Resort r, ResortRating rating) {
-        return mapToResponse(r, rating, null);
+        return mapToResponse(r, ratingsOf(List.of(r.getIdResort())).get(r.getIdResort()),
+                photoService.photosOf(r.getIdResort()), null);
     }
 
     // MAPPER interno: Se encarga de transformar las listas anidadas de Resort a DTOs de Amenity y RentalUnit.
     // Las unidades dadas de baja no van: la ficha y el plano ya no las ofrecen (RF32). El administrador
     // las ve en GET /api/rental-units.
-    private ResortResponse mapToResponse(Resort r, ResortRating rating, Long availableUnits) {
+    // La portada es la primera foto subida; sin fotos, la dirección que el balneario ya tenía (GH-67).
+    private ResortResponse mapToResponse(Resort r, ResortRating rating, List<ResortPhotoResponse> photos,
+                                         Long availableUnits) {
+        List<ResortPhotoResponse> photoList = photos == null ? List.of() : photos;
+        String cover = photoList.isEmpty() ? r.getCoverPhotoUrl() : photoList.get(0).url();
+
         List<AmenityResponse> amenities = (r.getAmenities() != null) ? r.getAmenities().stream()
                                                                        .map(a -> new AmenityResponse(a.getIdAmenity(), a.getName()))
                                                                        .toList() : List.of();
@@ -437,7 +447,8 @@ public class ResortService {
                 r.getIdResort(),
                 r.getName(),
                 r.getLocation(),
-                r.getCoverPhotoUrl(),
+                cover,
+                photoList,
                 r.getDescription(),
                 r.isActive(),
                 amenities,

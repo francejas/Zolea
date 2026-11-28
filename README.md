@@ -226,6 +226,10 @@ http://localhost:8080/swagger-ui/index.html
 | `GET` | `/api/resorts/{id}/occupied-units` | — | Unidades ocupadas entre `from` y `to` |
 | `GET` | `/api/resorts/my` | ADMIN | Mi balneario |
 | `PUT` | `/api/resorts/my` | ADMIN | Actualizar datos del balneario |
+| `POST` | `/api/resorts/my/photos` | ADMIN | Subir fotos (multipart, jpg, png o webp de hasta 5 MB, hasta 10 por balneario) |
+| `PUT` | `/api/resorts/my/photos/order` | ADMIN | Ordenar las fotos; la primera es la portada |
+| `DELETE` | `/api/resorts/my/photos/{photoId}` | ADMIN | Borrar una foto |
+| `GET` | `/api/resorts/{id}/photos/{photoId}` | — | Ver una foto |
 | `POST` | `/api/resorts` | Cuenta de Zolea | Dar de alta un balneario. El administrador de un balneario recibe `403` |
 | `PUT` | `/api/resorts/{id}` | ADMIN del balneario | Actualizar balneario por ID |
 | `PUT` | `/api/resorts/{id}/inactive` | ADMIN del balneario | Desactivar balneario |

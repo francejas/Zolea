@@ -895,3 +895,12 @@ SELECT CONCAT('demo-mp-', LPAD(b.id, 5, '0')), 'approved', b.total_price,
 FROM booking b
 WHERE b.walk_in_name IS NULL AND b.id_client IS NOT NULL AND b.id_client <> 1
   AND (b.status = 'CONFIRMED' OR (b.status = 'CANCELED' AND b.refund_amount > 0));
+
+-- =============================================================================
+-- GH-67: fotos del balneario
+-- La demo no trae fotos subidas: cada balneario muestra la dirección de su
+-- portada, como antes. Las que se suban probando se borran en cada arranque,
+-- igual que el resto de los datos; sin esto quedarían pegadas al balneario que
+-- vuelve a tener el mismo id.
+-- =============================================================================
+DELETE FROM resort_photo;

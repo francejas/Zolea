@@ -151,9 +151,10 @@ es una lista cerrada, el mensaje trae los valores posibles. Un `500` es siempre 
   **la cuenta de Zolea**: el ADMIN sin balneario (`zolea@zolea.com` en la demo). El administrador
   de un balneario recibe `403`, con el texto genérico, y elige los que ofrece en
   `PUT /api/resorts/my`, con `amenityIds`. Listar el catálogo sigue siendo público.
-- **Mi balneario** (`PUT /api/resorts/my`) manda el formulario entero: la descripción y la foto se
-  reemplazan siempre, y vacías se borran. `PUT /api/resorts/{id}` es parcial: lo que llega vacío
-  o no viene se conserva.
+- **Mi balneario** (`PUT /api/resorts/my`) manda el formulario entero: la descripción se reemplaza
+  siempre, y vacía se borra. `coverPhotoUrl` ya no está en el formulario: sin el campo queda la
+  dirección que había, y vacío la borra. `PUT /api/resorts/{id}` es parcial: lo que llega vacío o
+  no viene se conserva. Las fotos van aparte (ver «Fotos del balneario», más abajo).
 - **Dar de alta un balneario** (`POST /api/resorts`) también es solo de la cuenta de Zolea, y solo
   por la API: no tiene pantalla. El administrador de un balneario recibe `403`. Esa cuenta carga
   el catálogo y da de alta balnearios, y nada más: el panel le sigue respondiendo `403`.
@@ -375,6 +376,32 @@ No se puede dar de baja mientras tenga reservas pendientes o confirmadas que ter
 `400` «Tiene reservas por delante: cancelalas o esperá a que terminen.». Solo la da de baja el
 administrador de su balneario; el de otro recibe `404`, como si no existiera. Darla de baja otra
 vez no hace nada.
+
+### Fotos del balneario (administrador)
+
+El administrador sube, ordena y borra las fotos de **su** balneario, que sale de la sesión:
+
+```
+POST   /api/resorts/my/photos          multipart, una o varias en la parte "files"  → 201 [fotos]
+PUT    /api/resorts/my/photos/order    { "photoIds": [12, 10, 11] }                 → 200 [fotos]
+DELETE /api/resorts/my/photos/{id}                                                 → 204
+GET    /api/resorts/{id}/photos/{photoId}                          (público, la imagen)
+```
+
+- Van **jpg, png o webp, de hasta 5 MB** cada una, y el balneario tiene **hasta 10**. El tipo se
+  mira en el archivo, no en la extensión. Si una no sirve, no se guarda ninguna y responde `400`
+  con cuál y por qué (««playa.gif» no es una foto jpg, png o webp.»). Conviene revisarlas antes de
+  mandarlas, para decirle al administrador cuáles no van sin perder las que sí.
+- Subir y ordenar devuelven **todas** las fotos del balneario, en su orden: `[{ idPhoto, url }]`.
+- El orden lleva todas las fotos, cada una una vez; si falta, sobra o se repite una, `400` (pasa si
+  se subió o se borró una en otra pestaña: volvé a traer el balneario).
+- Borrar una foto de otro balneario, o una que ya no está, responde `404`.
+- Una cuenta que no es administrador de un balneario recibe `403`; la cuenta de Zolea también.
+
+Cada balneario (`GET /api/resorts`, `GET /api/resorts/{id}` y `GET /api/resorts/my`) trae `photos`,
+en su orden, y la **primera es la portada**: `coverPhotoUrl` es su `url`. Sin fotos, `photos` viene
+vacía y `coverPhotoUrl` sigue siendo la dirección que el balneario tenía cargada. La `url` es
+completa y pública, con caché larga: se pone tal cual en un `<img>`, que no manda el token.
 
 ### Detalles que ahorran errores
 
