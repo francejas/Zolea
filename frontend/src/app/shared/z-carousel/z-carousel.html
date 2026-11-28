@@ -1,0 +1,64 @@
+@if (count() === 1) {
+  <div class="z-photo z-carousel__frame">
+    <img [src]="photos()[0]" alt="" />
+  </div>
+} @else if (count() > 1) {
+  <section class="z-carousel" aria-roledescription="carrusel" [attr.aria-label]="label()">
+    <div class="z-carousel__stage">
+      <!-- La foto toma el foco para pasar con las flechas del teclado. -->
+      <div
+        class="z-photo z-carousel__frame"
+        tabindex="0"
+        [attr.aria-label]="position() + '. Pasá con las flechas del teclado.'"
+        (keydown)="onKeydown($event)"
+        (pointerdown)="onPointerDown($event)"
+        (pointerup)="onPointerUp($event)"
+        (pointercancel)="onPointerCancel()"
+      >
+        <ul class="z-carousel__track" [style.transform]="'translateX(' + index() * -100 + '%)'">
+          @for (url of photos(); track $index; let i = $index) {
+            <li
+              class="z-carousel__slide"
+              aria-roledescription="foto"
+              [attr.aria-label]="'Foto ' + (i + 1) + ' de ' + count()"
+              [inert]="i !== index()"
+            >
+              <img [src]="url" alt="" draggable="false" [attr.loading]="i === 0 ? null : 'lazy'" />
+            </li>
+          }
+        </ul>
+      </div>
+
+      <button
+        type="button"
+        class="z-carousel__arrow z-carousel__arrow--previous"
+        aria-label="Foto anterior"
+        (click)="previous()"
+      >
+        <svg lucideChevronLeft class="z-icon" aria-hidden="true"></svg>
+      </button>
+      <button
+        type="button"
+        class="z-carousel__arrow z-carousel__arrow--next"
+        aria-label="Foto siguiente"
+        (click)="next()"
+      >
+        <svg lucideChevronRight class="z-icon" aria-hidden="true"></svg>
+      </button>
+
+      <p class="z-carousel__count" aria-live="polite">{{ position() }}</p>
+    </div>
+
+    <div class="z-carousel__dots">
+      @for (url of photos(); track $index; let i = $index) {
+        <button
+          type="button"
+          class="z-carousel__dot"
+          [attr.aria-label]="'Ver la foto ' + (i + 1)"
+          [attr.aria-current]="i === index() ? 'true' : null"
+          (click)="go(i)"
+        ></button>
+      }
+    </div>
+  </section>
+}

@@ -47,11 +47,19 @@
       }
     </header>
 
-    <div class="z-photo detail__photo">
-      @if (resort.coverPhotoUrl) {
-        <img [src]="resort.coverPhotoUrl" alt="" width="1400" height="533" />
-      }
-    </div>
+    @if (photoUrls().length > 0) {
+      <z-carousel
+        class="detail__gallery"
+        [photos]="photoUrls()"
+        [label]="'Fotos de ' + resort.name"
+      />
+    } @else {
+      <div class="z-photo detail__photo">
+        @if (resort.coverPhotoUrl) {
+          <img [src]="resort.coverPhotoUrl" alt="" width="1400" height="533" />
+        }
+      </div>
+    }
 
     <div class="detail__layout">
       <div class="detail__main">

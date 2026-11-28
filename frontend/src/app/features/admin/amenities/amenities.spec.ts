@@ -19,6 +19,7 @@ function resort(idResort: number, amenities: Amenity[]): Resort {
     name: `Balneario ${idResort}`,
     location: 'Costa Atlántica',
     coverPhotoUrl: null,
+    photos: [],
     description: null,
     active: true,
     amenities,

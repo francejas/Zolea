@@ -32,11 +32,20 @@ export interface RentalUnitRequest {
   resortId: number;
 }
 
+/** Una foto subida desde Mi balneario: `url` es pública y se pone tal cual en un `<img>`. */
+export interface ResortPhoto {
+  idPhoto: number;
+  url: string;
+}
+
 export interface Resort {
   idResort: number;
   name: string;
   location: string;
+  /** La portada: la primera de `photos` o, sin fotos subidas, la dirección que tenía cargada. */
   coverPhotoUrl: string | null;
+  /** Las fotos subidas, en el orden elegido. Vacía si no tiene. */
+  photos: ResortPhoto[];
   description: string | null;
   active: boolean;
   amenities: Amenity[];
@@ -50,15 +59,14 @@ export interface Resort {
 }
 
 /**
- * El pedido de `PUT /api/resorts/my`. Va siempre completo: el backend conserva lo que llegue vacío
- * (una descripción o una foto en blanco no borran la que había), y el email del administrador no
- * se cambia por esta vía, así que no viaja.
+ * El pedido de `PUT /api/resorts/my`. Va siempre completo: una descripción vacía es la que el
+ * administrador borró. La foto no viaja: las fotos se suben aparte, y sin el campo el backend deja
+ * la dirección que tenía (GH-67). El email del administrador tampoco: no se cambia por esta vía.
  */
 export interface ResortRequest {
   name: string;
   location: string;
   description: string;
-  coverPhotoUrl: string;
   /** Los servicios que ofrece. Una lista vacía los saca todos. */
   amenityIds: number[];
 }

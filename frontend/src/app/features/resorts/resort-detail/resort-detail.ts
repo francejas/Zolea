@@ -16,6 +16,7 @@ import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
 import { ZRating } from '../../../shared/z-rating/z-rating';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
+import { ZCarousel } from '../../../shared/z-carousel/z-carousel';
 import { ZDirections } from '../../../shared/z-directions/z-directions';
 import { amenityIcon } from '../../../shared/utils/amenity-icons';
 import { ResortReviews } from '../resort-reviews/resort-reviews';
@@ -58,6 +59,7 @@ const TYPE_NAME: Record<UnitType, string> = { UMBRELLA: 'Sombrilla', TENT: 'Carp
     ZRating,
     ZSkeleton,
     ZDirections,
+    ZCarousel,
   ],
   styleUrl: './resort-detail.scss',
   templateUrl: './resort-detail.html',
@@ -72,6 +74,10 @@ export class ResortDetail {
 
   readonly status = signal<Status>('loading');
   readonly resort = signal<Resort | null>(null);
+  /** Las fotos subidas, en su orden (GH-67). Sin fotos, arriba va la portada de siempre. */
+  protected readonly photoUrls = computed(
+    () => this.resort()?.photos?.map((photo) => photo.url) ?? [],
+  );
 
   /** `?from=` y `?to=`, las fechas con que se llega desde la búsqueda de la Portada. */
   readonly fromParam = input<string | undefined>(undefined, { alias: 'from' });
