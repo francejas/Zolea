@@ -109,6 +109,27 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean hasUpcomingBookings(@Param("idRentalUnit") Long idRentalUnit,
                                 @Param("today") LocalDate today);
 
+    /** Cuántas reservas por delante tiene una unidad y cuándo empieza la primera (GH-77). */
+    interface UpcomingBookings {
+        Long getUnitId();
+        Long getTotal();
+        LocalDate getFirstStart();
+    }
+
+    /**
+     * Las reservas por delante de cada unidad, con el mismo criterio que {@link #hasUpcomingBookings}:
+     * pendientes o confirmadas que terminan {@code today} o después. Una sola consulta para toda la
+     * lista; las unidades sin reservas por delante no vienen.
+     */
+    @Query("SELECT b.rentalUnit.idRentalUnit AS unitId, COUNT(b) AS total, MIN(b.startDate) AS firstStart "
+            + "FROM Booking b "
+            + "WHERE b.rentalUnit.idRentalUnit IN :unitIds "
+            + "AND b.status IN ('PENDING', 'CONFIRMED') "
+            + "AND b.endDate >= :today "
+            + "GROUP BY b.rentalUnit.idRentalUnit")
+    List<UpcomingBookings> findUpcomingByUnits(@Param("unitIds") List<Long> unitIds,
+                                               @Param("today") LocalDate today);
+
     /** Las reservas del balneario que siguen pendientes de pago. */
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.rentalUnit.resort.idResort = :resortId AND b.status = 'PENDING'")
     long countPendingByResort(@Param("resortId") Long resortId);

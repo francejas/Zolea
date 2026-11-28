@@ -21,6 +21,13 @@ export interface RentalUnit {
   resortId: number;
   /** Dada de baja: definitivo. Sigue en la lista del administrador para conservar el historial. */
   retired: boolean;
+  /**
+   * Reservas pendientes o confirmadas que todavía no terminaron. Solo las trae el listado del
+   * administrador (y lo que devuelven precio, bloqueo y baja); para un cliente vienen en `null`.
+   */
+  upcomingBookings?: number | null;
+  /** `YYYY-MM-DD`: el primer día desde hoy en que está reservada. `null` si no tiene reservas por delante. */
+  nextBookingDate?: string | null;
 }
 
 /** El pedido de `POST /api/rental-units`. `resortId` es el `idManagedResort` de la sesión. */

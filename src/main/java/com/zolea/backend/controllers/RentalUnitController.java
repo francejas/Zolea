@@ -60,9 +60,12 @@ public class RentalUnitController {
     // cualquier balneario). El filtro por balneario para el cliente lo da GET /api/resorts/{id},
     // que ya devuelve las unidades del balneario que está mirando.
     @GetMapping
-    @Operation(summary = "Listar unidades", description = "Para un administrador, las de su balneario.")
+    @Operation(summary = "Listar unidades", description = "Para un administrador, las de su balneario, cada una con "
+            + "sus reservas por delante (upcomingBookings, pendientes o confirmadas que no terminaron) y el primer "
+            + "día desde hoy en que está reservada (nextBookingDate). Las respuestas de precio, bloqueo y baja las "
+            + "traen igual. Para un cliente, esos dos campos van en null.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Las unidades. Un administrador ve las de su balneario; un cliente, todas"),
+            @ApiResponse(responseCode = "200", description = "Las unidades. Un administrador ve las de su balneario, con sus reservas por delante; un cliente, todas"),
             @ApiResponse(responseCode = "401", description = "Sin token, o con el token vencido", content = @Content),
             @ApiResponse(responseCode = "403", description = "El administrador no tiene un balneario asignado", content = @Content)
     })

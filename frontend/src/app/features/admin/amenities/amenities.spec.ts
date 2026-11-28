@@ -413,6 +413,14 @@ describe('Amenities', () => {
       await fixture.whenStable();
     }
 
+    it('en la fila es un botón de texto rojo, y el que confirma va relleno', async () => {
+      expect(button('Borrar', rowOf('Spa'))!.classList).toContain('z-btn--danger-text');
+
+      await askDelete('Spa');
+
+      expect(button('Borrar del catálogo', dialog())!.classList).toContain('z-btn--danger');
+    });
+
     it('no avanza sin confirmar: pide confirmación y, con Volver, no manda nada', async () => {
       await askDelete('Spa');
 

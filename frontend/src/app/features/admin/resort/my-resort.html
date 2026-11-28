@@ -231,7 +231,9 @@
                 Deja de aparecer en la Portada y no toma reservas nuevas. Las reservas que ya tiene
                 siguen valiendo, y lo podés reactivar cuando quieras.
               </p>
-              <z-btn variant="secondary" (click)="askDeactivate()">Desactivar el balneario</z-btn>
+              <z-btn variant="danger-outline" (click)="askDeactivate()">
+                Desactivar el balneario
+              </z-btn>
             } @else {
               <h2 id="my-resort-status" class="my-resort__subtitle">
                 El balneario está desactivado

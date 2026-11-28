@@ -8,6 +8,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { FormField, ReadonlyFieldTree } from '@angular/forms/signals';
+import { LucideCircleAlert } from '@lucide/angular';
 
 /** El texto para los errores de los validadores que no traen mensaje propio. */
 const MESSAGES: Record<string, string> = {
@@ -23,6 +24,7 @@ const MESSAGES: Record<string, string> = {
  */
 @Component({
   selector: 'z-field',
+  imports: [LucideCircleAlert],
   styleUrl: './z-field.scss',
   // El control llega por ng-content: con el encapsulado de siempre, las reglas de .z-input no lo
   // alcanzarían. Las clases llevan el prefijo z-, así que no chocan con nada.
@@ -40,7 +42,11 @@ const MESSAGES: Record<string, string> = {
     <ng-content />
 
     @if (errorMessage(); as message) {
-      <p class="z-field__error" [id]="errorId()" aria-live="polite">{{ message }}</p>
+      <!-- El ícono hace que el error no dependa solo del color. -->
+      <p class="z-field__error" [id]="errorId()" aria-live="polite">
+        <svg lucideCircleAlert class="z-icon z-icon--s" aria-hidden="true"></svg>
+        <span>{{ message }}</span>
+      </p>
     } @else if (help()) {
       <p class="z-field__hint" [id]="helpId()">{{ help() }}</p>
     }
