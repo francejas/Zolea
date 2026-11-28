@@ -6,17 +6,6 @@
   (close)="onClose()"
 >
   <form class="review__form" novalidate (submit)="onSubmit($event)">
-    <!-- Cerrar a la vista (GH-80): hace lo mismo que «Ahora no». Mientras se envía, no cierra. -->
-    <button
-      class="z-icon-btn review__close"
-      type="button"
-      aria-label="Cerrar"
-      [disabled]="reviewForm().submitting()"
-      (click)="cancel()"
-    >
-      <svg lucideX class="z-icon" aria-hidden="true"></svg>
-    </button>
-
     <h2 id="review-title" class="z-modal__title review__title">
       {{ editing() ? 'Editá tu reseña' : 'Calificá tu estadía' }}
     </h2>
@@ -112,4 +101,16 @@
       </z-btn>
     </div>
   </form>
+
+  <!-- Cerrar a la vista (GH-80): hace lo mismo que «Ahora no» y, mientras se envía, no cierra. Se
+       ve arriba a la derecha, pero va último: así el foco del diálogo arranca en las estrellas. -->
+  <button
+    class="z-icon-btn review__close"
+    type="button"
+    aria-label="Cerrar"
+    [disabled]="reviewForm().submitting()"
+    (click)="cancel()"
+  >
+    <svg lucideX class="z-icon" aria-hidden="true"></svg>
+  </button>
 </dialog>
