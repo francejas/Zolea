@@ -147,65 +147,68 @@
           (action)="openCreate()"
         />
       } @else {
-        <div class="units__filters" role="group" aria-label="Filtrar las unidades">
-          <!-- Dos opciones que se marcan y desmarcan: ninguna o las dos, se ven todas. -->
-          <fieldset class="units__type-filter">
-            <legend>Tipo</legend>
-            <div class="units__segmented">
-              @for (option of typeFilterOptions; track option.value) {
-                <label class="z-choice">
-                  <input
-                    type="checkbox"
-                    name="filter-type"
-                    [value]="option.value"
-                    [checked]="typeFilter().includes(option.value)"
-                    (change)="toggleTypeFilter(option.value)"
-                  />
-                  @if (option.value === 'TENT') {
+        <!-- En el celular, los filtros se pliegan detrás de «Filtros» (GH-79). -->
+        <z-filters label="Filtrar las unidades" [count]="filterCount()">
+          <div class="units__filters">
+            <!-- Dos opciones que se marcan y desmarcan: ninguna o las dos, se ven todas. -->
+            <fieldset class="units__type-filter">
+              <legend>Tipo</legend>
+              <div class="units__segmented">
+                @for (option of typeFilterOptions; track option.value) {
+                  <label class="z-choice">
+                    <input
+                      type="checkbox"
+                      name="filter-type"
+                      [value]="option.value"
+                      [checked]="typeFilter().includes(option.value)"
+                      (change)="toggleTypeFilter(option.value)"
+                    />
+                    @if (option.value === 'TENT') {
+                      <svg
+                        lucideTent
+                        class="z-icon z-icon--s z-choice__icon"
+                        aria-hidden="true"
+                      ></svg>
+                    } @else {
+                      <svg
+                        lucideUmbrella
+                        class="z-icon z-icon--s z-choice__icon"
+                        aria-hidden="true"
+                      ></svg>
+                    }
                     <svg
-                      lucideTent
-                      class="z-icon z-icon--s z-choice__icon"
+                      lucideCheck
+                      class="z-icon z-icon--s z-choice__check"
                       aria-hidden="true"
                     ></svg>
-                  } @else {
-                    <svg
-                      lucideUmbrella
-                      class="z-icon z-icon--s z-choice__icon"
-                      aria-hidden="true"
-                    ></svg>
-                  }
-                  <svg
-                    lucideCheck
-                    class="z-icon z-icon--s z-choice__check"
-                    aria-hidden="true"
-                  ></svg>
-                  {{ option.label }}
-                </label>
-              }
-            </div>
-          </fieldset>
+                    {{ option.label }}
+                  </label>
+                }
+              </div>
+            </fieldset>
 
-          <label for="filter-status">
-            Estado
-            <select
-              #statusInput
-              id="filter-status"
-              class="z-input"
-              [value]="statusFilter()"
-              (change)="setStatusFilter(statusInput.value)"
-            >
-              <option value="ACTIVE">Disponibles y bloqueadas</option>
-              <option value="AVAILABLE">Solo disponibles</option>
-              <option value="BLOCKED">Solo bloqueadas</option>
-              <option value="RETIRED">Dadas de baja</option>
-              <option value="ALL">Todas</option>
-            </select>
-          </label>
+            <label for="filter-status">
+              Estado
+              <select
+                #statusInput
+                id="filter-status"
+                class="z-input"
+                [value]="statusFilter()"
+                (change)="setStatusFilter(statusInput.value)"
+              >
+                <option value="ACTIVE">Disponibles y bloqueadas</option>
+                <option value="AVAILABLE">Solo disponibles</option>
+                <option value="BLOCKED">Solo bloqueadas</option>
+                <option value="RETIRED">Dadas de baja</option>
+                <option value="ALL">Todas</option>
+              </select>
+            </label>
 
-          <z-btn variant="ghost" [disabled]="!hasFilters()" (click)="clearFilters()">
-            Quitar los filtros
-          </z-btn>
-        </div>
+            <z-btn variant="ghost" [disabled]="!hasFilters()" (click)="clearFilters()">
+              Quitar los filtros
+            </z-btn>
+          </div>
+        </z-filters>
 
         <!-- Como en Reservas: cuántas muestra el filtro de cuántas hay. Se anuncia al filtrar. -->
         <p #summaryEl class="units__summary" role="status" tabindex="-1">{{ summary() }}</p>
@@ -229,7 +232,9 @@
           }
         } @else {
           <div class="z-table-wrap">
-            <table class="z-table">
+            <!-- En el celular, cada fila es compacta: identificador, tipo y precio; debajo, el
+                 estado y el menú con las acciones (GH-79). -->
+            <table class="z-table z-table--compact">
               <thead>
                 <tr>
                   <th scope="col">Unidad</th>
@@ -241,12 +246,24 @@
               </thead>
               <tbody>
                 @for (unit of visibleUnits(); track unit.idRentalUnit) {
-                  <tr [class.is-blocked]="unit.isBlocked" [class.is-retired]="isRetired(unit)">
-                    <td data-label="Unidad" [class.is-muted]="unit.isBlocked || isRetired(unit)">
+                  <tr
+                    [class.is-blocked]="unit.isBlocked"
+                    [class.is-retired]="isRetired(unit)"
+                    [class.is-editing]="editingId() === unit.idRentalUnit"
+                  >
+                    <td
+                      data-label="Unidad"
+                      class="units__cell--id"
+                      [class.is-muted]="unit.isBlocked || isRetired(unit)"
+                    >
                       <span class="z-code">{{ unit.identifier }}</span>
                     </td>
 
-                    <td data-label="Tipo" [class.is-muted]="unit.isBlocked || isRetired(unit)">
+                    <td
+                      data-label="Tipo"
+                      class="units__cell--type"
+                      [class.is-muted]="unit.isBlocked || isRetired(unit)"
+                    >
                       <span class="units__type">
                         @if (unit.type === 'TENT') {
                           <svg lucideTent class="z-icon z-icon--s" aria-hidden="true"></svg>
@@ -258,7 +275,7 @@
                     </td>
 
                     <td
-                      class="is-num"
+                      class="is-num units__cell--price"
                       data-label="Precio por día"
                       [class.is-muted]="unit.isBlocked || isRetired(unit)"
                     >
@@ -292,7 +309,7 @@
                       </div>
                     </td>
 
-                    <td data-label="Estado">
+                    <td data-label="Estado" class="units__cell--status">
                       @if (isRetired(unit)) {
                         <span class="z-status z-status--neutral">Dada de baja</span>
                       } @else if (unit.isBlocked) {
@@ -308,7 +325,16 @@
                       }
                     </td>
 
-                    <td class="is-actions">
+                    <td class="is-actions units__cell--actions">
+                      <!-- En el celular, las acciones van en un menú. Mientras se edita el precio,
+                           se ven Cancelar y Guardar, como en la computadora. -->
+                      @if (!isRetired(unit) && editingId() !== unit.idRentalUnit) {
+                        <z-row-menu
+                          class="units__menu"
+                          [label]="'Acciones de ' + label(unit)"
+                          [actions]="rowActions().get(unit.idRentalUnit) ?? []"
+                        />
+                      }
                       <div class="z-table__actions">
                         @if (isRetired(unit)) {
                           <span class="units__none" aria-hidden="true">—</span>
