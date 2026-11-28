@@ -206,6 +206,40 @@ describe('ReviewDialog', () => {
     expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(false);
   });
 
+  describe('el botón de cerrar (GH-80)', () => {
+    const close = () => page.querySelector<HTMLButtonElement>('.review__close')!;
+
+    it('está arriba, se llama «Cerrar» y cierra sin calificar', async () => {
+      expect(close().getAttribute('aria-label')).toBe('Cerrar');
+      expect(close().type).toBe('button');
+
+      close().click();
+      await fixture.whenStable();
+
+      expect(closed).toBe(1);
+      expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(false);
+    });
+
+    it('mientras se envía, no cierra', async () => {
+      await pick(4);
+      await send();
+
+      expect(close().disabled).toBe(true);
+      close().click();
+      await fixture.whenStable();
+
+      expect(page.querySelector('dialog')!.hasAttribute('open')).toBe(true);
+      expect(closed).toBe(0);
+      http.expectOne(URL).flush({
+        author: 'Santiago R.',
+        rating: 4,
+        comment: null,
+        createdAt: '2026-01-20T10:00:00',
+      });
+      await settle();
+    });
+  });
+
   describe('Esc', () => {
     /** Lo que hace el navegador con Esc: avisa con `cancel` y, si nadie lo frena, cierra. */
     function pressEscape(): boolean {

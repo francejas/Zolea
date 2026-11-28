@@ -120,6 +120,16 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+/* El texto de ayuda quedó dentro de los filtros: la misma distancia que tenía como hermano. */
+.bookings__help {
+  margin-top: var(--space-5);
+}
+
+/* La flecha es solo del celular. */
+.bookings__arrow {
+  display: none;
+}
+
 @media (max-width: 767px) {
   .bookings__status,
   .bookings__dates {
@@ -128,5 +138,83 @@ h1 {
 
   .bookings__filters z-btn {
     width: 100%;
+  }
+
+  /* --- La fila compacta (GH-79) ------------------------------------------------------------
+     Titular y total; «Sombrilla A-01 · 20 → 25 dic»; estado y flecha. */
+  .z-table--compact tbody tr {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'holder holder total'
+      'unit dates dates'
+      'status status actions';
+  }
+
+  .bookings__cell--holder {
+    grid-area: holder;
+  }
+
+  .bookings__cell--total {
+    grid-area: total;
+    font-weight: 600;
+  }
+
+  .bookings__cell--unit {
+    grid-area: unit;
+    white-space: nowrap;
+  }
+
+  .bookings__cell--dates {
+    grid-area: dates;
+    white-space: nowrap;
+  }
+
+  /* Más específica que la regla global que saca las etiquetas de la fila compacta. */
+  .z-table--compact td.bookings__cell--dates::before {
+    content: '· ';
+    color: var(--color-text-muted);
+  }
+
+  .bookings__cell--unit,
+  .bookings__cell--dates {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+  }
+
+  .bookings__cell--status {
+    grid-area: status;
+  }
+
+  .bookings__cell--actions {
+    grid-area: actions;
+  }
+
+  /* El titular en un renglón, con el número al lado. Su enlace cubre la fila entera: toda la
+     ficha lleva al detalle. */
+  .bookings__holder {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .bookings__holder .bookings__code {
+    margin-left: var(--space-2);
+  }
+
+  .bookings__holder::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-m);
+  }
+
+  .bookings__arrow {
+    display: block;
+    color: var(--color-text-muted);
+  }
+
+  .z-table--compact .z-table__actions {
+    display: none;
   }
 }

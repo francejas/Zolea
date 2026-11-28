@@ -16,6 +16,7 @@ function resort(overrides: Partial<Resort>): Resort {
     name: 'Balneario',
     location: 'Mar del Plata',
     coverPhotoUrl: null,
+    photos: [],
     description: null,
     active: true,
     amenities: [],

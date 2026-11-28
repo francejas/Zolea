@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
 import { EntryApi } from './entry.api';
-import { GuestValidation } from './entry.models';
+import { GuestEntry, GuestValidation } from './entry.models';
 
 const URL = `${environment.apiUrl}/api/guests/validate`;
 
@@ -61,5 +61,23 @@ describe('EntryApi', () => {
         statusText: 'Not Found',
       },
     );
+  });
+
+  it('validateQr con el código escrito a mano avisa typed=true', () => {
+    api.validateQr('tok-00004-A3-VAL1', true).subscribe();
+
+    const req = http.expectOne(`${URL}/tok-00004-A3-VAL1?typed=true`);
+    expect(req.request.method).toBe('POST');
+    req.flush(valentina);
+  });
+
+  it('today hace GET /api/resorts/my/entries', () => {
+    let result: GuestEntry[] | undefined;
+    api.today().subscribe((entries) => (result = entries));
+
+    const req = http.expectOne(`${environment.apiUrl}/api/resorts/my/entries`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+    expect(result).toEqual([]);
   });
 });

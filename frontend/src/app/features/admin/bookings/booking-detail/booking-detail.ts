@@ -14,7 +14,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { LucideArrowLeft } from '@lucide/angular';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Subscription, takeUntil } from 'rxjs';
 import { todayIso } from '../../../../shared/utils/days';
 
 import {
@@ -35,6 +35,8 @@ import { ZSkeleton } from '../../../../shared/z-skeleton/z-skeleton';
 import { ErrorPage } from '../../../error-page/error-page';
 import { BookingsApi } from '../../../../core/api/bookings.api';
 import { Booking, CancellationResponse } from '../../../../core/api/booking.models';
+import { GuestEntry } from '../../../../core/api/entry.models';
+import { byGuest, ENTRY_METHOD, entryMoment } from '../../../entry/entry-format';
 import {
   BOOKING_STATUS,
   bookingNumber,
@@ -67,6 +69,16 @@ export class AdminBookingDetail {
   );
 
   protected readonly booking = signal<Booking | null>(null);
+
+  /** Los ingresos de la reserva (GH-76); null mientras cargan o si fallaron. */
+  protected readonly entries = signal<GuestEntry[] | null>(null);
+  protected readonly entriesError = signal('');
+  /** Los ingresos de cada persona, con la que entró último primero. */
+  protected readonly entryGroups = computed(() => byGuest(this.entries() ?? []));
+  protected readonly entryMethod = ENTRY_METHOD;
+  protected readonly moment = entryMoment;
+  protected readonly todayIso = todayIso;
+  private entriesRequest: Subscription | null = null;
   protected readonly loadError = signal('');
   protected readonly actionError = signal('');
   protected readonly notice = signal('');
@@ -126,6 +138,7 @@ export class AdminBookingDetail {
           next: (booking) => {
             this.booking.set(booking);
             this.state.set('ready');
+            this.loadEntries(booking);
           },
           error: (error: HttpErrorResponse) => {
             this.loadError.set(toUserMessage(error));
@@ -136,8 +149,27 @@ export class AdminBookingDetail {
           },
         });
 
-        onCleanup(() => request.unsubscribe());
+        onCleanup(() => {
+          request.unsubscribe();
+          this.entriesRequest?.unsubscribe();
+        });
       });
+    });
+  }
+
+  /**
+   * Los ingresos de cada persona. En una pendiente no se piden: todavía no se puede entrar, y la
+   * tarjeta lo dice.
+   */
+  protected loadEntries(booking: Booking): void {
+    this.entriesRequest?.unsubscribe();
+    this.entries.set(null);
+    this.entriesError.set('');
+    if (booking.status === 'PENDING') return;
+
+    this.entriesRequest = this.api.entries(booking.id).subscribe({
+      next: (entries) => this.entries.set(entries),
+      error: (error: HttpErrorResponse) => this.entriesError.set(toUserMessage(error)),
     });
   }
 

@@ -21,6 +21,7 @@ import { ZBtn } from '../../../shared/z-btn/z-btn';
 import { ZEmpty } from '../../../shared/z-empty/z-empty';
 import { ZField } from '../../../shared/z-field/z-field';
 import { ZProblem } from '../../../shared/z-problem/z-problem';
+import { RowAction, ZRowMenu } from '../../../shared/z-row-menu/z-row-menu';
 import { amenityIcon, amenityKey } from '../../../shared/utils/amenity-icons';
 import { ZSkeleton } from '../../../shared/z-skeleton/z-skeleton';
 
@@ -58,6 +59,7 @@ const GONE_MESSAGE = 'Este servicio ya no está en el catálogo: puede que lo ha
     ZEmpty,
     ZField,
     ZProblem,
+    ZRowMenu,
     ZSkeleton,
   ],
   templateUrl: './amenities.html',
@@ -93,6 +95,20 @@ export class Amenities {
     }
     return usage;
   });
+
+  /** Las acciones del menú de cada fila en el celular (GH-79): las mismas que los botones. */
+  protected readonly rowActions = computed(
+    () =>
+      new Map<number, RowAction[]>(
+        this.amenities().map((amenity) => [
+          amenity.idAmenity,
+          [
+            { label: 'Renombrar', run: () => this.startRename(amenity) },
+            { label: 'Borrar', danger: true, run: () => this.askDelete(amenity) },
+          ],
+        ]),
+      ),
+  );
 
   protected readonly summary = computed(() => {
     const count = this.amenities().length;
@@ -183,6 +199,15 @@ export class Amenities {
     const count = this.usage()?.get(amenity.idAmenity) ?? 0;
     if (count === 0) return 'Ninguno';
     return `${count} ${count === 1 ? 'balneario' : 'balnearios'}`;
+  }
+
+  /**
+   * Lo que completa la frase en el celular, donde no está la cabecera «Lo ofrecen» (GH-79):
+   * «3 balnearios lo ofrecen», «1 balneario lo ofrece», «Ninguno lo ofrece».
+   */
+  protected usageVerb(amenity: Amenity): string {
+    const count = this.usage()?.get(amenity.idAmenity) ?? 0;
+    return count > 1 ? 'lo ofrecen' : 'lo ofrece';
   }
 
   /** El campo mostró su error: se marca también para el lector de pantalla. */

@@ -19,6 +19,7 @@ function resort(idResort: number, amenities: Amenity[]): Resort {
     name: `Balneario ${idResort}`,
     location: 'Costa Atlántica',
     coverPhotoUrl: null,
+    photos: [],
     description: null,
     active: true,
     amenities,
@@ -502,6 +503,60 @@ describe('Amenities', () => {
         'Hace falta rol de administrador',
       );
       expect(rowOf('Spa')).toBeDefined();
+    });
+  });
+
+  describe('en el celular (GH-79)', () => {
+    beforeEach(async () => {
+      await respondWith([wifi, spa, duchas, musica]);
+    });
+
+    const menuOf = (name: string) =>
+      rowOf(name).querySelector<HTMLButtonElement>('.z-row-menu__trigger')!;
+
+    async function choose(name: string, label: string): Promise<void> {
+      menuOf(name).click();
+      await fixture.whenStable();
+      Array.from(rowOf(name).querySelectorAll<HTMLButtonElement>('.z-row-menu__item'))
+        .find((b) => b.textContent!.trim() === label)!
+        .click();
+      await fixture.whenStable();
+    }
+
+    it('la tabla es compacta y cada servicio tiene su menú, con su nombre', async () => {
+      expect(page.querySelector('table')!.classList).toContain('z-table--compact');
+      expect(menuOf('Spa').getAttribute('aria-label')).toBe('Acciones de Spa');
+
+      menuOf('Spa').click();
+      await fixture.whenStable();
+      expect(
+        Array.from(rowOf('Spa').querySelectorAll('.z-row-menu__item')).map((b) => text(b)),
+      ).toEqual(['Renombrar', 'Borrar']);
+    });
+
+    it('sin la columna, cuántos lo ofrecen se lee como frase', () => {
+      const verb = (name: string) =>
+        rowOf(name).querySelector('.amenities__usage')!.getAttribute('data-verb');
+      expect(verb('WiFi')).toBe('lo ofrecen');
+      expect(verb('Duchas')).toBe('lo ofrece');
+      expect(verb('Música')).toBe('lo ofrece');
+    });
+
+    it('Borrar desde el menú abre la misma confirmación', async () => {
+      await choose('Spa', 'Borrar');
+
+      expect(dialog().hasAttribute('open')).toBe(true);
+      expect(text(dialog())).toContain('¿Borrar «Spa» del catálogo?');
+    });
+
+    it('Renombrar desde el menú abre el campo en la fila', async () => {
+      await choose('Spa', 'Renombrar');
+
+      // Mientras se renombra, el nombre está en el campo: la fila se busca por la marca.
+      const editing = page.querySelector('tbody tr.is-editing')!;
+      expect(editing.querySelector('#amenity-new-name')!.getAttribute('aria-label')).toBe(
+        'Nuevo nombre de Spa',
+      );
     });
   });
 });

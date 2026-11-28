@@ -20,9 +20,11 @@ import com.zolea.backend.exceptions.payment.PaymentGatewayException;
 import com.zolea.backend.exceptions.rentalunit.DuplicateIdentifierException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitNotFoundException;
 import com.zolea.backend.exceptions.rentalunit.RentalUnitRetiredException;
+import com.zolea.backend.exceptions.resort.InvalidResortPhotoException;
 import com.zolea.backend.exceptions.resort.ResortInvalidRegisterException;
 import com.zolea.backend.exceptions.resort.InvalidResortSearchException;
 import com.zolea.backend.exceptions.resort.ResortNotFoundException;
+import com.zolea.backend.exceptions.resort.ResortPhotoNotFoundException;
 import com.zolea.backend.exceptions.resort.ResortRegistrationInvalidException;
 import com.zolea.backend.exceptions.review.ReviewNotFoundException;
 import jakarta.validation.ConstraintViolation;
@@ -44,6 +46,7 @@ import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DatabindException;
@@ -80,7 +83,8 @@ public class GlobalExceptionHandler {
             AmenityNotFoundException.class,
             BookingNotFoundException.class,
             RentalUnitNotFoundException.class,
-            ReviewNotFoundException.class
+            ReviewNotFoundException.class,
+            ResortPhotoNotFoundException.class
     })
     public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
         return respuesta(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -100,10 +104,20 @@ public class GlobalExceptionHandler {
             BookingStateException.class,
             RentalUnitRetiredException.class,
             WalkInWithClientException.class,
-            WebBookingWithWalkInException.class
+            WebBookingWithWalkInException.class,
+            InvalidResortPhotoException.class
     })
     public ResponseEntity<Map<String, String>> handleBadRequest(RuntimeException ex) {
         return respuesta(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /**
+     * Una subida más grande de lo que Spring deja pasar (application.properties). Cada foto se
+     * revisa contra los 5 MB en el servicio, que dice cuál es; esto ataja lo que ni llega hasta ahí.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleSubidaDemasiadoGrande(MaxUploadSizeExceededException ex) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Cada foto puede pesar hasta 5 MB.");
     }
 
     /**

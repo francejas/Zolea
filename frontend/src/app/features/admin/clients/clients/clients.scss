@@ -86,4 +86,95 @@ h1 {
   .clients__dialog {
     padding: var(--space-4);
   }
+
+  /* --- La fila compacta (GH-79) ------------------------------------------------------------
+     Nombre y total; «DNI … · 3 reservas»; el contacto en un renglón. El nombre abre el historial
+     y su botón cubre la fila entera. */
+  .clients__table tbody tr {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name name total'
+      'dni count count'
+      'contact contact contact';
+  }
+
+  .clients__cell--name {
+    grid-area: name;
+  }
+
+  .clients__cell--total {
+    grid-area: total;
+    font-weight: 600;
+  }
+
+  .clients__cell--dni {
+    grid-area: dni;
+    white-space: nowrap;
+  }
+
+  .clients__cell--count {
+    grid-area: count;
+  }
+
+  .clients__cell--contact {
+    grid-area: contact;
+  }
+
+  .clients__cell--dni,
+  .clients__cell--count,
+  .clients__cell--contact {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+  }
+
+  /* Las palabras que en la computadora da la cabecera. Más específicas que la regla global que
+     saca las etiquetas de la fila compacta. */
+  .clients__table td.clients__cell--dni.has-dni::before {
+    content: 'DNI ';
+  }
+
+  .clients__table td.clients__cell--count {
+    text-align: left;
+  }
+
+  .clients__table td.clients__cell--count::before {
+    content: '· ';
+  }
+
+  .clients__table td.clients__cell--count::after {
+    content: ' ' attr(data-word);
+  }
+
+  .clients__name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .clients__open {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .clients__open::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-m);
+  }
+
+  .clients__contact {
+    display: flex;
+    gap: var(--space-2);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .clients__contact span + span::before {
+    content: '· ';
+  }
 }

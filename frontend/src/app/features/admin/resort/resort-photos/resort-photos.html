@@ -1,0 +1,167 @@
+<div class="photos__head">
+  <p class="photos__hint">
+    La primera es la portada: se ve en la tarjeta de la Portada y abre el carrusel de la Ficha. Se
+    guardan apenas las subís, ordenás o borrás.
+  </p>
+  <p class="photos__rules">jpg, png o webp · hasta 5 MB cada una · hasta {{ maxPhotos }} fotos</p>
+</div>
+
+@if (notice(); as notice) {
+  <div id="photos-notice" tabindex="-1">
+    <z-alert variant="success" [title]="notice.title" [text]="notice.text" />
+  </div>
+}
+@if (error(); as error) {
+  <z-alert variant="danger" [title]="error.title" [text]="error.text" />
+}
+
+<p class="z-visually-hidden" aria-live="polite">{{ moveStatus() }}</p>
+
+@if (photos().length > 0) {
+  <ol class="photos__list" aria-label="Fotos del balneario, en orden">
+    @for (photo of photos(); track photo.idPhoto; let i = $index, first = $first, last = $last) {
+      <li class="photos__item" [attr.data-photo]="photo.idPhoto">
+        <img class="photos__thumb" [src]="photo.url" alt="" width="96" height="64" />
+        <p class="photos__name">
+          <span class="photos__place">Foto {{ i + 1 }}</span>
+          @if (first) {
+            <span class="z-status z-status--confirmed">Portada</span>
+          }
+        </p>
+        <div class="photos__controls">
+          <button
+            type="button"
+            class="z-icon-btn"
+            data-move="-1"
+            [attr.aria-label]="'Subir la foto ' + (i + 1)"
+            title="Subir"
+            [disabled]="first || busy() !== null"
+            (click)="move(photo, -1)"
+          >
+            <svg lucideArrowUp class="z-icon z-icon--s" aria-hidden="true"></svg>
+          </button>
+          <button
+            type="button"
+            class="z-icon-btn"
+            data-move="1"
+            [attr.aria-label]="'Bajar la foto ' + (i + 1)"
+            title="Bajar"
+            [disabled]="last || busy() !== null"
+            (click)="move(photo, 1)"
+          >
+            <svg lucideArrowDown class="z-icon z-icon--s" aria-hidden="true"></svg>
+          </button>
+          <button
+            type="button"
+            class="z-icon-btn photos__delete"
+            [attr.aria-label]="'Borrar la foto ' + (i + 1)"
+            title="Borrar"
+            [disabled]="busy() !== null"
+            (click)="askDelete(photo)"
+          >
+            <svg lucideTrash2 class="z-icon z-icon--s" aria-hidden="true"></svg>
+          </button>
+        </div>
+      </li>
+    }
+  </ol>
+} @else if (pending().length === 0) {
+  <p class="photos__empty">Todavía no subiste fotos. La primera que subas va a ser la portada.</p>
+}
+
+@if (rejected().length > 0) {
+  <div class="photos__rejected" role="alert">
+    <strong class="photos__rejected-title">
+      {{ rejected().length === 1 ? 'Esta no se puede subir' : 'Estas no se pueden subir' }}
+    </strong>
+    <ul>
+      @for (file of rejected(); track $index) {
+        <li>«{{ file.name }}» {{ file.reason }}</li>
+      }
+    </ul>
+  </div>
+}
+
+@if (pending().length > 0) {
+  <section class="photos__pending" aria-labelledby="photos-pending-title">
+    <h3 id="photos-pending-title" class="photos__pending-title">
+      {{
+        pending().length === 1 ? 'Por subir: 1 foto' : 'Por subir: ' + pending().length + ' fotos'
+      }}
+    </h3>
+    <ul class="photos__previews">
+      @for (item of pending(); track item.key) {
+        <li class="photos__preview">
+          <img [src]="item.preview" alt="" />
+          <span class="photos__preview-name">{{ item.file.name }}</span>
+          <button
+            type="button"
+            class="z-icon-btn photos__preview-remove"
+            [attr.aria-label]="'Quitar ' + item.file.name"
+            title="Quitar"
+            [disabled]="busy() !== null"
+            (click)="removePending(item.key)"
+          >
+            <svg lucideX class="z-icon z-icon--s" aria-hidden="true"></svg>
+          </button>
+        </li>
+      }
+    </ul>
+    <div class="photos__actions">
+      <z-btn variant="secondary" [disabled]="busy() !== null" (click)="clearPending()">
+        Cancelar
+      </z-btn>
+      <z-btn [loading]="busy() === 'upload'" [disabled]="busy() !== null" (click)="upload()">
+        {{ pending().length === 1 ? 'Subir la foto' : 'Subir ' + pending().length + ' fotos' }}
+      </z-btn>
+    </div>
+  </section>
+}
+
+<div class="photos__picker">
+  <input
+    #fileInput
+    type="file"
+    class="z-visually-hidden"
+    tabindex="-1"
+    aria-hidden="true"
+    multiple
+    [accept]="accept"
+    (change)="onFiles($event)"
+  />
+  <z-btn variant="secondary" [disabled]="room() <= 0 || busy() !== null" (click)="choose()">
+    <svg lucideImagePlus class="z-icon z-icon--s" aria-hidden="true"></svg>
+    Elegir fotos
+  </z-btn>
+  @if (room() <= 0) {
+    <p class="photos__hint">Llegaste a las {{ maxPhotos }} fotos: borrá una para subir otra.</p>
+  }
+</div>
+
+<dialog
+  #deleteDialog
+  class="z-modal"
+  aria-labelledby="photo-delete-title"
+  aria-describedby="photo-delete-text"
+  (cancel)="onDialogCancel($event)"
+  (close)="closeDelete()"
+>
+  <h2 id="photo-delete-title" class="z-modal__title">¿Borrás esta foto?</h2>
+  <div id="photo-delete-text" class="z-modal__body">
+    @if (toDelete(); as photo) {
+      <img class="photos__dialog-thumb" [src]="photo.url" alt="" />
+      <p>
+        Es la foto {{ place(photo) }}{{ place(photo) === 1 ? ', la portada' : '' }}. Deja de verse
+        en la Ficha, y no se puede recuperar.
+      </p>
+    }
+  </div>
+  <div class="z-modal__actions">
+    <z-btn variant="secondary" block [disabled]="busy() === 'delete'" (click)="closeDelete()">
+      Volver
+    </z-btn>
+    <z-btn variant="danger" block [loading]="busy() === 'delete'" (click)="confirmDelete()">
+      Borrar
+    </z-btn>
+  </div>
+</dialog>

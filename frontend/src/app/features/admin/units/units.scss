@@ -208,6 +208,11 @@
 }
 
 /* En el celular la fila es una tarjeta y los controles miden 44 px para el dedo: la celda también. */
+/* El menú de acciones es solo del celular. */
+.units__menu {
+  display: none;
+}
+
 @media (max-width: 767px) {
   .units__price-cell {
     min-height: var(--touch-min);
@@ -215,6 +220,67 @@
 
   .units__price .z-input {
     height: var(--touch-min);
+  }
+
+  /* --- La fila compacta (GH-79) ------------------------------------------------------------
+     El identificador y el tipo, con el precio a la derecha; debajo, el estado y el menú. */
+  .z-table--compact tbody tr {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'id type price'
+      'status status actions';
+  }
+
+  /* Mientras se edita el precio, Cancelar y Guardar ocupan su propio renglón. */
+  .z-table--compact tbody tr.is-editing {
+    grid-template-areas:
+      'id type price'
+      'status status status'
+      'actions actions actions';
+  }
+
+  .units__cell--id {
+    grid-area: id;
+    font-weight: 600;
+  }
+
+  .units__cell--type {
+    grid-area: type;
+    font-size: var(--text-small);
+  }
+
+  .units__cell--price {
+    grid-area: price;
+    font-weight: 600;
+  }
+
+  .units__cell--status {
+    grid-area: status;
+  }
+
+  .units__cell--actions {
+    grid-area: actions;
+  }
+
+  .units__upcoming {
+    margin-top: 2px;
+  }
+
+  /* Sin editar, el precio no reserva el alto del campo. */
+  .z-table--compact tr:not(.is-editing) .units__price-cell {
+    min-height: 0;
+  }
+
+  .units__menu {
+    display: inline-block;
+  }
+
+  .z-table--compact .z-table__actions {
+    display: none;
+  }
+
+  .z-table--compact tr.is-editing .z-table__actions {
+    display: flex;
   }
 }
 

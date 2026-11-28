@@ -1,0 +1,228 @@
+/* Las fotos de Mi balneario: una lista en orden, de arriba abajo, porque el orden es lo que se
+   edita (subir y bajar). Cada fila, la miniatura, su lugar y los tres botones. Lo que se eligió y
+   todavía no se subió va aparte, en una grilla de vistas previas, con sus dos botones. */
+
+:host {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.photos__head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.photos__hint {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.photos__rules {
+  margin: 0;
+  font: 500 var(--text-label) / 1.2 var(--font-mono);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* --- La lista en orden --- */
+
+.photos__list {
+  container-type: inline-size;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+}
+
+/* Angosta (la columna del formulario a 1024 px, o el celular), los botones van debajo del nombre;
+   con lugar, todo en una fila. */
+.photos__item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-areas:
+    'thumb name'
+    'thumb controls';
+  align-items: center;
+  gap: 0 var(--space-3);
+  padding: var(--space-2);
+  background: var(--color-surface);
+}
+
+@container (min-width: 420px) {
+  .photos__item {
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    grid-template-areas: 'thumb name controls';
+  }
+}
+
+.photos__item + .photos__item {
+  border-top: var(--border);
+}
+
+.photos__thumb {
+  grid-area: thumb;
+  display: block;
+  width: 96px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-s);
+  background: var(--color-sand-soft);
+}
+
+.photos__name {
+  grid-area: name;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  min-width: 0;
+}
+
+.photos__place {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.photos__controls {
+  grid-area: controls;
+  display: flex;
+}
+
+.photos__controls .z-icon-btn:disabled,
+.photos__preview-remove:disabled {
+  color: var(--color-line-strong);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.photos__delete:not(:disabled) {
+  color: var(--color-danger-text);
+}
+
+.photos__delete:not(:disabled):hover {
+  background: var(--color-danger-soft);
+}
+
+.photos__empty {
+  margin: 0;
+  padding: var(--space-5);
+  border: 1.5px dashed var(--color-line-strong);
+  border-radius: var(--radius-m);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* --- Los que no se pueden subir --- */
+
+.photos__rejected {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+  font-size: var(--text-small);
+
+  ul {
+    margin: var(--space-1) 0 0;
+    padding-left: var(--space-5);
+  }
+
+  li {
+    overflow-wrap: anywhere;
+  }
+}
+
+.photos__rejected-title {
+  font-weight: 600;
+}
+
+/* --- Por subir --- */
+
+.photos__pending {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1.5px dashed var(--color-line-strong);
+  border-radius: var(--radius-m);
+}
+
+.photos__pending-title {
+  margin: 0;
+  font: 600 var(--text-body) / var(--leading-ui) var(--font-body);
+}
+
+.photos__previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photos__preview {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-s);
+    background: var(--color-sand-soft);
+  }
+}
+
+.photos__preview-name {
+  overflow: hidden;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La cruz para quitarla, sobre la esquina de la miniatura. */
+.photos__preview-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgb(72 42 29 / 0.3);
+}
+
+.photos__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.photos__picker {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.photos__dialog-thumb {
+  display: block;
+  width: 100%;
+  max-height: 200px;
+  margin-bottom: var(--space-3);
+  object-fit: cover;
+  border-radius: var(--radius-s);
+}
+
+.photos__dialog-thumb + p {
+  margin: 0;
+}

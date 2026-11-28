@@ -115,7 +115,7 @@
                 <h2 id="tickets-title" class="booking__subtitle">Entradas</h2>
                 <p class="booking__hint">Una por persona. Se muestra en la puerta del balneario.</p>
 
-                <app-guest-qr [guest]="guest" [booking]="booking">
+                <app-guest-qr [guest]="guest" [booking]="booking" [you]="ticketIndex() === 0">
                   @if (booking.guests.length > 1) {
                     <div class="z-pager">
                       <button
