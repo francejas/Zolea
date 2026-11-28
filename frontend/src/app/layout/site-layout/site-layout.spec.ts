@@ -1,6 +1,6 @@
-import { computed, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { SessionService } from '../../core/session/session.service';
 import { SiteLayout } from './site-layout';
 
@@ -22,6 +22,14 @@ const MAXIMILIANO = {
   idManagedResort: 1,
 };
 
+@Component({ template: '' })
+class Blank {}
+
+/** Las rutas del sitio que importan para marcar la sección actual. */
+const ROUTES = ['', 'resorts/:id', 'my-bookings', 'bookings/:id', 'dashboard', 'profile'].map(
+  (path) => ({ path, component: Blank }),
+);
+
 describe('SiteLayout', () => {
   let fixture: ComponentFixture<SiteLayout>;
   let page: HTMLElement;
@@ -33,7 +41,7 @@ describe('SiteLayout', () => {
     await TestBed.configureTestingModule({
       imports: [SiteLayout],
       providers: [
-        provideRouter([]),
+        provideRouter(ROUTES),
         {
           provide: SessionService,
           useValue: {
@@ -86,12 +94,99 @@ describe('SiteLayout', () => {
 
     expect(userButton().getAttribute('aria-expanded')).toBe('true');
     expect(page.querySelector('#menu-usuario')!.hasAttribute('hidden')).toBe(false);
-    expect(texts('#menu-usuario .z-menu__item')).toEqual([
-      'Inicio',
-      'Mis reservas',
-      'Mi cuenta',
+    expect(texts('#menu-usuario .z-menu__item')).toEqual(['Inicio', 'Mi cuenta', 'Cerrar sesión']);
+  });
+
+  async function go(url: string): Promise<void> {
+    await TestBed.inject(Router).navigateByUrl(url);
+    await fixture.whenStable();
+  }
+
+  /** El aria-current de cada enlace de la barra, por su texto. */
+  function current(selector: string): Record<string, string | null> {
+    return Object.fromEntries(
+      Array.from(page.querySelectorAll(selector)).map((el) => [
+        el.textContent!.trim(),
+        el.getAttribute('aria-current'),
+      ]),
+    );
+  }
+
+  describe('la barra del cliente', () => {
+    it('entre el logo y el avatar muestra Balnearios y Mis reservas', async () => {
+      await render(SANTIAGO);
+
+      const nav = page.querySelector('.z-topbar__nav')!;
+      expect(nav.getAttribute('aria-label')).toBe('Secciones');
+      expect(texts('.z-topbar__nav a')).toEqual(['Balnearios', 'Mis reservas']);
+      expect(page.querySelector('.z-topbar__nav a')!.getAttribute('href')).toBe('/');
+      expect(page.querySelectorAll('.z-topbar__nav a')[1].getAttribute('href')).toBe(
+        '/my-bookings',
+      );
+
+      const logo = page.querySelector('.z-logo')!;
+      const actions = page.querySelector('.z-topbar__actions')!;
+      expect(logo.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(nav.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('marca la sección actual: la portada y la ficha son Balnearios', async () => {
+      await render(SANTIAGO);
+
+      await go('/');
+      expect(current('.z-topbar__nav a')).toEqual({ Balnearios: 'page', 'Mis reservas': null });
+
+      await go('/resorts/3');
+      expect(current('.z-topbar__nav a')).toEqual({ Balnearios: 'true', 'Mis reservas': null });
+    });
+
+    it('marca Mis reservas en la lista y en el detalle de una reserva', async () => {
+      await render(SANTIAGO);
+
+      await go('/my-bookings');
+      expect(current('.z-topbar__nav a')).toEqual({ Balnearios: null, 'Mis reservas': 'page' });
+
+      await go('/bookings/47');
+      expect(current('.z-topbar__nav a')).toEqual({ Balnearios: null, 'Mis reservas': 'true' });
+
+      await go('/profile');
+      expect(current('.z-topbar__nav a')).toEqual({ Balnearios: null, 'Mis reservas': null });
+    });
+
+    it('en el menú del celular, Balnearios va primero y la sección actual se marca', async () => {
+      await render(SANTIAGO);
+      await go('/my-bookings');
+
+      expect(texts('#menu-celular .z-menu__item')).toEqual([
+        'Balnearios',
+        'Inicio',
+        'Mis reservas',
+        'Mi cuenta',
+        'Cerrar sesión',
+      ]);
+      expect(current('#menu-celular a.z-menu__item')).toEqual({
+        Balnearios: null,
+        Inicio: null,
+        'Mis reservas': 'page',
+        'Mi cuenta': null,
+      });
+    });
+  });
+
+  it('al administrador no le suma la barra de secciones', async () => {
+    await render(MAXIMILIANO);
+
+    expect(page.querySelector('.z-topbar__nav')).toBeNull();
+    expect(texts('#menu-celular .z-menu__item')).toEqual([
+      'Panel de mi balneario',
       'Cerrar sesión',
     ]);
+  });
+
+  it('sin sesión no hay barra de secciones', async () => {
+    await render(null);
+
+    expect(page.querySelector('.z-topbar__nav')).toBeNull();
   });
 
   it('al administrador le muestra solo el panel y cerrar sesión', async () => {

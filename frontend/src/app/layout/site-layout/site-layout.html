@@ -7,6 +7,21 @@
       <span class="z-logo__word" translate="no">Zolea</span>
     </a>
 
+    <!-- Las secciones del cliente, a la vista. El administrador tiene su panel. -->
+    @if (session.user() && !session.isAdmin()) {
+      <nav class="z-topbar__nav" aria-label="Secciones">
+        <a class="z-topbar__link" routerLink="/" [attr.aria-current]="currentFor('resorts')"
+          >Balnearios</a
+        >
+        <a
+          class="z-topbar__link"
+          routerLink="/my-bookings"
+          [attr.aria-current]="currentFor('bookings')"
+          >Mis reservas</a
+        >
+      </nav>
+    }
+
     <div class="z-topbar__actions">
       @if (session.user(); as user) {
         <div class="user" #userMenu (focusout)="onUserMenuFocusOut($event)">
@@ -28,7 +43,7 @@
             [hidden]="!userMenuOpen()"
             (click)="userMenuOpen.set(false)"
           >
-            <ng-container *ngTemplateOutlet="account; context: { $implicit: user }" />
+            <ng-container *ngTemplateOutlet="account; context: { $implicit: user, sheet: false }" />
           </ul>
         </div>
       } @else {
@@ -58,7 +73,7 @@
 <nav class="z-sheet" id="menu-celular" aria-label="Menú" [hidden]="!sheetOpen()">
   @if (session.user(); as user) {
     <ul class="z-sheet__list" (click)="sheetOpen.set(false)">
-      <ng-container *ngTemplateOutlet="account; context: { $implicit: user }" />
+      <ng-container *ngTemplateOutlet="account; context: { $implicit: user, sheet: true }" />
     </ul>
   } @else {
     <a class="z-btn z-btn--primary z-btn--block" routerLink="/login">Ingresar</a>
@@ -102,8 +117,9 @@
   </div>
 </footer>
 
-<!-- Lo mismo en el menú de la computadora y en el del celular. -->
-<ng-template #account let-user>
+<!-- El menú de la persona. En la computadora, Balnearios y Mis reservas ya están en la barra; en el
+     celular, la barra no los muestra y van acá, con Balnearios primero. -->
+<ng-template #account let-user let-sheet="sheet">
   <li class="z-menu__head">
     <strong>{{ user.firstName }} {{ user.lastName }}</strong>
     <span>{{ user.email }}</span>
@@ -118,23 +134,32 @@
       </a>
     </li>
   } @else {
+    @if (sheet) {
+      <li>
+        <a class="z-menu__item" routerLink="/" [attr.aria-current]="currentFor('resorts')">
+          <svg lucideUmbrella class="z-icon" aria-hidden="true"></svg>
+          Balnearios
+        </a>
+      </li>
+    }
     <li>
       <a class="z-menu__item" routerLink="/dashboard" routerLinkActive ariaCurrentWhenActive="page">
         <svg lucideHouse class="z-icon" aria-hidden="true"></svg>
         Inicio
       </a>
     </li>
-    <li>
-      <a
-        class="z-menu__item"
-        routerLink="/my-bookings"
-        routerLinkActive
-        ariaCurrentWhenActive="page"
-      >
-        <svg lucideTicket class="z-icon" aria-hidden="true"></svg>
-        Mis reservas
-      </a>
-    </li>
+    @if (sheet) {
+      <li>
+        <a
+          class="z-menu__item"
+          routerLink="/my-bookings"
+          [attr.aria-current]="currentFor('bookings')"
+        >
+          <svg lucideTicket class="z-icon" aria-hidden="true"></svg>
+          Mis reservas
+        </a>
+      </li>
+    }
     <li>
       <a class="z-menu__item" routerLink="/profile" routerLinkActive ariaCurrentWhenActive="page">
         <svg lucideUser class="z-icon" aria-hidden="true"></svg>
