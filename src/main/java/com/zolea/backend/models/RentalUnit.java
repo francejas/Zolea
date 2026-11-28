@@ -68,8 +68,12 @@ public class RentalUnit {
      * el plano entero, no una restricción de la base: al intercambiar dos unidades, una restricción
      * única saltaría entre la primera actualización y la segunda.
      */
+    // Con el nombre escrito: sin él, la columna salía "posx", porque una sola mayúscula al final no
+    // lleva guion bajo.
+    @Column(name = "pos_x")
     private Integer posX;
 
+    @Column(name = "pos_y")
     private Integer posY;
 
     @ManyToOne(fetch = FetchType.LAZY)

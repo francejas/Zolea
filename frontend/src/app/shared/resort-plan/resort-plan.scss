@@ -28,7 +28,7 @@
   --plan-lead: calc(var(--plan-pad) + 116px + var(--space-3));
   --plan-aisle: 22px;
   /* El ancho de una casilla del plano libre (GH-68): entra una carpa. */
-  --plan-cell: 60px;
+  --plan-cell: 56px;
   --zone-top: var(--space-5);
   --zone-bottom: var(--space-6);
 
@@ -45,9 +45,11 @@
   overscroll-behavior-x: contain;
 }
 
+/* Tan ancho como su fila más larga: ninguna se corta en dos renglones (ZV-04). Con min-content, las
+   filas de sombrillas, que cruzan la pista flexible, no le pedían ancho al mapa y se salían de él. */
 .z-plan__map {
   display: grid;
-  min-width: min-content;
+  min-width: max-content;
 }
 
 .z-plan__map > * {
