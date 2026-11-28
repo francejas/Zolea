@@ -28,17 +28,26 @@ export function toUserMessage(err: HttpErrorResponse): string {
 /**
  * Los errores por campo del backend, listos para devolver desde la acción de `submit()`: Angular
  * pega cada uno en su campo. Los campos del modelo se llaman igual que los del pedido, y una clave
- * que el formulario no tiene se descarta.
+ * que el formulario no tiene se descarta. Una clave con puntos, como `admin.email`, es un campo de
+ * un subformulario: se busca por partes.
  */
 export function toFieldErrors<T>(
   form: FieldTree<T>,
   err: HttpErrorResponse,
 ): ValidationError.WithOptionalFieldTree[] {
   const apiError = err.error as ApiError | null;
-  const fields = form as unknown as Record<string, FieldTree<unknown> | undefined>;
-
   return Object.entries(apiError?.campos ?? {}).flatMap(([key, message]) => {
-    const fieldTree = fields[key];
+    const fieldTree = fieldAt(form, key);
     return fieldTree ? [{ fieldTree, kind: 'server', message }] : [];
   });
+}
+
+/** El campo de esa clave (`email`, `admin.email`), o `undefined` si el formulario no lo tiene. */
+function fieldAt<T>(form: FieldTree<T>, key: string): FieldTree<unknown> | undefined {
+  let node: unknown = form;
+  for (const part of key.split('.')) {
+    node = (node as Record<string, unknown> | undefined)?.[part];
+    if (node === undefined) return undefined;
+  }
+  return node as FieldTree<unknown>;
 }

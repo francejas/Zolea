@@ -2,7 +2,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
-import { Resort, ResortActionResponse, ResortFilters, ResortRequest } from './resort.models';
+import {
+  Resort,
+  ResortActionResponse,
+  ResortFilters,
+  ResortRegistrationRequest,
+  ResortRequest,
+  ResortSummary,
+} from './resort.models';
 
 @Injectable({
   providedIn: 'root',
@@ -36,9 +43,19 @@ export class ResortsApi {
     return this.http.put<ResortActionResponse>(`${this.apiUrl}/my`, request);
   }
 
+  /** Todos los balnearios, también los inactivos, con su administrador. Solo la cuenta de Zolea. */
+  all(): Observable<ResortSummary[]> {
+    return this.http.get<ResortSummary[]>(`${this.apiUrl}/all`);
+  }
+
+  /** Da de alta un balneario junto con su administrador. Solo la cuenta de Zolea. */
+  register(request: ResortRegistrationRequest): Observable<ResortActionResponse> {
+    return this.http.post<ResortActionResponse>(this.apiUrl, request);
+  }
+
   /**
    * La baja del balneario: deja de aparecer en la Portada y no toma reservas nuevas; las que ya
-   * tiene siguen valiendo. Solo el administrador de ese balneario.
+   * tiene siguen valiendo. Su administrador o la cuenta de Zolea.
    */
   deactivate(id: number): Observable<ResortActionResponse> {
     return this.http.put<ResortActionResponse>(`${this.apiUrl}/${id}/inactive`, {});

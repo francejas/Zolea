@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Dar de alta un balneario es de la cuenta de Zolea, como el catálogo de servicios (15.7).
  *
  * <p>Antes lo podía hacer cualquier administrador: el de Mar del Plata podía sumar balnearios a la
- * portada. Es solo por la API; no tiene pantalla.
+ * portada. El alta crea también la cuenta de su administrador (#71): ver {@code ZoleaResortsTest}.
  */
 @AutoConfigureMockMvc
 @DisplayName("Alta de balnearios — solo la cuenta de Zolea")
@@ -39,7 +39,10 @@ class ResortRegistrationTest extends IntegrationTest {
 
     private static MockHttpServletRequestBuilder alta(String nombre) {
         return post("/api/resorts").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name":"%s","location":"Pinamar","adminEmail":"nuevo@zolea.com"}""".formatted(nombre));
+                {"name":"%s","location":"Pinamar",
+                 "admin":{"firstName":"Nuevo","lastName":"Administrador","email":"nuevo@zolea.com",
+                          "phone":"+54 2254 555555","dni":"31222333","password":"provisoria1"}}"""
+                .formatted(nombre));
     }
 
     @Test

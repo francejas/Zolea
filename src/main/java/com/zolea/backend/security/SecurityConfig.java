@@ -80,7 +80,8 @@ public class SecurityConfig {
                         // /api/resorts/* abre la ficha de cada balneario, y de paso agarraba
                         // /api/resorts/my: sin token llegaba al @PreAuthorize y respondía 403, y el
                         // panel con la sesión vencida no mandaba al login. Va antes, y pide sesión.
-                        .requestMatchers(HttpMethod.GET, "/api/resorts/my").authenticated()
+                        // Lo mismo con /api/resorts/all, la lista de la cuenta de Zolea (#71).
+                        .requestMatchers(HttpMethod.GET, "/api/resorts/my", "/api/resorts/all").authenticated()
                         // /api/resorts/* abarca un solo tramo: las reseñas y las unidades ocupadas,
                         // que también son públicas, necesitan su propia regla.
                         .requestMatchers(HttpMethod.GET, "/api/resorts", "/api/resorts/*",
